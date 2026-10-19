@@ -8,7 +8,7 @@
 		<h1>Ready to<br /><span>play?</span></h1>
 		<p class="intro">Jump into the game, meet the team, and make this space your own.</p>
 		<div class="actions">
-			<button class="button" onclick={() => goto('/game')}>Play now <span aria-hidden="true">↗</span></button>
+			<button class="button" onclick={() => window.location.assign('/game')}>Play now <span aria-hidden="true">↗</span></button>
 			<button class="button button-outline" onclick={() => goto('/setting')}>Your settings</button>
 		</div>
 		<div class="quick-links">

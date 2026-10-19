@@ -6,13 +6,10 @@ services:
       -c "test -f /certs/fullchain.pem ||
       openssl req -x509 -nodes -days 365 -newkey rsa:2048
       -keyout /certs/privkey.pem -out /certs/fullchain.pem
-      -subj /CN=localhost"
+      -subj /CN=localhost
+      -addext subjectAltName=DNS:localhost,IP:127.0.0.1"
     volumes:
       - certs:/certs
-
-  app:
-    build: .
-    restart: always
 
   nginx:
     image: nginx:alpine
@@ -23,11 +20,57 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - certs:/etc/nginx/certs:ro
+      - ./backend/sveltekit/static/public/game:/usr/share/nginx/public/game:ro
     depends_on:
       app:
-        condition: service_started
+        condition: service_healthy
       certs:
         condition: service_completed_successfully
 
+  db:
+    image: postgres:17
+    restart: always
+    env_file: .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  app:
+    build: ./backend/sveltekit
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(()=>process.exit(0)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  migrate:
+    build:
+      context: ./backend/sveltekit
+      target: build
+    command: npm run db:migrate:deploy
+    restart: on-failure
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - '127.0.0.1:8180:8080'
+
 volumes:
   certs:
+  pgdata:

@@ -1,12 +1,14 @@
+<!-- PR title = Conventional Commit, e.g. "feat(web): require an account to play" (it becomes the squash commit on develop). -->
+
 ## What & why
 
-<!-- What does this PR change, and why? Link an issue/task if there is one. -->
+<!-- What does this PR change, and why? Link the vault note / task if there is one. -->
 
 ## Scope
 
 - [ ] `web/`
 - [ ] `UnityProject/`
-- [ ] Docs / repo config
+- [ ] Vault / docs / repo config
 
 ## How was this tested?
 
@@ -14,7 +16,10 @@
 
 ## Checklist
 
-- [ ] Targets `develop/web` or `develop/game` (not `main`, unless this is a release merge)
+- [ ] Targets `develop` (only `develop` → `main` for a release)
 - [ ] CI is green
+- [ ] Tested in Google Chrome, no errors in the browser console
+- [ ] Matching Obsidian vault note updated (and submodule bumped)
+- [ ] WebGL build redone in its own commit if `UnityProject/` changed
 - [ ] No secrets/credentials committed
 - [ ] Reviewed by at least one teammate

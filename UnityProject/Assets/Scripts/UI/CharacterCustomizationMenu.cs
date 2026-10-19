@@ -15,7 +15,7 @@ public class CharacterCustomizationMenu : MonoBehaviour
     private static CharacterCustomizationMenu instance;
 
     [SerializeField] private TMP_InputField nameInputField;
-    [SerializeField] private int maxNameLength = 20;
+    [SerializeField] private int maxNameLength = 24;
 
     private void Awake()
     {
@@ -159,6 +159,21 @@ public class CharacterCustomizationMenu : MonoBehaviour
             return;
 
         Apply(player, CurrentClassIndex(player), index);
+    }
+
+    // Sets class and color together, e.g. from the web profile.
+    public void ApplyProfile(int classIndex, int colorIndex)
+    {
+        if (classIndex < 0 || classIndex >= kitsByClass.Length)
+            return;
+        if (colorIndex < 0 || colorIndex >= colorVariants.Length)
+            return;
+
+        GameObject player = LocalPlayer.Get();
+        if (player == null)
+            return;
+
+        Apply(player, classIndex, colorIndex);
     }
 
     private void Apply(GameObject player, int classIndex, int colorIndex)

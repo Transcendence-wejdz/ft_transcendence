@@ -6,6 +6,10 @@ public static class KeybindOverrides
 {
     private const string OverridesKey = "Settings.KeyBindingOverrides";
 
+    public static event System.Action OnSaved;
+
+    public static string Json => PlayerPrefs.GetString(OverridesKey, "");
+
     public static void Apply(InputActionAsset asset)
     {
         string json = PlayerPrefs.GetString(OverridesKey, "");
@@ -17,6 +21,22 @@ public static class KeybindOverrides
     {
         PlayerPrefs.SetString(OverridesKey, asset.SaveBindingOverridesAsJson());
         PlayerPrefs.Save();
+        OnSaved?.Invoke();
+    }
+
+    // Replaces the stored overrides (e.g. from the web account) and reapplies them to the local player.
+    public static void SetJson(string json)
+    {
+        PlayerPrefs.SetString(OverridesKey, json ?? "");
+        PlayerPrefs.Save();
+
+        GameObject player = LocalPlayer.Get();
+        PlayerInput input = player != null ? player.GetComponent<PlayerInput>() : null;
+        if (input == null || input.actions == null)
+            return;
+
+        input.actions.RemoveAllBindingOverrides();
+        Apply(input.actions);
     }
 
     // Display string for an action's keyboard binding, falling back to the raw path for keys Unity can't render as text.

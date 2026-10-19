@@ -3,8 +3,8 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 
 // RuleTile treating configured tiles as connected siblings.
-[CreateAssetMenu(fileName = "New Sibling Wall Rule Tile", menuName = "Tiles/Sibling Wall Rule Tile")]
-public class SiblingWallRuleTile : RuleTile<SiblingWallRuleTile.Neighbor>
+[CreateAssetMenu(fileName = "New Sibling Rule Tile", menuName = "Tiles/Sibling Rule Tile")]
+public class SiblingRuleTile : RuleTile<SiblingRuleTile.Neighbor>
 {
     public class Neighbor : RuleTile.TilingRuleOutput.Neighbor
     {
@@ -12,7 +12,7 @@ public class SiblingWallRuleTile : RuleTile<SiblingWallRuleTile.Neighbor>
         public const int NotSibling = 4;
     }
 
-    [Tooltip("Other wall tiles that should count as connected neighbors (e.g. the water variant of this wall).")]
+    [Tooltip("Other tiles that count as connected neighbors (e.g. the other ground biomes).")]
     public List<TileBase> siblingTiles = new();
 
     public override bool RuleMatch(int neighbor, TileBase other)

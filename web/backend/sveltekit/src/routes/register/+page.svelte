@@ -1,5 +1,9 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { page } from '$app/state';
+    import { safeRedirect } from '$lib/redirect';
+
+    const redirectTo = $derived(safeRedirect(page.url));
 
     let email = $state('');
     let display_name = $state('');
@@ -31,7 +35,8 @@
                 return;
             }
 
-            await goto('/', { invalidateAll: true });
+            if (redirectTo === '/game') window.location.assign(redirectTo);
+            else await goto(redirectTo, { invalidateAll: true });
         } catch {
             error = 'Could not reach the server, please try again.';
         } finally {
@@ -44,6 +49,9 @@
     <p class="eyebrow">JOIN THE GAME</p>
     <h1>Create account</h1>
     <p class="description">Set up your player profile and get ready to play.</p>
+    {#if redirectTo === '/game'}
+        <p class="notice" role="status">You need an account to play. Log in or create one first.</p>
+    {/if}
 
     <form onsubmit={submit}>
         <label for="email">Email</label>
@@ -64,10 +72,20 @@
             {loading ? 'Creating account...' : 'Create account'}
         </button>
     </form>
-    <p class="switch">Already have an account? <a href="/login">Log in</a></p>
+    <p class="switch">Already have an account? <a href={redirectTo === '/' ? '/login' : `/login?redirectTo=${encodeURIComponent(redirectTo)}`}>Log in</a></p>
 </section>
 
 <style>
+    .notice {
+        margin: 0 0 1.25rem;
+        padding: 0.75rem 1rem;
+        border-radius: 0.75rem;
+        border: 1px solid rgba(245, 184, 92, 0.35);
+        background: rgba(245, 184, 92, 0.1);
+        color: #f5b85c;
+        font-size: 0.9rem;
+    }
+
     .auth-card {
         width: min(100%, 460px);
         margin: 1rem auto;

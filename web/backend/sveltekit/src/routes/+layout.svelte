@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { goto } from '$app/navigation';
     import { page } from '$app/state';
 
     let { data, children } = $props();
@@ -10,12 +9,14 @@
         });
 
         if (response.ok) {
-            await goto('/login', { invalidateAll: true });
+            window.location.assign('/login');
         }
     }
 </script>
 
-<div class="app-shell" class:game-route={page.url.pathname === '/game'}>
+<!-- Full page loads in and out of /game so the Unity instance never outlives its page and other pages refetch fresh data. -->
+<div class="app-shell" class:game-route={page.url.pathname === '/game'}
+     data-sveltekit-reload={page.url.pathname === '/game' ? '' : 'off'}>
     <header class="topbar">
         <a class="brand" href="/" aria-label="Transcendence home">
             <span class="brand-mark">T</span>
@@ -23,7 +24,7 @@
         </a>
 
         <nav class="main-nav" aria-label="Main navigation">
-            <a href="/game">Play</a>
+            <a href="/game" data-sveltekit-reload>Play</a>
             <a href="/setting">Settings</a>
             <a href="/project">Project</a>
             <a href="/team">Team</a>

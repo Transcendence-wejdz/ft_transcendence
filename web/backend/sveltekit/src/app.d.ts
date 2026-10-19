@@ -11,6 +11,7 @@ declare global {
 				color: string;
 				class: string;
 				avatar_url: string | null;
+				game_settings: unknown;
 			} | null;
 		}
 		// interface PageData {}

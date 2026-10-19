@@ -92,9 +92,11 @@
                     // const displayName = data.user.display_name;
 
                     const profile = JSON.stringify({
+                        userId: data.user.id,
                         displayName: data.user.display_name,
                         playerClass: data.user.class,
-                        color: data.user.color
+                        color: data.user.color,
+                        settingsJson: data.user.game_settings ? JSON.stringify(data.user.game_settings) : ''
                     });
 
                     unityInstance.SendMessage(

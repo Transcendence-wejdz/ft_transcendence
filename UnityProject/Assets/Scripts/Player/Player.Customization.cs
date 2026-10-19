@@ -137,6 +137,7 @@ public partial class Player
         classIndex.Value = newClassIndex;
         colorIndex.Value = newColorIndex;
         PlayerProfileStore.Save(classIndex.Value, colorIndex.Value, playerName.Value.ToString());
+        WebProfileBridge.PushSelection(newClassIndex, newColorIndex);
     }
 
     public void SetTeam(int newTeamIndex)
@@ -154,6 +155,7 @@ public partial class Player
 
         playerName.Value = newName;
         PlayerProfileStore.Save(classIndex.Value, colorIndex.Value, playerName.Value.ToString());
+        WebProfileBridge.PushName(newName);
     }
 
     public void SetReady(bool ready)

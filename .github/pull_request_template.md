@@ -19,7 +19,7 @@
 - [ ] Targets `develop` (only `develop` → `main` for a release)
 - [ ] CI is green
 - [ ] Tested in Google Chrome, no errors in the browser console
-- [ ] Matching Obsidian vault note updated (and submodule bumped)
+- [ ] Matching Obsidian vault note updated (pushed to the vault's main, no submodule bump)
 - [ ] WebGL build redone in its own commit if `UnityProject/` changed
 - [ ] No secrets/credentials committed
 - [ ] Reviewed by at least one teammate

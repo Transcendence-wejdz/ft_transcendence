@@ -8,15 +8,15 @@ the website, customize their character (name, class, color, avatar) and play dir
 
 The game is designed around three multiplayer modes instead of a single-player loop:
 
-- **4-player co-op** — all players fight the horde together. **Implemented.**
-- **2 vs 2** — two teams of survivors fight each other (and the horde). _Designed, not built yet._
-- **3 vs 1 asymmetric** — three survivors against one "horde leader" player. _Designed, not built yet._
+- **4-player co-op**: all players fight the horde together. **Implemented.**
+- **2 vs 2**: two teams of survivors fight each other (and the horde). _Designed, not built yet._
+- **3 vs 1 asymmetric**: three survivors against one "horde leader" player. _Designed, not built yet._
 
 The repository holds two codebases with very different lifecycles:
 
-- `web/` — the deliverable required by the subject: SvelteKit app, PostgreSQL database, nginx HTTPS
-  reverse proxy, all orchestrated with Docker Compose.
-- `UnityProject/` — the Unity **source** of the game. It is not part of the web runtime: only its
+- `web/`: the deliverable required by the subject (SvelteKit app, PostgreSQL database, nginx HTTPS
+  reverse proxy, all orchestrated with Docker Compose).
+- `UnityProject/`: the Unity **source** of the game. It is not part of the web runtime: only its
   exported WebGL **build** is shipped, in `web/backend/sveltekit/static/public/game/`, and served by nginx.
 
 The website and the game share the same player profile: the `/game` page sends the signed-in user's
@@ -104,21 +104,21 @@ Everyone develops; the roles above add extra responsibilities on top.
 - **Meetings**: every 3–4 days on Discord; attendance is not mandatory as long as everyone stays
   reachable. Meeting notes and the project state live in the Obsidian vault.
 - **Obsidian vault** (`Transcendence_obsidian/`, separate repository used as a submodule): the team's
-  shared brain — one note per code module with its key files and connections. Update the matching
+  shared brain, with one note per code module listing its key files and connections. Update the matching
   note whenever you change the code.
 - **Branches**:
 
   ```
-  main      protected, PR only, CI green + 1 review — what we present at evaluation
+  main      protected, PR only, CI green + 1 review (what we present at evaluation)
     ▲ merge commit "release: …"
-  develop   protected, PR only, CI green — integration of web + game
+  develop   protected, PR only, CI green (integration of web + game)
     ▲ squash merge
   feat/<scope>-<name>   fix/<scope>-<name>   docs/<name>   short-lived, branched from develop
   ```
 
-  Old branches are never deleted without first pushing an `archive/<branch>` tag, so no commit is ever
-  lost.
-- **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) —
+  A branch holding unique commits is never deleted directly: it is first renamed to `archive/<branch>`,
+  so no commit is ever lost.
+- **Commits**: [Conventional Commits](https://www.conventionalcommits.org/):
   `type(scope): short summary`, one intention per commit.
   Types: `feat`, `fix`, `refactor`, `chore`, `docs`, `ci`, `build`.
   Scopes: `web`, `api`, `db`, `game`, `net`, `infra`, `ci`, `vault`, `docs`.
@@ -130,9 +130,9 @@ Everyone develops; the roles above add extra responsibilities on top.
 
 GitHub Actions (`.github/workflows/`):
 
-- **Web CI** (`web-ci.yml`) — on every push/PR to `main`/`develop`: builds the SvelteKit app and its
+- **Web CI** (`web-ci.yml`): on every push/PR to `main`/`develop`, builds the SvelteKit app and its
   Docker image. Required to merge into `main`.
-- **Unity Build Check** (`unity-ci.yml`) — on push/PR touching `UnityProject/**`: headless compile check
+- **Unity Build Check** (`unity-ci.yml`): on push/PR touching `UnityProject/**`, headless compile check
   via [GameCI](https://game.ci/). A no-op until a Unity license is added as repository secrets (see
   the comment at the top of the workflow).
 
@@ -166,19 +166,19 @@ created_at     timestamptz
 
 ## Features List
 
-- **Accounts** (erbuffet) — sign up / log in with email or display name, Argon2id hashing, server-side
+- **Accounts** (erbuffet): sign up / log in with email or display name, Argon2id hashing, server-side
   validation, rate-limited auth routes, database sessions, logout.
-- **Profile settings** (erbuffet) — name, character class, color and avatar picture.
-- **Game embedded in the website** (zsonie, erbuffet) — `/game` loads the Unity WebGL build; an account
+- **Profile settings** (erbuffet): name, character class, color and avatar picture.
+- **Game embedded in the website** (zsonie, erbuffet): `/game` loads the Unity WebGL build; an account
   is required to play.
-- **Shared profile between site and game** (zsonie) — the site sends the profile to Unity; character,
+- **Shared profile between site and game** (zsonie): the site sends the profile to Unity; character,
   name, settings and key bindings changed in-game are saved back to the database.
-- **4-player online co-op** (zsonie) — host/join with a session code through Unity Relay, lobby with
+- **4-player online co-op** (zsonie): host/join with a session code through Unity Relay, lobby with
   ready check, waves of enemies, level-up choices, revive system, game over screen.
-- **Friends** (zsonie) — Unity Friends list with invites to your session; your friend name is your
+- **Friends** (zsonie): Unity Friends list with invites to your session; your friend name is your
   website display name.
-- **Character customization** (zsonie) — 5 classes × 4 colors, each class with its own abilities.
-- **Infrastructure** (zsonie) — HTTPS reverse proxy, Docker Compose stack, CI workflows.
+- **Character customization** (zsonie): 5 classes × 4 colors, each class with its own abilities.
+- **Infrastructure** (zsonie): HTTPS reverse proxy, Docker Compose stack, CI workflows.
 
 ## Modules
 
@@ -186,15 +186,15 @@ created_at     timestamptz
 
 | Module | Type | Points | Who |
 | --- | --- | --- | --- |
-| Web — use a framework for frontend and backend (SvelteKit) | Major | 2 | erbuffet |
-| Web — use an ORM for the database (Prisma) | Minor | 1 | erbuffet |
-| User management — standard user management and profile | Major | 2 | erbuffet, zsonie |
-| Gaming — remote players / multiplayer (online co-op) | Major × 3 | 6 | zsonie |
-| Gaming — game customization options | Minor | 1 | zsonie |
+| Web: use a framework for frontend and backend (SvelteKit) | Major | 2 | erbuffet |
+| Web: use an ORM for the database (Prisma) | Minor | 1 | erbuffet |
+| User management: standard user management and profile | Major | 2 | erbuffet, zsonie |
+| Gaming: remote players / multiplayer (online co-op) | Major × 3 | 6 | zsonie |
+| Gaming: game customization options | Minor | 1 | zsonie |
 
 **Planned** (from the 13/09 meeting): real-time features and messaging (Web, majors), i18n and
 additional browsers (Accessibility, minors), game history / achievements (User management, minor),
-AI opponent (AI, major), WAF + secrets vault (Cybersecurity, major), a second game — pig race — with
+AI opponent (AI, major), WAF + secrets vault (Cybersecurity, major), a second game (pig race) with
 matchmaking (Gaming, major), advanced chat and gamification (minors), health check (DevOps, minor).
 The module list and point totals will be finalized against the subject before evaluation.
 

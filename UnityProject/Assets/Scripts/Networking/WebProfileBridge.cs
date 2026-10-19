@@ -231,6 +231,7 @@ public class WebProfileBridge : MonoBehaviour
             if (status >= 200 && status < 300)
             {
                 ConfirmedName = playerName;
+                _ = ServicesAuth.SyncPlayerNameAsync();
             }
             else if (status == 400 || status == 409)
             {

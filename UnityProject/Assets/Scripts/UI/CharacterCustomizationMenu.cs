@@ -161,6 +161,21 @@ public class CharacterCustomizationMenu : MonoBehaviour
         Apply(player, CurrentClassIndex(player), index);
     }
 
+    // Sets class and color together, e.g. from the web profile.
+    public void ApplyProfile(int classIndex, int colorIndex)
+    {
+        if (classIndex < 0 || classIndex >= kitsByClass.Length)
+            return;
+        if (colorIndex < 0 || colorIndex >= colorVariants.Length)
+            return;
+
+        GameObject player = LocalPlayer.Get();
+        if (player == null)
+            return;
+
+        Apply(player, classIndex, colorIndex);
+    }
+
     private void Apply(GameObject player, int classIndex, int colorIndex)
     {
         if (!ApplyVisuals(player, classIndex, colorIndex))

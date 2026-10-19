@@ -2,3 +2,4 @@
 	path = Transcendence_obsidian
 	url = git@github.com:Transcendence-wejdz/Transcendence_obsidian.git
 	branch = main
+	ignore = all

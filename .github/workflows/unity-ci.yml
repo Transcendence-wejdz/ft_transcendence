@@ -14,12 +14,12 @@ name: Unity Build Check
 
 on:
   push:
-    branches: [main, develop/game]
+    branches: [main, develop]
     paths:
       - "UnityProject/**"
       - ".github/workflows/unity-ci.yml"
   pull_request:
-    branches: [main, develop/game]
+    branches: [main, develop]
     paths:
       - "UnityProject/**"
       - ".github/workflows/unity-ci.yml"

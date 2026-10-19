@@ -20,7 +20,6 @@ UnityProject/Assets/Screenshots/
 UnityProject/Assets/Screenshots.meta
 
 # WebGL build debug output that must not ship
-web/public/game/*_BurstDebugInformation_DoNotShip/
 
 # Visual Studio / Rider / VS Code generated project files
 .vs/
@@ -56,3 +55,7 @@ CLAUDE.md
 # Project reference materials (subject PDF, drafts, local notes)
 .datas/
 
+
+# Local secrets
+web/.env
+web/backend/sveltekit/static/public/game/*_BurstDebugInformation_DoNotShip/

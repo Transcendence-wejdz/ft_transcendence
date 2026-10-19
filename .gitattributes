@@ -27,4 +27,4 @@
 *.wasm binary
 *.gz binary
 *.data binary
-web/public/game/Build/*.js binary
+web/backend/sveltekit/static/public/game/Build/*.js binary

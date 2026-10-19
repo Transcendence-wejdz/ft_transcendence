@@ -1,9 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { prisma } from '$lib/server/db.js';
+import { CLASSES, COLORS, displayNameError, isUniqueViolation } from '$lib/server/validation.js';
 
-const colors = new Set(['Black', 'Blue', 'Purple', 'Red', 'Yellow']);
-const classes = new Set(['Warrior', 'Archer', 'Lancer', 'Monk', 'Pawn']);
 const MAX_AVATAR_LENGTH = 700_000;
 
 export const PUT: RequestHandler = async ({ locals, request }) => {
@@ -25,16 +24,12 @@ export const PUT: RequestHandler = async ({ locals, request }) => {
     const playerClass = input.class;
     const avatarUrl = input.avatar_url;
 
-    if (displayName.length < 2 || displayName.length > 24) {
-        return json({ success: false, error: 'Name must be between 2 and 24 characters.' }, { status: 400 });
-    }
-    if (!/^[\p{L}\p{N}_ -]+$/u.test(displayName)) {
-        return json({ success: false, error: 'Name can use letters, numbers, spaces, _ and -.' }, { status: 400 });
-    }
-    if (typeof color !== 'string' || !colors.has(color)) {
+    const nameError = displayNameError(displayName);
+    if (nameError) return json({ success: false, error: nameError }, { status: 400 });
+    if (typeof color !== 'string' || !COLORS.has(color)) {
         return json({ success: false, error: 'Choose a color from the available options.' }, { status: 400 });
     }
-    if (typeof playerClass !== 'string' || !classes.has(playerClass)) {
+    if (typeof playerClass !== 'string' || !CLASSES.has(playerClass)) {
         return json({ success: false, error: 'Choose a class from the available options.' }, { status: 400 });
     }
     if (avatarUrl !== null && (typeof avatarUrl !== 'string' || avatarUrl.length > MAX_AVATAR_LENGTH || !/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+=*$/.test(avatarUrl))) {
@@ -57,7 +52,7 @@ export const PUT: RequestHandler = async ({ locals, request }) => {
         locals.user = updatedUser;
         return json({ success: true, user: updatedUser });
     } catch (error) {
-        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+        if (isUniqueViolation(error)) {
             return json({ success: false, error: 'That player name is already taken.' }, { status: 409 });
         }
         console.error('Failed to update player settings:', error);

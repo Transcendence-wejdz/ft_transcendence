@@ -15,6 +15,7 @@ model User {
   color        String    @default("Black")
   class        String    @default("Warrior")
   avatarUrl    String?   @map("avatar_url")
+  gameSettings Json?     @map("game_settings")
   createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   sessions     Session[]
 

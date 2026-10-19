@@ -29,7 +29,7 @@ export async function validateSession(token: string) {
     const session = await prisma.session.findFirst({
         where: { id: hashToken(token), expiresAt: { gt: new Date() } },
         select: {
-            user: { select: { id: true, email: true, displayName: true, color: true, class: true, avatarUrl: true } }
+            user: { select: { id: true, email: true, displayName: true, color: true, class: true, avatarUrl: true, gameSettings: true } }
         }
     });
     return session ? {
@@ -38,7 +38,8 @@ export async function validateSession(token: string) {
         display_name: session.user.displayName,
         color: session.user.color,
         class: session.user.class,
-        avatar_url: session.user.avatarUrl
+        avatar_url: session.user.avatarUrl,
+        game_settings: session.user.gameSettings
     } : null;
 }
 

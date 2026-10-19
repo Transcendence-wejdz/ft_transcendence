@@ -15,7 +15,7 @@ public class CharacterCustomizationMenu : MonoBehaviour
     private static CharacterCustomizationMenu instance;
 
     [SerializeField] private TMP_InputField nameInputField;
-    [SerializeField] private int maxNameLength = 20;
+    [SerializeField] private int maxNameLength = 24;
 
     private void Awake()
     {

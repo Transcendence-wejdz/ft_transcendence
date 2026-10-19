@@ -59,8 +59,11 @@ jobs:
             node --check "$f"
           done
 
+      - name: Create .env from example
+        run: cp .env.example .env
+
       - name: Validate docker compose config
         run: docker compose -f compose.yaml config >/dev/null
 
-      - name: Build Docker image
-        run: docker build -t transcendence-web:ci .
+      - name: Build Docker images
+        run: docker compose -f compose.yaml build

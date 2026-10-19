@@ -5,9 +5,9 @@ name: Web CI
 # job itself is fast, so running it unconditionally is cheap.
 on:
   push:
-    branches: [main, develop/web]
+    branches: [main, develop]
   pull_request:
-    branches: [main, develop/web]
+    branches: [main, develop]
 
 jobs:
   build:

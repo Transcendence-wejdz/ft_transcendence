@@ -1,0 +1,23 @@
+// See https://svelte.dev/docs/kit/types#app.d.ts
+// for information about these interfaces
+declare global {
+	namespace App {
+		// interface Error {}
+		interface Locals {
+			user: {
+				id: string;
+				email: string;
+				display_name: string;
+				color: string;
+				class: string;
+				avatar_url: string | null;
+				game_settings: unknown;
+			} | null;
+		}
+		// interface PageData {}
+		// interface PageState {}
+		// interface Platform {}
+	}
+}
+
+export {};

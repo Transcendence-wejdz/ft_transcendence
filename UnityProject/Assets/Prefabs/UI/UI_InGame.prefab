@@ -8348,7 +8348,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterCustomizationMenu
   nameInputField: {fileID: 4680456093021041289}
-  maxNameLength: 20
+  maxNameLength: 24
   kitsByClass:
   - {fileID: 11400000, guid: 590f376c4c7a40e0aa6b4132f95723bd, type: 2}
   - {fileID: 11400000, guid: a38b611367056637c94bebaeecc70c3f, type: 2}

@@ -54,6 +54,7 @@ public static class FriendsManager
 
         OwnName = await AuthenticationService.Instance.GetPlayerNameAsync();
 
+        ServicesAuth.OnPlayerNameChanged += name => { OwnName = name; OnChanged?.Invoke(); };
         FriendsService.Instance.RelationshipAdded += _ => OnChanged?.Invoke();
         FriendsService.Instance.RelationshipDeleted += _ => OnChanged?.Invoke();
         FriendsService.Instance.PresenceUpdated += _ => OnChanged?.Invoke();

@@ -15,7 +15,8 @@ setup:
 
 up: setup
 	$(COMPOSE) up --build -d
-	@echo "Transcendence is up: https://localhost:4443"
+	@echo "TRANSCENDENCE is up: https://localhost:4443"
+	@echo "ADMINER is up: http://localhost:8180"
 
 down:
 	$(COMPOSE) down

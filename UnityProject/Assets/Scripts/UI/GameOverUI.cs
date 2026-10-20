@@ -20,6 +20,7 @@ public class GameOverUI : MonoBehaviour
     private CanvasGroup panelGroup;
     private float triggerTime = -1f;
     private bool shown;
+    private CoopRunStats runStats;
 
     public static bool IsShowing { get; private set; }
 
@@ -56,7 +57,10 @@ public class GameOverUI : MonoBehaviour
             return;
 
         if (triggerTime < 0f)
+        {
             triggerTime = Time.unscaledTime;
+            runStats = CaptureRunStats();
+        }
 
         if (Time.unscaledTime - triggerTime >= showDelay)
             Show();
@@ -68,6 +72,7 @@ public class GameOverUI : MonoBehaviour
         shown = false;
         IsShowing = false;
         triggerTime = -1f;
+        runStats = null;
         panel.SetActive(false);
         PauseManager.SetExternalPause(false);
         restartButton.interactable = true;
@@ -87,6 +92,34 @@ public class GameOverUI : MonoBehaviour
 
         panel.SetActive(true);
         StartCoroutine(FadeIn());
+        SubmitScore();
+    }
+
+    // Snapshotted at the wipe itself, since the wave timer keeps running behind the screen.
+    private CoopRunStats CaptureRunStats()
+    {
+        WaveSpawner spawner = FindAnyObjectByType<WaveSpawner>();
+        XPManager xp = FindAnyObjectByType<XPManager>();
+        if (spawner == null || spawner.CurrentWave <= 0)
+            return null;
+
+        return new CoopRunStats
+        {
+            wave = spawner.CurrentWave,
+            xp = xp != null ? xp.TotalXP : 0,
+            seconds = Mathf.FloorToInt(spawner.ElapsedSeconds),
+            players = Mathf.Max(1, Player.AllActiveInstances.Count)
+        };
+    }
+
+    // Every player submits the shared team result on their own account; the board refreshes itself once it lands.
+    private async void SubmitScore()
+    {
+        if (runStats == null)
+            return;
+
+        int score = runStats.ComputeScore();
+        await LeaderboardClient.SubmitCoopScoreAsync(score, runStats);
     }
 
     private void Choose(bool restart)

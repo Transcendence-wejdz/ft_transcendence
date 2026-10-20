@@ -535,6 +535,63 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   lobbySceneName: Lobby
   startupGracePeriod: 0.5
+--- !u!1001 &808495530
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2694136334666979418, guid: d95ea394c3de6f8c5a1200a7583e466e, type: 3}
+      propertyPath: m_Name
+      value: SeaClouds
+      objectReference: {fileID: 0}
+    - target: {fileID: 7394030231172085167, guid: d95ea394c3de6f8c5a1200a7583e466e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7394030231172085167, guid: d95ea394c3de6f8c5a1200a7583e466e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7394030231172085167, guid: d95ea394c3de6f8c5a1200a7583e466e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7394030231172085167, guid: d95ea394c3de6f8c5a1200a7583e466e, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7394030231172085167, guid: d95ea394c3de6f8c5a1200a7583e466e, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7394030231172085167, guid: d95ea394c3de6f8c5a1200a7583e466e, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7394030231172085167, guid: d95ea394c3de6f8c5a1200a7583e466e, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7394030231172085167, guid: d95ea394c3de6f8c5a1200a7583e466e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7394030231172085167, guid: d95ea394c3de6f8c5a1200a7583e466e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7394030231172085167, guid: d95ea394c3de6f8c5a1200a7583e466e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: d95ea394c3de6f8c5a1200a7583e466e, type: 3}
 --- !u!1001 &971538329
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1499,104 +1556,202 @@ MonoBehaviour:
   waterBackgroundTilemap: {fileID: 3116289660912037479}
   coastFoamTilemap: {fileID: 6630250672137080087}
   player: {fileID: 8664487228250979934, guid: 0c5fd484e0ae59378a6141dc3c220519, type: 3}
-  chunkSize: 4
-  viewDistanceInChunks: 2
-  maxChunkGenerationsPerFrame: 2
-  seed: 15
-  spawnSafeRadius: 2
-  biomeNoiseScale: 0.1
-  biomeTiles:
-  - {fileID: 11400000, guid: fe10effbe23c4a03ac99d50817ef8a7d, type: 2}
-  - {fileID: 11400000, guid: 087f48f83ae844658f373a68cbc2256e, type: 2}
-  - {fileID: 11400000, guid: 0f1a7ca835a84090a60ff084f76602d9, type: 2}
-  - {fileID: 11400000, guid: 55c1b6c41d3b47ae987f15689eceeae2, type: 2}
-  - {fileID: 11400000, guid: c963d9d33e034fdebc5abd2991de4403, type: 2}
-  waterNoiseScale: 0.1
+  seed: 1
+  chunkSize: 16
+  viewDistanceInChunks: 8
+  maxChunkGenerationsPerFrame: 4
+  groundNoiseScale: 0.1
+  biomes:
+  - name: Forest
+    groundTiles:
+    - {fileID: 11400000, guid: fe10effbe23c4a03ac99d50817ef8a7d, type: 2}
+    - {fileID: 11400000, guid: 087f48f83ae844658f373a68cbc2256e, type: 2}
+    - {fileID: 11400000, guid: 0f1a7ca835a84090a60ff084f76602d9, type: 2}
+    spawnSafeRadius: 5
+    decor:
+    - prefab: {fileID: 1598588655992799798, guid: a907899a7ecfb906d99ebfb5729ae1e7, type: 3}
+      surface: 0
+      density: 0.09
+      noiseScale: 0.12
+      noiseThreshold: 0.5
+    - prefab: {fileID: 6524784339964986097, guid: f17f1362e54a17aad9c2d40bfe7a3ab9, type: 3}
+      surface: 0
+      density: 0.2
+      noiseScale: 0.12
+      noiseThreshold: 0.598
+    - prefab: {fileID: 6944997123655819113, guid: ae4b4d6855f722986a9e1c663af8072b, type: 3}
+      surface: 0
+      density: 0.25
+      noiseScale: 0.15
+      noiseThreshold: 0.62
+    - prefab: {fileID: 6802664848772536556, guid: e70649dc53e4d18f1a9de87a529193dc, type: 3}
+      surface: 0
+      density: 0.1
+      noiseScale: 0.25
+      noiseThreshold: 0.6
+    - prefab: {fileID: 4021531436006504528, guid: a477c60a0563118e2bf50a87756eeb1d, type: 3}
+      surface: 0
+      density: 0.1
+      noiseScale: 0.25
+      noiseThreshold: 0.6
+    - prefab: {fileID: 5890264081347668165, guid: 3b03faf92c453cd839e46422d9d8d004, type: 3}
+      surface: 0
+      density: 0.08
+      noiseScale: 0.25
+      noiseThreshold: 0.65
+    - prefab: {fileID: 5682110923380568844, guid: 83899a0550004ec3c8190a0e8261341c, type: 3}
+      surface: 0
+      density: 0.02
+      noiseScale: 0.25
+      noiseThreshold: 0.75
+    - prefab: {fileID: 8180021866609941328, guid: e57e560ea96187addaa992869673c5ba, type: 3}
+      surface: 0
+      density: 0.02
+      noiseScale: 0.25
+      noiseThreshold: 0.75
+    - prefab: {fileID: 3965439484568466488, guid: 7e6acfbaf3ef7ca388e16178ecc59c18, type: 3}
+      surface: 1
+      density: 0.03
+      noiseScale: 0.3
+      noiseThreshold: 0.75
+    - prefab: {fileID: 2097706737646764478, guid: f77a21673d4827165b46af6ec452728c, type: 3}
+      surface: 1
+      density: 0.03
+      noiseScale: 0.3
+      noiseThreshold: 0.75
+  - name: Plains
+    groundTiles:
+    - {fileID: 11400000, guid: 087f48f83ae844658f373a68cbc2256e, type: 2}
+    - {fileID: 11400000, guid: 55c1b6c41d3b47ae987f15689eceeae2, type: 2}
+    spawnSafeRadius: 4
+    decor:
+    - prefab: {fileID: 6802664848772536556, guid: e70649dc53e4d18f1a9de87a529193dc, type: 3}
+      surface: 0
+      density: 0.1
+      noiseScale: 0.2
+      noiseThreshold: 0.55
+    - prefab: {fileID: 4021531436006504528, guid: a477c60a0563118e2bf50a87756eeb1d, type: 3}
+      surface: 0
+      density: 0.1
+      noiseScale: 0.2
+      noiseThreshold: 0.55
+    - prefab: {fileID: 5890264081347668165, guid: 3b03faf92c453cd839e46422d9d8d004, type: 3}
+      surface: 0
+      density: 0.1
+      noiseScale: 0.2
+      noiseThreshold: 0.55
+    - prefab: {fileID: 4040083552489541714, guid: 419f8b9230cf78d888ebc2af680d8a43, type: 3}
+      surface: 0
+      density: 0.1
+      noiseScale: 0.2
+      noiseThreshold: 0.55
+    - prefab: {fileID: 1598588655992799798, guid: a907899a7ecfb906d99ebfb5729ae1e7, type: 3}
+      surface: 0
+      density: 0.08
+      noiseScale: 0.3
+      noiseThreshold: 0.78
+    - prefab: {fileID: 6524784339964986097, guid: f17f1362e54a17aad9c2d40bfe7a3ab9, type: 3}
+      surface: 0
+      density: 0.08
+      noiseScale: 0.3
+      noiseThreshold: 0.78
+    - prefab: {fileID: 6061384922041497983, guid: 8cf9d9201fbe09523872aaee4c89b5e5, type: 3}
+      surface: 0
+      density: 0.02
+      noiseScale: 0.25
+      noiseThreshold: 0.75
+    - prefab: {fileID: 636951289468101223, guid: 5822640d431382c44a687014b83e4a83, type: 3}
+      surface: 0
+      density: 0.02
+      noiseScale: 0.25
+      noiseThreshold: 0.75
+    - prefab: {fileID: 3965439484568466488, guid: 7e6acfbaf3ef7ca388e16178ecc59c18, type: 3}
+      surface: 1
+      density: 0.04
+      noiseScale: 0.3
+      noiseThreshold: 0.7
+    - prefab: {fileID: 9175538198328060603, guid: ca6ef86f6dd2560b9af68659b5d3046c, type: 3}
+      surface: 1
+      density: 0.04
+      noiseScale: 0.3
+      noiseThreshold: 0.7
+  - name: Rocky
+    groundTiles:
+    - {fileID: 11400000, guid: c963d9d33e034fdebc5abd2991de4403, type: 2}
+    - {fileID: 11400000, guid: 087f48f83ae844658f373a68cbc2256e, type: 2}
+    spawnSafeRadius: 4
+    decor:
+    - prefab: {fileID: 5682110923380568844, guid: 83899a0550004ec3c8190a0e8261341c, type: 3}
+      surface: 0
+      density: 0.12
+      noiseScale: 0.18
+      noiseThreshold: 0.6
+    - prefab: {fileID: 8180021866609941328, guid: e57e560ea96187addaa992869673c5ba, type: 3}
+      surface: 0
+      density: 0.12
+      noiseScale: 0.18
+      noiseThreshold: 0.6
+    - prefab: {fileID: 6061384922041497983, guid: 8cf9d9201fbe09523872aaee4c89b5e5, type: 3}
+      surface: 0
+      density: 0.12
+      noiseScale: 0.18
+      noiseThreshold: 0.6
+    - prefab: {fileID: 636951289468101223, guid: 5822640d431382c44a687014b83e4a83, type: 3}
+      surface: 0
+      density: 0.12
+      noiseScale: 0.18
+      noiseThreshold: 0.6
+    - prefab: {fileID: 6944997123655819113, guid: ae4b4d6855f722986a9e1c663af8072b, type: 3}
+      surface: 0
+      density: 0.06
+      noiseScale: 0.3
+      noiseThreshold: 0.78
+    - prefab: {fileID: 8020669809099554080, guid: 0a3122ed4d24dbc71bd2ed5f4e545e2a, type: 3}
+      surface: 0
+      density: 0.06
+      noiseScale: 0.3
+      noiseThreshold: 0.78
+    - prefab: {fileID: 5890264081347668165, guid: 3b03faf92c453cd839e46422d9d8d004, type: 3}
+      surface: 0
+      density: 0.05
+      noiseScale: 0.25
+      noiseThreshold: 0.7
+    - prefab: {fileID: 4040083552489541714, guid: 419f8b9230cf78d888ebc2af680d8a43, type: 3}
+      surface: 0
+      density: 0.05
+      noiseScale: 0.25
+      noiseThreshold: 0.7
+    - prefab: {fileID: 3965439484568466488, guid: 7e6acfbaf3ef7ca388e16178ecc59c18, type: 3}
+      surface: 1
+      density: 0.1
+      noiseScale: 0.25
+      noiseThreshold: 0.6
+    - prefab: {fileID: 2097706737646764478, guid: f77a21673d4827165b46af6ec452728c, type: 3}
+      surface: 1
+      density: 0.1
+      noiseScale: 0.25
+      noiseThreshold: 0.6
+    - prefab: {fileID: 9175538198328060603, guid: ca6ef86f6dd2560b9af68659b5d3046c, type: 3}
+      surface: 1
+      density: 0.1
+      noiseScale: 0.25
+      noiseThreshold: 0.6
+    - prefab: {fileID: 931983565565048284, guid: 78763b22c9cc3fa25a210f0d8dae60da, type: 3}
+      surface: 1
+      density: 0.1
+      noiseScale: 0.25
+      noiseThreshold: 0.6
+  waterNoiseScale: 0.102
   waterThreshold: 0.2
   waterTile: {fileID: 11400000, guid: da1f07ab417c38a8fbaf4b560b7cebc8, type: 2}
   waterBackgroundTile: {fileID: 11400000, guid: f02d7af0d5b224b25b5e1980817b96b6, type: 2}
   coastFoamTile: {fileID: 11400000, guid: d2462fe4b13543caa3c538201f70cebe, type: 2}
-  decorEntries:
-  - prefab: {fileID: 1598588655992799798, guid: a907899a7ecfb906d99ebfb5729ae1e7, type: 3}
-    surface: 0
-    density: 0.15
-    noiseScale: 0.3
-    noiseThreshold: 0.8
-  - prefab: {fileID: 6524784339964986097, guid: f17f1362e54a17aad9c2d40bfe7a3ab9, type: 3}
-    surface: 0
-    density: 0.17
-    noiseScale: 0.45
-    noiseThreshold: 0.8
-  - prefab: {fileID: 6944997123655819113, guid: ae4b4d6855f722986a9e1c663af8072b, type: 3}
-    surface: 0
-    density: 0.18
-    noiseScale: 0.33
-    noiseThreshold: 0.8
-  - prefab: {fileID: 8020669809099554080, guid: 0a3122ed4d24dbc71bd2ed5f4e545e2a, type: 3}
-    surface: 0
-    density: 0.2
-    noiseScale: 0.15
-    noiseThreshold: 0.8
-  - prefab: {fileID: 5682110923380568844, guid: 83899a0550004ec3c8190a0e8261341c, type: 3}
-    surface: 0
-    density: 0.03
-    noiseScale: 0.25
-    noiseThreshold: 0.75
-  - prefab: {fileID: 8180021866609941328, guid: e57e560ea96187addaa992869673c5ba, type: 3}
-    surface: 0
-    density: 0.03
-    noiseScale: 0.25
-    noiseThreshold: 0.75
-  - prefab: {fileID: 6061384922041497983, guid: 8cf9d9201fbe09523872aaee4c89b5e5, type: 3}
-    surface: 0
-    density: 0.03
-    noiseScale: 0.25
-    noiseThreshold: 0.75
-  - prefab: {fileID: 636951289468101223, guid: 5822640d431382c44a687014b83e4a83, type: 3}
-    surface: 0
-    density: 0.03
-    noiseScale: 0.25
-    noiseThreshold: 0.75
-  - prefab: {fileID: 6802664848772536556, guid: e70649dc53e4d18f1a9de87a529193dc, type: 3}
-    surface: 0
-    density: 0.08
-    noiseScale: 0.25
-    noiseThreshold: 0.7
-  - prefab: {fileID: 4021531436006504528, guid: a477c60a0563118e2bf50a87756eeb1d, type: 3}
-    surface: 0
-    density: 0.08
-    noiseScale: 0.25
-    noiseThreshold: 0.7
-  - prefab: {fileID: 5890264081347668165, guid: 3b03faf92c453cd839e46422d9d8d004, type: 3}
-    surface: 0
-    density: 0.08
-    noiseScale: 0.25
-    noiseThreshold: 0.7
-  - prefab: {fileID: 4040083552489541714, guid: 419f8b9230cf78d888ebc2af680d8a43, type: 3}
-    surface: 0
-    density: 0.08
-    noiseScale: 0.25
-    noiseThreshold: 0.7
-  - prefab: {fileID: 3965439484568466488, guid: 7e6acfbaf3ef7ca388e16178ecc59c18, type: 3}
-    surface: 1
-    density: 0.05
-    noiseScale: 0.3
-    noiseThreshold: 0.7
-  - prefab: {fileID: 2097706737646764478, guid: f77a21673d4827165b46af6ec452728c, type: 3}
-    surface: 1
-    density: 0.05
-    noiseScale: 0.3
-    noiseThreshold: 0.7
-  - prefab: {fileID: 9175538198328060603, guid: ca6ef86f6dd2560b9af68659b5d3046c, type: 3}
-    surface: 1
-    density: 0.05
-    noiseScale: 0.3
-    noiseThreshold: 0.7
-  - prefab: {fileID: 931983565565048284, guid: 78763b22c9cc3fa25a210f0d8dae60da, type: 3}
-    surface: 1
-    density: 0.05
-    noiseScale: 0.3
-    noiseThreshold: 0.7
+  islandRadius: 75
+  islandEdgeVariation: 0.137
+  islandEdgeNoiseScale: 0.05
+  decorCoastOffset: 3
+  previewInEditor: 1
+  previewRadiusInChunks: 4
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -1609,3 +1764,4 @@ SceneRoots:
   - {fileID: 17904482}
   - {fileID: 208363089}
   - {fileID: 638674637}
+  - {fileID: 808495530}

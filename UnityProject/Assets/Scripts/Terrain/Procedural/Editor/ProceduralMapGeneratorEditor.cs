@@ -22,12 +22,15 @@ public class ProceduralMapGeneratorEditor : Editor
     {
         new("References", "References",
             "landTilemap", "waterTilemap", "waterBackgroundTilemap", "coastFoamTilemap", "player"),
+        new("Generation", "Generation", "seed"),
         new("ChunkStreaming", "Chunk Streaming",
-            "chunkSize", "viewDistanceInChunks", "maxChunkGenerationsPerFrame", "seed", "spawnSafeRadius"),
-        new("BiomeWater", "Biome & Water",
-            "biomeNoiseScale", "biomeTiles", "waterNoiseScale", "waterThreshold",
-            "waterTile", "waterBackgroundTile", "coastFoamTile"),
-        new("Decor", "Decor", "decorEntries"),
+            "chunkSize", "viewDistanceInChunks", "maxChunkGenerationsPerFrame"),
+        new("Biomes", "Biomes", "groundNoiseScale", "biomes"),
+        new("Water", "Water",
+            "waterNoiseScale", "waterThreshold", "waterTile", "waterBackgroundTile", "coastFoamTile"),
+        new("Island", "Island",
+            "islandRadius", "islandEdgeVariation", "islandEdgeNoiseScale", "decorCoastOffset"),
+        new("EditorPreview", "Editor Preview", "previewInEditor", "previewRadiusInChunks"),
     };
 
     private const string FoldoutPrefPrefix = "ProceduralMapGeneratorEditor.Foldout.";
@@ -60,5 +63,8 @@ public class ProceduralMapGeneratorEditor : Editor
         }
 
         serializedObject.ApplyModifiedProperties();
+
+        if (serializedObject.FindProperty("previewInEditor").boolValue && GUILayout.Button("Regenerate Preview"))
+            ((ProceduralMapGenerator)target).GeneratePreview();
     }
 }

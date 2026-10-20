@@ -11,26 +11,58 @@ public partial class ProceduralMapGenerator : MonoBehaviour
     [SerializeField] private Tilemap coastFoamTilemap;
     [SerializeField] private Transform player;
 
+    [Header("Generation")]
+    [Tooltip("Drives every noise offset and picks the biome (seed modulo the biome count).")]
+    [SerializeField] private int seed;
+
     [Header("Chunk Streaming")]
     [SerializeField] private int chunkSize = 16;
     [Tooltip("Extra buffer chunks loaded beyond the camera's current view, to avoid pop-in at screen edges.")]
     [SerializeField] private int viewDistanceInChunks = 1;
     [Tooltip("Max newly-needed chunks generated per frame after the initial load, to spread bursts across frames.")]
     [SerializeField] private int maxChunkGenerationsPerFrame = 2;
-    [SerializeField] private int seed;
-    [SerializeField] private float spawnSafeRadius = 5f;
 
-    [Header("Biome & Water")]
-    [SerializeField] private float biomeNoiseScale = 0.05f;
-    [SerializeField] private TileBase[] biomeTiles;
+    [Header("Biomes")]
+    [Tooltip("Perlin scale of the ground tile patches inside the biome.")]
+    [SerializeField] private float groundNoiseScale = 0.1f;
+    [Tooltip("One biome per map, picked as seed modulo the biome count.")]
+    [SerializeField] private Biome[] biomes;
+
+    [Header("Water")]
     [SerializeField] private float waterNoiseScale = 0.1f;
     [SerializeField] private float waterThreshold = 0.35f;
     [SerializeField] private TileBase waterTile;
     [SerializeField] private TileBase waterBackgroundTile;
     [SerializeField] private TileBase coastFoamTile;
 
-    [Header("Decor")]
-    [SerializeField] private DecorEntry[] decorEntries;
+    [Header("Island")]
+    [Tooltip("Radius in cells around the generator beyond which everything is water. 0 = endless land.")]
+    [SerializeField] private float islandRadius;
+    [Range(0f, 0.5f)]
+    [Tooltip("How far the coastline wanders from a perfect circle, as a fraction of the radius.")]
+    [SerializeField] private float islandEdgeVariation = 0.15f;
+    [Tooltip("Perlin scale of the coastline wobble. Smaller = fewer, wider bays and capes.")]
+    [SerializeField] private float islandEdgeNoiseScale = 0.05f;
+    [Tooltip("Decor only spawns up to this many cells past the coastline (negative keeps it inland). Ignored without an island.")]
+    [SerializeField] private float decorCoastOffset = 3f;
+
+    [Header("Editor Preview")]
+    [Tooltip("Keeps a generated preview of the map in the Scene view, refreshed on every inspector change.")]
+    [SerializeField] private bool previewInEditor;
+    [Tooltip("Chunk radius previewed around the generator when there is no island.")]
+    [SerializeField] private int previewRadiusInChunks = 4;
+
+    [System.Serializable]
+    private class Biome
+    {
+        public string name;
+        [Tooltip("Ground tiles mixed inside this biome, picked by the ground noise.")]
+        public TileBase[] groundTiles;
+        [Tooltip("Radius in cells around the player spawn kept as dry land with no decor.")]
+        public float spawnSafeRadius = 5f;
+        [Tooltip("Decor spawned on this biome. Earlier entries win when several match a cell.")]
+        public DecorEntry[] decor;
+    }
 
     private enum DecorSurface { Land, Water }
 
@@ -54,29 +86,47 @@ public partial class ProceduralMapGenerator : MonoBehaviour
     private readonly HashSet<Vector2Int> pendingChunks = new();
     private readonly Queue<Vector2Int> pendingChunkQueue = new();
     private readonly HashSet<Vector2Int> desiredChunks = new();
-    private readonly Dictionary<Vector2Int, List<(GameObject instance, GameObject prefab)>> decorObjects = new();
-    private readonly Dictionary<GameObject, Stack<GameObject>> decorPool = new();
-    private Transform decorParent;
-    private readonly Dictionary<string, Transform> decorCategoryParents = new();
     private Vector2Int lastPlayerChunk;
     private bool hasGeneratedOnce;
-    private float biomeOffsetX;
-    private float biomeOffsetY;
-    private float waterOffsetX;
-    private float waterOffsetY;
     private Vector2Int spawnCell;
-    private int effectiveViewDistanceInChunks;
+
+    private bool[,] waterMask;
+    private int maskOriginX;
+    private int maskOriginY;
+    private TileBase[] landTiles;
+    private TileBase[] waterTiles;
+    private TileBase[] waterBackgroundTiles;
+    private TileBase[] coastFoamTiles;
+    private TileBase[] clearTiles;
 
     void Awake()
     {
-        System.Random rng = new(seed);
-        biomeOffsetX = rng.Next(-100000, 100000);
-        biomeOffsetY = rng.Next(-100000, 100000);
-        waterOffsetX = rng.Next(-100000, 100000);
-        waterOffsetY = rng.Next(-100000, 100000);
+        Initialize();
+    }
 
-        Vector3Int cell = landTilemap.WorldToCell(GetTrackedPlayer().position);
+    // Seeds noise offsets and allocates per-chunk buffers, shared by runtime and the editor preview.
+    private void Initialize()
+    {
+        System.Random rng = new(seed);
+        waterOffset = NextOffset(rng);
+        islandOffset = NextOffset(rng);
+        groundOffset = NextOffset(rng);
+        activeBiome = biomes != null && biomes.Length > 0 ? biomes[((seed % biomes.Length) + biomes.Length) % biomes.Length] : null;
+        InitDecorOffsets();
+
+        Transform tracked = GetTrackedPlayer();
+        Vector3Int cell = landTilemap.WorldToCell(tracked != null ? tracked.position : transform.position);
         spawnCell = new Vector2Int(cell.x, cell.y);
+        Vector3Int center = landTilemap.WorldToCell(transform.position);
+        islandCenter = new Vector2(center.x, center.y);
+
+        int cellCount = chunkSize * chunkSize;
+        waterMask = new bool[chunkSize + 2, chunkSize + 2];
+        landTiles = new TileBase[cellCount];
+        waterTiles = new TileBase[cellCount];
+        waterBackgroundTiles = new TileBase[cellCount];
+        coastFoamTiles = new TileBase[cellCount];
+        clearTiles = new TileBase[cellCount];
     }
 
     // Each client streams chunks around its own local character.
@@ -103,15 +153,9 @@ public partial class ProceduralMapGenerator : MonoBehaviour
 
         float cellSize = landTilemap.cellSize.x > 0f ? landTilemap.cellSize.x : 1f;
         float chunkWorldSize = chunkSize * cellSize;
+        float halfExtent = Mathf.Max(Mathf.Abs(worldMax.x - worldMin.x), Mathf.Abs(worldMax.y - worldMin.y)) * 0.5f;
 
-        float halfWidth = Mathf.Abs(worldMax.x - worldMin.x) * 0.5f;
-        float halfHeight = Mathf.Abs(worldMax.y - worldMin.y) * 0.5f;
-
-        int chunksNeededX = Mathf.CeilToInt(halfWidth / chunkWorldSize);
-        int chunksNeededY = Mathf.CeilToInt(halfHeight / chunkWorldSize);
-        int cameraChunkRadius = Mathf.Max(chunksNeededX, chunksNeededY);
-
-        return cameraChunkRadius + viewDistanceInChunks;
+        return Mathf.CeilToInt(halfExtent / chunkWorldSize) + viewDistanceInChunks;
     }
 
     void Update()
@@ -131,15 +175,13 @@ public partial class ProceduralMapGenerator : MonoBehaviour
 
     private void UpdateChunks(Vector2Int centerChunk)
     {
-        effectiveViewDistanceInChunks = ComputeEffectiveViewDistance();
+        int radius = ComputeEffectiveViewDistance();
 
         desiredChunks.Clear();
-        for (int y = -effectiveViewDistanceInChunks; y <= effectiveViewDistanceInChunks; y++)
+        for (int y = -radius; y <= radius; y++)
         {
-            for (int x = -effectiveViewDistanceInChunks; x <= effectiveViewDistanceInChunks; x++)
-            {
+            for (int x = -radius; x <= radius; x++)
                 desiredChunks.Add(centerChunk + new Vector2Int(x, y));
-            }
         }
 
         foreach (Vector2Int chunk in desiredChunks)
@@ -179,24 +221,7 @@ public partial class ProceduralMapGenerator : MonoBehaviour
     {
         int originX = chunk.x * chunkSize;
         int originY = chunk.y * chunkSize;
-        int maskOriginX = originX - 1;
-        int maskOriginY = originY - 1;
-
-        int maskSize = chunkSize + 2;
-        bool[,] waterMask = new bool[maskSize, maskSize];
-        for (int y = 0; y < maskSize; y++)
-        {
-            for (int x = 0; x < maskSize; x++)
-            {
-                waterMask[x, y] = IsWater(maskOriginX + x, maskOriginY + y);
-            }
-        }
-
-        int cellCount = chunkSize * chunkSize;
-        TileBase[] landTiles = new TileBase[cellCount];
-        TileBase[] waterTiles = new TileBase[cellCount];
-        TileBase[] waterBackgroundTiles = new TileBase[cellCount];
-        TileBase[] coastFoamTiles = new TileBase[cellCount];
+        FillWaterMask(originX - 1, originY - 1);
 
         for (int y = 0; y < chunkSize; y++)
         {
@@ -205,71 +230,39 @@ public partial class ProceduralMapGenerator : MonoBehaviour
                 int worldX = originX + x;
                 int worldY = originY + y;
                 int index = x + y * chunkSize;
+                bool isWater = MaskIsWater(worldX, worldY);
+                bool isCoastalGround = !isWater && MaskIsAdjacentToWater(worldX, worldY);
 
-                bool isWater = MaskIsWater(waterMask, maskOriginX, maskOriginY, worldX, worldY);
-
-                if (isWater)
-                {
-                    waterTiles[index] = waterTile;
-                    landTiles[index] = null;
-                }
-                else
-                {
-                    waterTiles[index] = null;
-                    landTiles[index] = PickLandTile(worldX, worldY);
-                }
-
-                bool isCoastalGround = !isWater && MaskIsAdjacentToWater(waterMask, maskOriginX, maskOriginY, worldX, worldY);
-
-                if (isCoastalGround)
-                {
-                    waterBackgroundTiles[index] = waterBackgroundTile;
-                    coastFoamTiles[index] = coastFoamTile;
-                }
+                waterTiles[index] = isWater ? waterTile : null;
+                landTiles[index] = isWater ? null : PickLandTile(worldX, worldY);
+                waterBackgroundTiles[index] = isCoastalGround ? waterBackgroundTile : null;
+                coastFoamTiles[index] = isCoastalGround ? coastFoamTile : null;
             }
         }
 
-        BoundsInt bounds = new(originX, originY, 0, chunkSize, chunkSize, 1);
+        BoundsInt bounds = ChunkBounds(chunk);
         landTilemap.SetTilesBlock(bounds, landTiles);
         waterTilemap.SetTilesBlock(bounds, waterTiles);
         waterBackgroundTilemap.SetTilesBlock(bounds, waterBackgroundTiles);
         coastFoamTilemap.SetTilesBlock(bounds, coastFoamTiles);
 
-        GenerateDecor(chunk, originX, originY, waterMask, maskOriginX, maskOriginY);
+        GenerateDecor(chunk, originX, originY);
     }
 
     private void UnloadChunk(Vector2Int chunk)
     {
-        int originX = chunk.x * chunkSize;
-        int originY = chunk.y * chunkSize;
-        BoundsInt bounds = new(originX, originY, 0, chunkSize, chunkSize, 1);
-        TileBase[] clearTiles = new TileBase[chunkSize * chunkSize];
-
+        BoundsInt bounds = ChunkBounds(chunk);
         landTilemap.SetTilesBlock(bounds, clearTiles);
         waterTilemap.SetTilesBlock(bounds, clearTiles);
         waterBackgroundTilemap.SetTilesBlock(bounds, clearTiles);
         coastFoamTilemap.SetTilesBlock(bounds, clearTiles);
 
-        if (decorObjects.TryGetValue(chunk, out List<(GameObject instance, GameObject prefab)> decorList))
-        {
-            foreach ((GameObject instance, GameObject prefab) in decorList)
-                ReturnDecorToPool(instance, prefab);
-            decorObjects.Remove(chunk);
-        }
+        UnloadDecor(chunk);
     }
 
-    // Pooled rather than destroyed, since chunks reload often.
-    private void ReturnDecorToPool(GameObject instance, GameObject prefab)
+    private BoundsInt ChunkBounds(Vector2Int chunk)
     {
-        instance.SetActive(false);
-
-        if (!decorPool.TryGetValue(prefab, out Stack<GameObject> pool))
-        {
-            pool = new Stack<GameObject>();
-            decorPool[prefab] = pool;
-        }
-
-        pool.Push(instance);
+        return new BoundsInt(chunk.x * chunkSize, chunk.y * chunkSize, 0, chunkSize, chunkSize, 1);
     }
 
     private Vector2Int WorldToChunk(Vector3 worldPosition)
@@ -278,12 +271,5 @@ public partial class ProceduralMapGenerator : MonoBehaviour
         return new Vector2Int(
             Mathf.FloorToInt(cell.x / (float)chunkSize),
             Mathf.FloorToInt(cell.y / (float)chunkSize));
-    }
-
-    // Seeded from chunk coordinates so a chunk regenerates identically.
-    private System.Random GetChunkRandom(Vector2Int chunk)
-    {
-        int hash = seed ^ (chunk.x * 73856093) ^ (chunk.y * 19349663);
-        return new System.Random(hash);
     }
 }

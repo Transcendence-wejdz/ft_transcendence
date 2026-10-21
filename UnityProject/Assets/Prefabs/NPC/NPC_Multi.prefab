@@ -362,7 +362,7 @@ PrefabInstance:
     - target: {fileID: 1424089340919024968, guid: ffffe254cf16bb8b29defdb48be8c5ff, type: 3}
       propertyPath: m_sharedMaterial
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
     - target: {fileID: 1424089340919024968, guid: ffffe254cf16bb8b29defdb48be8c5ff, type: 3}
       propertyPath: m_fontColor32.rgba
       value: 4294967295
@@ -394,6 +394,10 @@ PrefabInstance:
     - target: {fileID: 4281734878290004344, guid: ffffe254cf16bb8b29defdb48be8c5ff, type: 3}
       propertyPath: keyCapBlinkSpeed
       value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4281734878290004344, guid: ffffe254cf16bb8b29defdb48be8c5ff, type: 3}
+      propertyPath: labelAlwaysVisible
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4281734878290004344, guid: ffffe254cf16bb8b29defdb48be8c5ff, type: 3}
       propertyPath: keyCapBlinkMinAlpha

@@ -147,6 +147,19 @@ public partial class Player
         TakeDamage(amount);
     }
 
+    // Mirrors a local dummy hit onto the other players' copies of that non-networked dummy.
+    public void BroadcastDummyHit(Vector2 position, float amount)
+    {
+        if (NetworkObject.IsSpawned && IsOwner)
+            DummyHitRpc(position, amount);
+    }
+
+    [Rpc(SendTo.NotMe)]
+    private void DummyHitRpc(Vector2 position, float amount)
+    {
+        DummyStats.ApplyRemoteHit(position, amount);
+    }
+
     // Called by a rider once the 20s mount channel completes; routed to the downed player's own owner, same pattern as damage.
     public void RequestRevive()
     {

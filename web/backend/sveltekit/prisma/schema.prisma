@@ -21,8 +21,9 @@ model User {
   createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   sessions     Session[]
   gameRuns     GameRun[]
-  sentFriendships     Friendship[] @relation("FriendshipSender")
-  receivedFriendships Friendship[] @relation("FriendshipReceiver")
+  requestFriendships Friendship[] @relation("FriendshipRequest")
+  lowFriendships     Friendship[] @relation("FriendshipLowRequest")
+  highFriendships    Friendship[] @relation("FriendshipHighRequest")
 
   @@map("users")
 }
@@ -58,18 +59,23 @@ model GameRun {
 enum Status {
   PENDING
   ACCEPTED
-  BLOCKED
 }
 
 model Friendship {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  senderId   String  @map("sender_id") @db.Uuid
-  sender   User   @relation("FriendshipSender", fields: [senderId], references: [id])
-  receiverId String  @map("receiver_id") @db.Uuid
-  receiver   User   @relation("FriendshipReceiver", fields: [receiverId], references: [id])
+  
+  requesterId   String  @map("requester_id") @db.Uuid
+  requester   User   @relation("FriendshipRequest", fields: [requesterId], references: [id])
+
+  userLowId String  @map("user_Low_id") @db.Uuid
+  userLow   User   @relation("FriendshipLowRequest", fields: [userLowId], references: [id])
+
+  userHighId String  @map("user_High_id") @db.Uuid
+  userHigh   User   @relation("FriendshipHighRequest", fields: [userHighId], references: [id])
+
   relationStatus Status @default(PENDING)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("friendship")
-  @@unique([senderId, receiverId])
+  @@unique([userLowId, userHighId])
 }

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -20,6 +21,7 @@ public class GameOverUI : MonoBehaviour
     private CanvasGroup panelGroup;
     private float triggerTime = -1f;
     private bool shown;
+    private CoopRunStats runStats;
 
     public static bool IsShowing { get; private set; }
 
@@ -56,7 +58,10 @@ public class GameOverUI : MonoBehaviour
             return;
 
         if (triggerTime < 0f)
+        {
             triggerTime = Time.unscaledTime;
+            runStats = CaptureRunStats();
+        }
 
         if (Time.unscaledTime - triggerTime >= showDelay)
             Show();
@@ -68,6 +73,7 @@ public class GameOverUI : MonoBehaviour
         shown = false;
         IsShowing = false;
         triggerTime = -1f;
+        runStats = null;
         panel.SetActive(false);
         PauseManager.SetExternalPause(false);
         restartButton.interactable = true;
@@ -85,8 +91,51 @@ public class GameOverUI : MonoBehaviour
         lobbyButton.gameObject.SetActive(canChoose);
         waitingText.gameObject.SetActive(!canChoose);
 
+        LeaderboardUI board = panel.GetComponentInChildren<LeaderboardUI>(true);
+        if (board != null && runStats != null)
+            board.SetMode(runStats.Mode());
+
         panel.SetActive(true);
         StartCoroutine(FadeIn());
+        SubmitScore();
+    }
+
+    // Built from the server's frozen result plus the synced team names, so every teammate's entry groups under one runId.
+    private CoopRunStats CaptureRunStats()
+    {
+        RunResult result = check.Result;
+        if (result.wave <= 0)
+            return null;
+
+        List<string> team = new List<string>();
+        foreach (Player player in Player.AllActiveInstances)
+            team.Add(player.PlayerName);
+        if (team.Count == 0)
+        {
+            Player local = LocalPlayer.GetPlayer();
+            team.Add(local != null ? local.PlayerName : "Player");
+        }
+        team.Sort(System.StringComparer.Ordinal);
+
+        return new CoopRunStats
+        {
+            runId = result.runId,
+            wave = result.wave,
+            xp = result.xp,
+            seconds = result.seconds,
+            players = team.Count,
+            team = team.ToArray()
+        };
+    }
+
+    // Every player submits the shared team result on their own account; the board refreshes itself once it lands.
+    private async void SubmitScore()
+    {
+        if (runStats == null)
+            return;
+
+        int score = runStats.ComputeScore();
+        await LeaderboardClient.SubmitScoreAsync(runStats.Mode(), score, runStats);
     }
 
     private void Choose(bool restart)

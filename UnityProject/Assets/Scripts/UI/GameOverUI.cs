@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -90,25 +91,40 @@ public class GameOverUI : MonoBehaviour
         lobbyButton.gameObject.SetActive(canChoose);
         waitingText.gameObject.SetActive(!canChoose);
 
+        LeaderboardUI board = panel.GetComponentInChildren<LeaderboardUI>(true);
+        if (board != null && runStats != null)
+            board.SetMode(runStats.Mode());
+
         panel.SetActive(true);
         StartCoroutine(FadeIn());
         SubmitScore();
     }
 
-    // Snapshotted at the wipe itself, since the wave timer keeps running behind the screen.
+    // Built from the server's frozen result plus the synced team names, so every teammate's entry groups under one runId.
     private CoopRunStats CaptureRunStats()
     {
-        WaveSpawner spawner = FindAnyObjectByType<WaveSpawner>();
-        XPManager xp = FindAnyObjectByType<XPManager>();
-        if (spawner == null || spawner.CurrentWave <= 0)
+        RunResult result = check.Result;
+        if (result.wave <= 0)
             return null;
+
+        List<string> team = new List<string>();
+        foreach (Player player in Player.AllActiveInstances)
+            team.Add(player.PlayerName);
+        if (team.Count == 0)
+        {
+            Player local = LocalPlayer.GetPlayer();
+            team.Add(local != null ? local.PlayerName : "Player");
+        }
+        team.Sort(System.StringComparer.Ordinal);
 
         return new CoopRunStats
         {
-            wave = spawner.CurrentWave,
-            xp = xp != null ? xp.TotalXP : 0,
-            seconds = Mathf.FloorToInt(spawner.ElapsedSeconds),
-            players = Mathf.Max(1, Player.AllActiveInstances.Count)
+            runId = result.runId,
+            wave = result.wave,
+            xp = result.xp,
+            seconds = result.seconds,
+            players = team.Count,
+            team = team.ToArray()
         };
     }
 
@@ -119,7 +135,7 @@ public class GameOverUI : MonoBehaviour
             return;
 
         int score = runStats.ComputeScore();
-        await LeaderboardClient.SubmitCoopScoreAsync(score, runStats);
+        await LeaderboardClient.SubmitScoreAsync(runStats.Mode(), score, runStats);
     }
 
     private void Choose(bool restart)

@@ -3,6 +3,15 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+// Run totals frozen by the server at the wipe, so every player submits the exact same result.
+public struct RunResult : INetworkSerializeByMemcpy
+{
+    public int runId;
+    public int wave;
+    public int xp;
+    public int seconds;
+}
+
 // Detects a full wipe and lets the host (or solo player) restart the mode or return to the Lobby.
 public class GameOverCheck : NetworkBehaviour
 {
@@ -12,7 +21,11 @@ public class GameOverCheck : NetworkBehaviour
     private readonly NetworkVariable<bool> gameOver = new NetworkVariable<bool>(
         false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
+    private readonly NetworkVariable<RunResult> result = new NetworkVariable<RunResult>(
+        default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
     private bool offlineGameOver;
+    private RunResult offlineResult;
     private bool isLoading;
     private bool sceneReady;
     private float readyTime;
@@ -20,6 +33,8 @@ public class GameOverCheck : NetworkBehaviour
     public bool IsGameOver => IsSpawned ? gameOver.Value : offlineGameOver;
 
     public bool CanChoose => this.HasServerAuthority();
+
+    public RunResult Result => IsSpawned ? result.Value : offlineResult;
 
     // Networked: waits for every client's scene load to finish before evaluating wipes, so stale health can't false-trigger it.
     void Start()
@@ -58,10 +73,31 @@ public class GameOverCheck : NetworkBehaviour
         if (!AllPlayersDead())
             return;
 
+        RunResult snapshot = CaptureResult();
         if (IsSpawned)
+        {
+            result.Value = snapshot;
             gameOver.Value = true;
+        }
         else
+        {
+            offlineResult = snapshot;
             offlineGameOver = true;
+        }
+    }
+
+    // Snapshotted at the wipe itself, since the wave timer keeps running behind the Game Over screen.
+    private static RunResult CaptureResult()
+    {
+        WaveSpawner spawner = FindAnyObjectByType<WaveSpawner>();
+        XPManager xp = FindAnyObjectByType<XPManager>();
+        return new RunResult
+        {
+            runId = Random.Range(1, int.MaxValue),
+            wave = spawner != null ? spawner.CurrentWave : 0,
+            xp = xp != null ? xp.TotalXP : 0,
+            seconds = spawner != null ? Mathf.FloorToInt(spawner.ElapsedSeconds) : 0,
+        };
     }
 
     public void Restart()

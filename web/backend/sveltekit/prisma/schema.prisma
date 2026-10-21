@@ -21,6 +21,8 @@ model User {
   createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   sessions     Session[]
   gameRuns     GameRun[]
+  sentFriendships     Friendship[] @relation("FriendshipSender")
+  receivedFriendships Friendship[] @relation("FriendshipReceiver")
 
   @@map("users")
 }
@@ -52,4 +54,22 @@ model GameRun {
 
   @@index([userId, startedAt], map: "game_runs_user_id_started_at_idx")
   @@map("game_runs")
+}
+enum Status {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+model Friendship {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  senderId   String  @map("sender_id") @db.Uuid
+  sender   User   @relation("FriendshipSender", fields: [senderId], references: [id])
+  receiverId String  @map("receiver_id") @db.Uuid
+  receiver   User   @relation("FriendshipReceiver", fields: [receiverId], references: [id])
+  relationStatus Status @default(PENDING)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("friendship")
+  @@unique([senderId, receiverId])
 }

@@ -24,7 +24,7 @@ public class ProceduralMapGeneratorEditor : Editor
             "landTilemap", "waterTilemap", "waterBackgroundTilemap", "coastFoamTilemap", "player"),
         new("Generation", "Generation", "seed", "seedSource"),
         new("ChunkStreaming", "Chunk Streaming",
-            "chunkSize", "viewDistanceInChunks", "maxChunkGenerationsPerFrame"),
+            "chunkSize", "viewDistanceInChunks", "maxChunkGenerationsPerFrame", "loadWholeIsland"),
         new("Biomes", "Biomes",
             "groundNoiseScale", "groundNoiseOctaves", "groundNoisePersistence", "groundNoiseContrast", "biomes"),
         new("EditorPreview", "Editor Preview", "previewInEditor", "previewRadiusInChunks"),

@@ -77,10 +77,7 @@ public partial class ProceduralMapGenerator
         ClearPreview();
         Initialize();
 
-        IslandSettings island = Island;
-        int radius = island.radius > 0f
-            ? Mathf.CeilToInt((island.radius * (1f + island.edgeVariation) + Mathf.Max(0f, island.decorCoastOffset)) / chunkSize) + 1
-            : previewRadiusInChunks;
+        int radius = Island.radius > 0f ? IslandChunkRadius() : previewRadiusInChunks;
         Vector2Int center = WorldToChunk(transform.position);
 
         for (int y = -radius; y <= radius; y++)

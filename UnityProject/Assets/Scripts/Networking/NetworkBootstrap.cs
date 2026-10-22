@@ -12,7 +12,6 @@ public class NetworkBootstrap : MonoBehaviour
     [SerializeField] private MenuPanel multiplayerPanel;
     [SerializeField] private GameObject gameModeManagerPrefab;
     [SerializeField] private TMP_InputField ipInputField;
-    [SerializeField] private Transform spawnPoint;
     [SerializeField] private int maxPlayers = 4;
     [SerializeField] private Button hostButton;
     [SerializeField] private Button joinButton;
@@ -55,10 +54,10 @@ public class NetworkBootstrap : MonoBehaviour
             response.Position = hostSpawnPosition.Value;
             response.Rotation = hostSpawnRotation;
         }
-        else if (spawnPoint != null)
+        else if (PlayerSpawner.TryGetSpawnPosition(request.ClientNetworkId, out Vector3 position))
         {
-            response.Position = spawnPoint.position;
-            response.Rotation = spawnPoint.rotation;
+            response.Position = position;
+            response.Rotation = Quaternion.identity;
         }
     }
 

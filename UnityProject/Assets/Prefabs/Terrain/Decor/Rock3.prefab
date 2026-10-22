@@ -141,6 +141,7 @@ MonoBehaviour:
   spriteRenderer: {fileID: 97853510278514373}
   sortingOffset: 0
   sortPivotOffset: {x: 0, y: 0, z: 0}
+  fxDrawsOver: 1
 --- !u!61 &417707606598860335
 BoxCollider2D:
   m_ObjectHideFlags: 0

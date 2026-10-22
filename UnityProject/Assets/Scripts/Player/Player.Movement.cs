@@ -71,26 +71,14 @@ public partial class Player
             NetworkManager.SceneManager.OnLoadComplete -= HandleSceneLoadComplete;
     }
 
-    // 1st/2nd/3rd/4th client slot: x-1, y-1, x+1, y+1 - spreads the 4 co-op players off the single shared spawn point so they don't land stacked on each other.
-    private static readonly Vector2[] RespawnOffsetsByClientSlot =
-    {
-        new Vector2(-1f, 0f),
-        new Vector2(0f, -1f),
-        new Vector2(1f, 0f),
-        new Vector2(0f, 1f),
-    };
-
+    // Moves the local player onto its spawner glyph (one per client slot) after a scene load.
     private void HandleSceneLoadComplete(ulong clientId, string sceneName, LoadSceneMode loadSceneMode)
     {
         if (NetworkManager == null || clientId != NetworkManager.LocalClientId)
             return;
 
-        PlayerSpawnPoint spawnPoint = FindAnyObjectByType<PlayerSpawnPoint>();
-        if (spawnPoint == null)
+        if (!PlayerSpawner.TryGetSpawnPosition(OwnerClientId, out Vector3 position))
             return;
-
-        Vector2 offset = RespawnOffsetsByClientSlot[(int)(OwnerClientId % (ulong)RespawnOffsetsByClientSlot.Length)];
-        Vector3 position = spawnPoint.transform.position + (Vector3)offset;
 
         rb.position = position;
         rb.linearVelocity = Vector2.zero;

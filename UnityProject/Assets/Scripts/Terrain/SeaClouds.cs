@@ -1,9 +1,10 @@
 using UnityEngine;
 
-// Cosmetic clouds drifting over the map, drawn above everything on the Sky sorting layer.
+// Cosmetic clouds living in a fixed world area over the map, drifting with the wind and drawn above everything on the Sky sorting layer.
 public class SeaClouds : MonoBehaviour
 {
     [SerializeField] private Sprite[] cloudSprites;
+    [Range(0, 300)]
     [SerializeField] private int cloudCount = 10;
     [Tooltip("Wind direction, normalized at runtime.")]
     [SerializeField] private Vector2 windDirection = new(1f, 0.15f);
@@ -11,8 +12,11 @@ public class SeaClouds : MonoBehaviour
     [SerializeField] private Vector2 scaleRange = new(0.7f, 1.3f);
     [Range(0f, 1f)]
     [SerializeField] private float opacity = 0.9f;
-    [Tooltip("World units added around the camera view; clouds wrap around this area, so keep it wider than a cloud.")]
-    [SerializeField] private float margin = 12f;
+    [Tooltip("World-space size of the cloud area, centered on this object. Clouds wrap inside it, so keep it a bit wider than the map.")]
+    [SerializeField] private Vector2 areaSize = new(60f, 60f);
+    [Range(0f, 30f)]
+    [Tooltip("Clouds fade out over this distance before reaching the area edge, so the wrap to the other side is invisible.")]
+    [SerializeField] private float edgeFade = 8f;
     [SerializeField] private string sortingLayer = "Sky";
     [SerializeField] private int sortingOrder;
     [Tooltip("Leave empty for the default sprite material.")]
@@ -21,15 +25,17 @@ public class SeaClouds : MonoBehaviour
     private Transform[] clouds;
     private SpriteRenderer[] renderers;
     private float[] speeds;
-    private Camera cam;
 
     void Start()
     {
         if (cloudSprites == null || cloudSprites.Length == 0)
+        {
             enabled = false;
+            return;
+        }
+        Spawn();
     }
 
-    // The camera lives on the spawned player, so clouds are created once one exists.
     private void Spawn()
     {
         clouds = new Transform[cloudCount];
@@ -54,16 +60,6 @@ public class SeaClouds : MonoBehaviour
 
     void Update()
     {
-        if (cam == null)
-        {
-            cam = Camera.main;
-            if (cam == null)
-                return;
-        }
-
-        if (clouds == null)
-            Spawn();
-
         Rect area = GetArea();
         Vector3 wind = windDirection.normalized;
 
@@ -79,16 +75,23 @@ public class SeaClouds : MonoBehaviour
             }
 
             clouds[i].position = new Vector3(pos.x, pos.y, 0f);
+
+            float edgeDistance = Mathf.Min(pos.x - area.xMin, area.xMax - pos.x, pos.y - area.yMin, area.yMax - pos.y);
+            float alpha = opacity * (edgeFade > 0f ? Mathf.Clamp01(edgeDistance / edgeFade) : 1f);
+            renderers[i].color = new Color(1f, 1f, 1f, alpha);
         }
     }
 
-    // Camera view plus margin, so wrapping always happens off-screen.
     private Rect GetArea()
     {
-        float halfHeight = cam.orthographicSize + margin;
-        float halfWidth = cam.orthographicSize * cam.aspect + margin;
-        Vector3 center = cam.transform.position;
-        return new Rect(center.x - halfWidth, center.y - halfHeight, halfWidth * 2f, halfHeight * 2f);
+        Vector3 center = transform.position;
+        return new Rect(center.x - areaSize.x * 0.5f, center.y - areaSize.y * 0.5f, areaSize.x, areaSize.y);
+    }
+
+    void OnDrawGizmosSelected()
+    {
+        Gizmos.color = new Color(1f, 1f, 1f, 0.5f);
+        Gizmos.DrawWireCube(transform.position, new Vector3(areaSize.x, areaSize.y, 0f));
     }
 
     // New look each time a cloud re-enters, so the wrap is not noticeable.

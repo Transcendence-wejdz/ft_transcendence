@@ -11,11 +11,41 @@ public partial class ProceduralMapGenerator
     // Deferred because OnValidate is not allowed to create or destroy objects.
     void OnValidate()
     {
+        RefreshEntryLabels();
         if (Application.isPlaying)
             return;
 
         EditorApplication.delayCall -= RefreshPreview;
         EditorApplication.delayCall += RefreshPreview;
+    }
+
+    // Array elements show their tile or prefab name instead of "Element N".
+    private void RefreshEntryLabels()
+    {
+        if (biomes == null)
+            return;
+
+        foreach (Biome biome in biomes)
+        {
+            if (biome == null)
+                continue;
+            if (biome.grounds != null)
+            {
+                foreach (GroundEntry ground in biome.grounds)
+                {
+                    if (ground != null)
+                        ground.label = ground.tile != null ? ground.tile.name : "(empty)";
+                }
+            }
+            if (biome.decor != null)
+            {
+                foreach (DecorEntry entry in biome.decor)
+                {
+                    if (entry != null)
+                        entry.label = entry.prefab != null ? $"{entry.prefab.name} ({entry.surface})" : "(empty)";
+                }
+            }
+        }
     }
 
     // Scene-only: a preview inside a prefab stage or on the asset would get saved into the prefab.
@@ -47,8 +77,9 @@ public partial class ProceduralMapGenerator
         ClearPreview();
         Initialize();
 
-        int radius = islandRadius > 0f
-            ? Mathf.CeilToInt((islandRadius * (1f + islandEdgeVariation) + Mathf.Max(0f, decorCoastOffset)) / chunkSize) + 1
+        IslandSettings island = Island;
+        int radius = island.radius > 0f
+            ? Mathf.CeilToInt((island.radius * (1f + island.edgeVariation) + Mathf.Max(0f, island.decorCoastOffset)) / chunkSize) + 1
             : previewRadiusInChunks;
         Vector2Int center = WorldToChunk(transform.position);
 

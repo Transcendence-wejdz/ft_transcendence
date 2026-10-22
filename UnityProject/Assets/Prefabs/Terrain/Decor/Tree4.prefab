@@ -34,8 +34,8 @@ Transform:
   - {fileID: 4054493099546236592}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!61 &7429317365389093418
-BoxCollider2D:
+--- !u!58 &7429317365389093418
+CircleCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -69,17 +69,7 @@ BoxCollider2D:
   m_CompositeOperation: 0
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0.2}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0, y: 0}
-    oldSize: {x: 0, y: 0}
-    newSize: {x: 0, y: 0}
-    adaptiveTilingThreshold: 0
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Size: {x: 0.3, y: 0.2}
-  m_EdgeRadius: 0
+  m_Radius: 0.125
 --- !u!114 &1976565016300648049
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -94,7 +84,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SortingLayer_Auto
   spriteRenderer: {fileID: 8587013288542305694}
   sortingOffset: 0
-  sortPivotOffset: {x: 0, y: 0.12, z: 0}
+  sortPivotOffset: {x: 0, y: 0.1982922, z: 0}
+  fxDrawsOver: 0
 --- !u!1 &9102046974828952166
 GameObject:
   m_ObjectHideFlags: 0

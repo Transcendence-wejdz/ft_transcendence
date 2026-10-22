@@ -18,7 +18,7 @@ public partial class ProceduralMapGenerator
         int count = decorEntries.Length;
         decorOffsets = new Vector2[count];
         for (int i = 0; i < count; i++)
-            decorOffsets[i] = NextOffset(new System.Random(seed ^ (i * -1640531527)));
+            decorOffsets[i] = NextOffset(new System.Random(activeSeed ^ (i * -1640531527)));
     }
 
     private void GenerateDecor(Vector2Int chunk, int originX, int originY)
@@ -26,7 +26,6 @@ public partial class ProceduralMapGenerator
         if (decorOffsets.Length == 0)
             return;
 
-        System.Random chunkRandom = GetChunkRandom(chunk);
         List<(GameObject instance, GameObject prefab)> spawned = null;
 
         for (int y = 0; y < chunkSize; y++)
@@ -36,10 +35,10 @@ public partial class ProceduralMapGenerator
                 int worldX = originX + x;
                 int worldY = originY + y;
 
-                if (IsInSpawnSafeZone(worldX, worldY) || IsBeyondIslandCoast(worldX, worldY, decorCoastOffset))
+                if (IsInSpawnSafeZone(worldX, worldY) || IsBeyondIslandCoast(worldX, worldY, Island.decorCoastOffset))
                     continue;
 
-                GameObject prefab = PickDecorPrefab(chunkRandom, worldX, worldY, MaskIsWater(worldX, worldY));
+                GameObject prefab = PickDecorPrefab(worldX, worldY, MaskIsWater(worldX, worldY));
                 if (prefab == null)
                     continue;
 
@@ -120,14 +119,26 @@ public partial class ProceduralMapGenerator
         return categoryParent;
     }
 
-    // Seeded from chunk coordinates so a chunk regenerates identically.
-    private System.Random GetChunkRandom(Vector2Int chunk)
+    // Stable roll in [0, 1) per cell and entry, so tuning one entry never reshuffles the others' rolls.
+    private float DecorRoll(int worldX, int worldY, int entryIndex)
     {
-        return new System.Random(seed ^ (chunk.x * 73856093) ^ (chunk.y * 19349663));
+        unchecked
+        {
+            uint h = (uint)activeSeed;
+            h ^= (uint)worldX * 0x8DA6B343u;
+            h ^= (uint)worldY * 0xD8163841u;
+            h ^= (uint)entryIndex * 0xCB1AB31Fu;
+            h ^= h >> 15;
+            h *= 0x2C1B3C6Du;
+            h ^= h >> 12;
+            h *= 0x297A2D39u;
+            h ^= h >> 15;
+            return (h & 0xFFFFFFu) / 16777216f;
+        }
     }
 
     // First entry matching the cell's surface and noise/density roll.
-    private GameObject PickDecorPrefab(System.Random chunkRandom, int worldX, int worldY, bool isWater)
+    private GameObject PickDecorPrefab(int worldX, int worldY, bool isWater)
     {
         for (int i = 0; i < decorEntries.Length; i++)
         {
@@ -138,10 +149,11 @@ public partial class ProceduralMapGenerator
             if ((entry.surface == DecorSurface.Water) != isWater)
                 continue;
 
-            if (SampleNoise(worldX, worldY, decorOffsets[i], entry.noiseScale) <= entry.noiseThreshold)
+            float noise = SampleNoise(worldX, worldY, decorOffsets[i], entry.noiseScale);
+            if (noise <= entry.noiseRange.x || (entry.noiseRange.y < 1f && noise > entry.noiseRange.y))
                 continue;
 
-            if (chunkRandom.NextDouble() >= entry.density)
+            if (DecorRoll(worldX, worldY, i) >= entry.density)
                 continue;
 
             return entry.prefab;

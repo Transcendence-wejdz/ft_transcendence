@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 878315209946158993}
   - component: {fileID: 3518206591079640573}
   - component: {fileID: 1457541005456204187}
+  - component: {fileID: 2723521203949811946}
   m_Layer: 0
   m_Name: Monastery
   m_TagString: Untagged
@@ -155,3 +156,16 @@ MonoBehaviour:
   spriteRenderer: {fileID: 878315209946158993}
   sortingOffset: 0
   sortPivotOffset: {x: 0, y: -1.5, z: 0}
+  fxDrawsOver: 0
+--- !u!114 &2723521203949811946
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 292817870013883805}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62b3f53c378aa9c24b95a797c56cd225, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RevealOccluder

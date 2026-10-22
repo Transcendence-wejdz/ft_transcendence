@@ -127,6 +127,7 @@ GameObject:
   - component: {fileID: 2073784165024683942}
   - component: {fileID: 3243825454171768939}
   - component: {fileID: 6415509214941531770}
+  - component: {fileID: 3006533644774030408}
   m_Layer: 6
   m_Name: Tree3
   m_TagString: Untagged
@@ -202,3 +203,15 @@ MonoBehaviour:
   sortingOffset: 0
   sortPivotOffset: {x: 0, y: 0.1943897, z: 0}
   fxDrawsOver: 0
+--- !u!114 &3006533644774030408
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6944997123655819113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62b3f53c378aa9c24b95a797c56cd225, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RevealOccluder

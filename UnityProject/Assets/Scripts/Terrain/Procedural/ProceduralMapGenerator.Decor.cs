@@ -84,7 +84,10 @@ public partial class ProceduralMapGenerator
         if (decorPool.TryGetValue(prefab, out Stack<GameObject> pool) && pool.Count > 0)
             return pool.Pop();
 
-        return MarkEditorOnly(Instantiate(prefab, GetDecorCategoryParent(prefab)));
+        GameObject instance = MarkEditorOnly(Instantiate(prefab, GetDecorCategoryParent(prefab)));
+        if (Application.isPlaying && !instance.TryGetComponent(out RevealOccluder _))
+            instance.AddComponent<RevealOccluder>();
+        return instance;
     }
 
     // Edit-mode preview decor must never end up serialized into the scene or prefab.

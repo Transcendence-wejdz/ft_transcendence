@@ -9,19 +9,17 @@ public class EnemyActions : NetworkBehaviour
     private EnemyAI ai;
     private Player swingTarget;
     private float pendingHitTime;
-    // Set by the ranged projectile's own hitbox if it hits a shield mid-flight; ResolveHit checks it instead of the position-based shield check melee uses, since a flying shot's range can exceed a shield's radius.
-    private bool rangedShotBlocked;
 
     public bool IsWindingUp => pendingHitTime > 0f;
 
     // Assigned at spawn time by whoever instantiates this enemy (see Enemy.Initialize); never baked into the prefab.
     public EnemyKit Kit { get => kit; set => kit = value; }
 
-    private readonly NetworkVariable<byte> swingCount = new NetworkVariable<byte>(
+    private readonly NetworkVariable<byte> swingCount = new OfflineSafeNetworkVariable<byte>(
         0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     // Swing direction in degrees, replicated so remote clients can reproduce the same telegraph the server resolves against.
-    private readonly NetworkVariable<float> swingAngleDegrees = new NetworkVariable<float>(
+    private readonly NetworkVariable<float> swingAngleDegrees = new OfflineSafeNetworkVariable<float>(
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     void Awake()
@@ -55,16 +53,11 @@ public class EnemyActions : NetworkBehaviour
             PlayAttackAnimation();
     }
 
-    // Damage lands attackHitDelay later for melee; for ranged it lands exactly when a shot travelling at ProjectileSpeed would reach the target's current position, so the hit stays in sync with the actual flying sprite instead of an unrelated fixed delay.
+    // Melee damage lands attackHitDelay later; ranged shots deal damage on contact (see RangedAttackVisual), the delay only holds the shooter still while it fires.
     public void StartAttack(Player target)
     {
         swingTarget = target;
-        rangedShotBlocked = false;
-
-        float hitDelay = kit.AttackHitDelay;
-        if (kit.IsRanged && kit.ProjectileSpeed > 0f)
-            hitDelay = Vector2.Distance(ai.BodyCenter, EnemyAI.TargetCenter(target)) / kit.ProjectileSpeed;
-        pendingHitTime = Time.time + hitDelay;
+        pendingHitTime = Time.time + kit.AttackHitDelay;
 
         Vector2 direction = (EnemyAI.TargetCenter(target) - ai.BodyCenter).normalized;
         swingAngleDegrees.Value = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
@@ -77,7 +70,7 @@ public class EnemyActions : NetworkBehaviour
     private void ResolveHit()
     {
         pendingHitTime = 0f;
-        if (swingTarget == null || swingTarget.IsDead)
+        if (kit.IsRanged || swingTarget == null || swingTarget.IsDead)
             return;
 
         Vector2 toVictim = EnemyAI.TargetCenter(swingTarget) - ai.BodyCenter;
@@ -89,15 +82,8 @@ public class EnemyActions : NetworkBehaviour
         if (Vector2.Angle(swingDirection, toVictim) > kit.AttackAngle * 0.5f)
             return;
 
-        if (kit.IsRanged)
-        {
-            if (rangedShotBlocked)
-                return;
-        }
-        else if (Player.TryAbsorbWithShield(ai.BodyCenter, EnemyAI.TargetCenter(swingTarget), kit.Damage))
-        {
+        if (Player.TryAbsorbWithShield(ai.BodyCenter, EnemyAI.TargetCenter(swingTarget), kit.Damage))
             return;
-        }
 
         swingTarget.RequestDamage(kit.Damage);
     }
@@ -117,7 +103,7 @@ public class EnemyActions : NetworkBehaviour
 
         if (kit.IsRanged)
         {
-            RangedAttackVisual.Show(kit.ProjectilePrefab, ai.BodyCenter, direction, kit.ProjectileSpeed, kit.ProjectileMaxDistance, kit.ProjectileArcHeight, kit.Damage, this.HasServerAuthority(), () => rangedShotBlocked = true);
+            RangedAttackVisual.Show(kit.ProjectilePrefab, ai.BodyCenter, direction, kit.ProjectileSpeed, kit.ProjectileMaxDistance, kit.ProjectileArcHeight, kit.Damage, this.HasServerAuthority());
             return;
         }
 

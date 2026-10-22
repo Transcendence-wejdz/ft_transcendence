@@ -30,6 +30,9 @@ public class NetworkBootstrap : MonoBehaviour
         NetworkManager.Singleton.NetworkConfig.ConnectionApproval = true;
         NetworkManager.Singleton.ConnectionApprovalCallback = ApprovalCheck;
 
+        if (ipInputField != null)
+            ipInputField.onSubmit.AddListener(SubmitJoinCode);
+
         if (!string.IsNullOrEmpty(PendingJoinCode))
         {
             string code = PendingJoinCode;
@@ -42,6 +45,17 @@ public class NetworkBootstrap : MonoBehaviour
     {
         if (NetworkManager.Singleton != null)
             NetworkManager.Singleton.ConnectionApprovalCallback -= ApprovalCheck;
+        if (ipInputField != null)
+            ipInputField.onSubmit.RemoveListener(SubmitJoinCode);
+    }
+
+    // Enter in the join-code field acts like the Join button, unless a join is already running (button disabled).
+    private void SubmitJoinCode(string _)
+    {
+        if (joinButton != null && !joinButton.interactable)
+            return;
+
+        JoinGame();
     }
 
     private void ApprovalCheck(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)

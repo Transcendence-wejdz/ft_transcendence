@@ -2,12 +2,13 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Bottom-center shared XP bar + level indicator, shown once waves start (same gate as CoopHUD).
+// Bottom-center shared XP bar + level indicator under the top-left avatar, both shown once waves start (same gate as CoopHUD).
 public class XPBarUI : MonoBehaviour
 {
     [SerializeField] private GameObject content;
     [SerializeField] private Image fillImage;
     [SerializeField] private TMP_Text levelText;
+    [SerializeField] private bool showBar = true;
 
     private XPManager xpManager;
     private WaveSpawner spawner;
@@ -15,6 +16,7 @@ public class XPBarUI : MonoBehaviour
     void Awake()
     {
         content.SetActive(false);
+        levelText.gameObject.SetActive(false);
     }
 
     void Update()
@@ -28,8 +30,11 @@ public class XPBarUI : MonoBehaviour
         }
 
         bool started = spawner.CurrentWave > 0;
-        if (content.activeSelf != started)
-            content.SetActive(started);
+        if (levelText.gameObject.activeSelf != started)
+        {
+            content.SetActive(started && showBar);
+            levelText.gameObject.SetActive(started);
+        }
 
         if (!started)
             return;

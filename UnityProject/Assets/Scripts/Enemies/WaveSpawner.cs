@@ -17,9 +17,15 @@ public class WaveSpawner : NetworkBehaviour
     [SerializeField] private int maxSpawnPointAttempts = 30;
     [SerializeField] private float spawnClearance = 1f;
 
-    private readonly NetworkVariable<int> currentWave = new NetworkVariable<int>(
+    [SerializeField] private bool spawnWaves = true;
+
+    [Header("Boss Transition")]
+    [SerializeField] private string bossSceneName;
+    [SerializeField] private float bossSceneSeconds = 300f;
+
+    private readonly NetworkVariable<int> currentWave = new OfflineSafeNetworkVariable<int>(
         0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-    private readonly NetworkVariable<double> startServerTime = new NetworkVariable<double>(
+    private readonly NetworkVariable<double> startServerTime = new OfflineSafeNetworkVariable<double>(
         0d, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     private int waveNumber;
@@ -72,11 +78,41 @@ public class WaveSpawner : NetworkBehaviour
 
         wavesStarted = true;
         StartCoroutine(RunWaves());
+        if (!string.IsNullOrEmpty(bossSceneName))
+            StartCoroutine(RunBossSceneTransition());
+    }
+
+    // Server/offline only (BeginWaves never runs on a joined client): at bossSceneSeconds, outside any level-up choice, hands the run state over and moves the whole party to the boss scene.
+    private IEnumerator RunBossSceneTransition()
+    {
+        LevelUpManager levelUp = FindAnyObjectByType<LevelUpManager>();
+        GameOverCheck gameOver = FindAnyObjectByType<GameOverCheck>();
+        yield return new WaitUntil(() => ElapsedSeconds >= bossSceneSeconds && (levelUp == null || !levelUp.SequenceActive));
+        if (gameOver != null && gameOver.IsGameOver)
+            yield break;
+
+        XPManager xp = FindAnyObjectByType<XPManager>();
+        bool isNetworked = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+        RunCarryOver.Capture(bossSceneName, xp != null ? xp.TotalXP : 0, CurrentWave, levelUp != null ? levelUp.ProcessedLevel : 1,
+            ElapsedSeconds, isNetworked ? null : LocalPlayer.GetPlayer());
+        GameModeLoader.LoadNow(bossSceneName);
     }
 
     private IEnumerator RunWaves()
     {
-        MarkStartTime();
+        bool carried = RunCarryOver.IsForActiveScene;
+        MarkStartTime(carried ? RunCarryOver.ElapsedSeconds : 0f);
+
+        if (!spawnWaves)
+        {
+            waveNumber = carried ? Mathf.Max(1, RunCarryOver.Wave) : 1;
+            if (IsSpawned)
+                currentWave.Value = waveNumber;
+            yield break;
+        }
+
+        if (carried)
+            waveNumber = RunCarryOver.Wave;
 
         while (true)
         {
@@ -100,7 +136,7 @@ public class WaveSpawner : NetworkBehaviour
 
         while (elapsed < timeBetweenWaves)
         {
-            if (FindObjectsByType<EnemyStats>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Length == 0)
+            if (FindObjectsByType<EnemyStats>(FindObjectsInactive.Exclude).Length == 0)
                 yield break;
 
             yield return checkDelay;
@@ -108,12 +144,13 @@ public class WaveSpawner : NetworkBehaviour
         }
     }
 
-    private void MarkStartTime()
+    // Backdated by alreadyElapsed so a carried-over run keeps counting from where the previous scene stopped.
+    private void MarkStartTime(float alreadyElapsed)
     {
         if (IsSpawned)
-            startServerTime.Value = NetworkManager.ServerTime.Time;
+            startServerTime.Value = NetworkManager.ServerTime.Time - alreadyElapsed;
         else
-            offlineStartTime = Time.time;
+            offlineStartTime = Time.time - alreadyElapsed;
     }
 
     // Public so EnemyAI can resolve the same kit by index on every peer (see EnemyAI.ApplyKitFromIndex).
@@ -125,22 +162,42 @@ public class WaveSpawner : NetworkBehaviour
     // Each enemy independently rolls a random kit from whatever tiers are unlocked this wave; SetNetworkedKitIndex must run before Spawn() so remote clients get it in the initial state.
     private void SpawnWave(int count)
     {
-        bool isNetworked = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
         RefreshUnlockedKitIndices();
-
         for (int i = 0; i < count; i++)
-        {
-            int kitIndex = unlockedKitIndices[Random.Range(0, unlockedKitIndices.Count)];
-            EnemyKit kit = GetKit(kitIndex);
-            GameObject instance = Instantiate(kit.EnemyPrefab, FindSpawnPosition(), Quaternion.identity);
-            instance.GetComponent<Enemy>().Initialize(kit);
+            SpawnEnemy(unlockedKitIndices[Random.Range(0, unlockedKitIndices.Count)], FindSpawnPosition());
+    }
 
-            NetworkObject netObj = instance.GetComponent<NetworkObject>();
-            if (isNetworked)
+    // Server-side summon (e.g. a boss calling minions): spawns kit on a valid point within radius of center, or on center itself; returns where it landed.
+    public Vector3 SpawnEnemyNear(EnemyKit kit, Vector3 center, float radius)
+    {
+        int kitIndex = System.Array.IndexOf(enemyKits, kit);
+        if (kitIndex < 0)
+            return center;
+
+        ProceduralMapGenerator mapGenerator = FindAnyObjectByType<ProceduralMapGenerator>();
+        for (int attempt = 0; attempt < maxSpawnPointAttempts; attempt++)
+        {
+            Vector3 candidate = center + (Vector3)(Random.insideUnitCircle.normalized * Random.Range(radius * 0.5f, radius));
+            if (IsValidSpawnPoint(candidate, mapGenerator))
             {
-                instance.GetComponent<EnemyAI>().SetNetworkedKitIndex(kitIndex);
-                netObj.Spawn(true);
+                SpawnEnemy(kitIndex, candidate);
+                return candidate;
             }
+        }
+        SpawnEnemy(kitIndex, center);
+        return center;
+    }
+
+    private void SpawnEnemy(int kitIndex, Vector3 position)
+    {
+        EnemyKit kit = GetKit(kitIndex);
+        GameObject instance = Instantiate(kit.EnemyPrefab, position, Quaternion.identity);
+        instance.GetComponent<Enemy>().Initialize(kit);
+
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            instance.GetComponent<EnemyAI>().SetNetworkedKitIndex(kitIndex);
+            instance.GetComponent<NetworkObject>().Spawn(true);
         }
     }
 

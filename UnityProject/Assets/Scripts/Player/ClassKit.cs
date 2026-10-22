@@ -1,10 +1,11 @@
 using UnityEngine;
 using UnityEngine.Serialization;
 
-// Per-class combat timing/FX; fields are grouped per-ability so each of Attack/Special/Ultimate is self-contained.
+// Per-class stats and combat tuning: General (health, mana, dodge) then Actions, each of Attack/Special/Ultimate self-contained.
 [CreateAssetMenu(fileName = "ClassKit", menuName = "Transcendence/Class Kit")]
 public class ClassKit : ScriptableObject
 {
+    [Space(6), Header("GENERAL")]
     [Header("Health")]
     [SerializeField] private float maxHealth = 100f;
     [SerializeField] private float healthRegenPerSecond = 1f;
@@ -13,6 +14,13 @@ public class ClassKit : ScriptableObject
     [SerializeField] private float maxMana = 50f;
     [SerializeField] private float manaRegenPerSecond = 1f;
 
+    [Header("Dodge")]
+    [SerializeField] private int dodgeCharges = 2;
+    [SerializeField] private float dodgeRechargeSeconds = 3f;
+    [SerializeField] private float dodgeDistance = 2.5f;
+    [SerializeField] private float dodgeDuration = 0.2f;
+
+    [Space(12), Header("ACTIONS")]
     [Header("Attack")]
     [SerializeField] private float attackCooldown = 0.5f;
     [SerializeField] private GameObject attackFxPrefab;
@@ -122,4 +130,8 @@ public class ClassKit : ScriptableObject
     public float ShieldPushInterval => shieldPushInterval;
     public float ShieldTurnSpeed => shieldTurnSpeed;
     public bool ShieldHoldAnimation => shieldHoldAnimation;
+    public int DodgeCharges => dodgeCharges;
+    public float DodgeRechargeSeconds => dodgeRechargeSeconds;
+    public float DodgeDistance => dodgeDistance;
+    public float DodgeDuration => dodgeDuration;
 }

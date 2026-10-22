@@ -24,23 +24,38 @@ public class AttackTelegraph : MonoBehaviour
         if (radius <= 0f || duration <= 0f || direction.sqrMagnitude < 0.0001f)
             return;
 
+        Spawn(anchor, position, BuildWedgeMesh(direction, coneAngleDegrees, radius, out Color[] colors), colors, duration);
+    }
+
+    // Straight lane from position along direction, e.g. a boss charge path.
+    public static void ShowLane(Transform anchor, Vector3 position, Vector2 direction, float length, float width, float duration)
+    {
+        if (length <= 0f || width <= 0f || duration <= 0f || direction.sqrMagnitude < 0.0001f)
+            return;
+
+        Spawn(anchor, position, BuildLaneMesh(direction.normalized, length, width, out Color[] colors), colors, duration);
+    }
+
+    private static void Spawn(Transform anchor, Vector3 position, Mesh mesh, Color[] colors, float duration)
+    {
         var go = new GameObject("AttackTelegraph", typeof(MeshFilter), typeof(MeshRenderer));
         go.transform.position = position;
         if (anchor != null)
             go.transform.SetParent(anchor, worldPositionStays: true);
 
         AttackTelegraph telegraph = go.AddComponent<AttackTelegraph>();
-        telegraph.Init(direction, coneAngleDegrees, radius, duration);
+        telegraph.Init(mesh, colors, duration);
     }
 
-    private void Init(Vector2 direction, float coneAngleDegrees, float radius, float duration)
+    private void Init(Mesh mesh, Color[] colors, float duration)
     {
         meshFilter = GetComponent<MeshFilter>();
         meshRenderer = GetComponent<MeshRenderer>();
         meshRenderer.material = GetOrBuildMaterial();
         meshRenderer.sortingLayerName = GroundSortingLayer;
 
-        meshFilter.mesh = BuildWedgeMesh(direction, coneAngleDegrees, radius, out baseColors);
+        meshFilter.mesh = mesh;
+        baseColors = colors;
         StartCoroutine(Animate(duration));
     }
 
@@ -97,6 +112,22 @@ public class AttackTelegraph : MonoBehaviour
         var mesh = new Mesh { name = "AttackTelegraphWedge" };
         mesh.SetVertices(vertices);
         mesh.SetTriangles(triangles, 0);
+        mesh.SetColors(colors);
+        mesh.RecalculateBounds();
+        return mesh;
+    }
+
+    // Rectangle with a faint start edge and a strong far edge, matching the boss charge hit lane.
+    private static Mesh BuildLaneMesh(Vector2 direction, float length, float width, out Color[] colors)
+    {
+        Vector3 forward = direction * length;
+        Vector3 side = new Vector3(-direction.y, direction.x, 0f) * (width * 0.5f);
+        var vertices = new[] { -side, side, forward + side, forward - side };
+        colors = new[] { FillColor, FillColor, EdgeColor, EdgeColor };
+
+        var mesh = new Mesh { name = "AttackTelegraphLane" };
+        mesh.SetVertices(vertices);
+        mesh.SetTriangles(new[] { 0, 1, 2, 0, 2, 3 }, 0);
         mesh.SetColors(colors);
         mesh.RecalculateBounds();
         return mesh;

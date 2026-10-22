@@ -10,18 +10,20 @@ public struct RunResult : INetworkSerializeByMemcpy
     public int wave;
     public int xp;
     public int seconds;
+    public bool victory;
 }
 
-// Detects a full wipe and lets the host (or solo player) restart the mode or return to the Lobby.
+// Detects a full wipe (or the boss's death, a victory) and lets the host (or solo player) restart the mode or return to the Lobby.
 public class GameOverCheck : NetworkBehaviour
 {
     [SerializeField] private string lobbySceneName = "Lobby";
+    [SerializeField] private string restartSceneName;
     [SerializeField] private float startupGracePeriod = 0.5f;
 
-    private readonly NetworkVariable<bool> gameOver = new NetworkVariable<bool>(
+    private readonly NetworkVariable<bool> gameOver = new OfflineSafeNetworkVariable<bool>(
         false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    private readonly NetworkVariable<RunResult> result = new NetworkVariable<RunResult>(
+    private readonly NetworkVariable<RunResult> result = new OfflineSafeNetworkVariable<RunResult>(
         default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     private bool offlineGameOver;
@@ -29,12 +31,15 @@ public class GameOverCheck : NetworkBehaviour
     private bool isLoading;
     private bool sceneReady;
     private float readyTime;
+    private bool bossEngaged;
 
     public bool IsGameOver => IsSpawned ? gameOver.Value : offlineGameOver;
 
     public bool CanChoose => this.HasServerAuthority();
 
     public RunResult Result => IsSpawned ? result.Value : offlineResult;
+
+    public bool IsVictory => IsGameOver && Result.victory;
 
     // Networked: waits for every client's scene load to finish before evaluating wipes, so stale health can't false-trigger it.
     void Start()
@@ -70,10 +75,15 @@ public class GameOverCheck : NetworkBehaviour
         if (!this.HasServerAuthority() || IsGameOver || !sceneReady || Time.time < readyTime)
             return;
 
-        if (!AllPlayersDead())
+        if (Boss.Active != null)
+            bossEngaged = true;
+
+        bool victory = bossEngaged && Boss.Active == null;
+        if (!victory && !AllPlayersDead())
             return;
 
         RunResult snapshot = CaptureResult();
+        snapshot.victory = victory;
         if (IsSpawned)
         {
             result.Value = snapshot;
@@ -95,14 +105,14 @@ public class GameOverCheck : NetworkBehaviour
         {
             runId = Random.Range(1, int.MaxValue),
             wave = spawner != null ? spawner.CurrentWave : 0,
-            xp = xp != null ? xp.TotalXP : 0,
+            xp = xp != null ? xp.TotalXP : RunCarryOver.IsForActiveScene ? RunCarryOver.TotalXP : 0,
             seconds = spawner != null ? Mathf.FloorToInt(spawner.ElapsedSeconds) : 0,
         };
     }
 
     public void Restart()
     {
-        LoadScene(SceneManager.GetActiveScene().name);
+        LoadScene(string.IsNullOrEmpty(restartSceneName) ? SceneManager.GetActiveScene().name : restartSceneName);
     }
 
     public void ReturnToLobby()
@@ -121,11 +131,7 @@ public class GameOverCheck : NetworkBehaviour
         if (sceneName == lobbySceneName)
             ModeReadyCheck.Instance?.CancelReadyCheck();
 
-        bool isNetworked = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
-        if (isNetworked)
-            NetworkManager.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
-        else
-            LoadingScreenManager.LoadScene(sceneName);
+        GameModeLoader.LoadNow(sceneName);
     }
 
     private bool AllPlayersDead()

@@ -1,27 +1,27 @@
 using UnityEngine;
 
-// Enemy's thrown shot; the prefab carries its own SpriteRenderer/frames/Rigidbody2D/CircleCollider2D (same shape as the player's ArrowProjectile), Init supplies the per-kit speed/range/damage. ResolveHit's windup timer still decides whether the shot would connect (range/angle re-check); this is what actually detects a shield in its path - a real trigger hitbox against the shield's collider, not a position/radius check, so it works regardless of how far the shooter is from the shield.
+// Enemy's thrown shot (same shape as the player's ArrowProjectile): flies straight to its max range and deals its damage on contact with a living player's body, or is absorbed by a shield in its path.
 [RequireComponent(typeof(Rigidbody2D))]
 public class RangedAttackVisual : MonoBehaviour
 {
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private Sprite[] frames;
     [SerializeField] private float frameRate = 16f;
+    [SerializeField] private GameObject impactPrefab;
 
     private Rigidbody2D rb;
     private float damage;
     private float maxDistance;
     private float arcHeight;
     private bool isAuthoritative;
-    private System.Action onBlocked;
     private bool resolved;
     private float frameTimer;
     private int frameIndex;
     private Vector3 startPosition;
     private Vector3 spriteBaseLocalPosition;
 
-    // isAuthoritative should be true only for the server/offline-authoritative spawn (see EnemyActions.HasServerAuthority) - every other peer's copy is replay-only and must not call the ClientRpc-backed ApplyShieldDamage.
-    public static void Show(GameObject prefab, Vector3 from, Vector2 direction, float speed, float maxDistance, float arcHeight, float damage, bool isAuthoritative, System.Action onBlocked = null)
+    // isAuthoritative should be true only for the server/offline-authoritative spawn; every other peer's copy is replay-only and never applies damage.
+    public static void Show(GameObject prefab, Vector3 from, Vector2 direction, float speed, float maxDistance, float arcHeight, float damage, bool isAuthoritative)
     {
         if (prefab == null || speed <= 0f || maxDistance <= 0f || direction.sqrMagnitude < 0.0001f)
             return;
@@ -34,16 +34,15 @@ public class RangedAttackVisual : MonoBehaviour
             return;
         }
 
-        visual.Init(direction.normalized * speed, maxDistance, arcHeight, damage, isAuthoritative, onBlocked);
+        visual.Init(direction.normalized * speed, maxDistance, arcHeight, damage, isAuthoritative);
     }
 
-    private void Init(Vector2 velocity, float maxDist, float arc, float damageValue, bool authoritative, System.Action onBlockedCallback)
+    private void Init(Vector2 velocity, float maxDist, float arc, float damageValue, bool authoritative)
     {
         maxDistance = maxDist;
         arcHeight = arc;
         damage = damageValue;
         isAuthoritative = authoritative;
-        onBlocked = onBlockedCallback;
         startPosition = transform.position;
         rb.linearVelocity = velocity;
     }
@@ -74,7 +73,7 @@ public class RangedAttackVisual : MonoBehaviour
         float traveled = Vector3.Distance(startPosition, transform.position);
         if (traveled >= maxDistance)
         {
-            Destroy(gameObject);
+            Impact();
             return;
         }
 
@@ -99,22 +98,40 @@ public class RangedAttackVisual : MonoBehaviour
         }
     }
 
+    // Shields absorb the shot; otherwise only a living player's solid body counts, never trigger zones (e.g. revive/interaction areas).
     void OnTriggerEnter2D(Collider2D other)
     {
         if (resolved)
             return;
 
         ShieldHoldFX shield = other.GetComponent<ShieldHoldFX>();
-        if (shield == null)
+        if (shield != null)
+        {
+            resolved = true;
+            if (isAuthoritative && shield.Owner != null)
+                shield.Owner.ApplyShieldDamage(damage);
+            Impact();
+            return;
+        }
+
+        if (other.isTrigger)
+            return;
+
+        Player player = other.GetComponentInParent<Player>();
+        if (player == null || player.IsDead)
             return;
 
         resolved = true;
         if (isAuthoritative)
-        {
-            onBlocked?.Invoke();
-            if (shield.Owner != null)
-                shield.Owner.ApplyShieldDamage(damage);
-        }
+            player.RequestDamage(damage);
+        Impact();
+    }
+
+    // Ends the shot, bursting its impact FX at the same spot and scale when the prefab has one.
+    private void Impact()
+    {
+        if (impactPrefab != null)
+            Instantiate(impactPrefab, transform.position, Quaternion.identity).transform.localScale = transform.localScale;
         Destroy(gameObject);
     }
 }

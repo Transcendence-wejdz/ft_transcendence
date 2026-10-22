@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 0d70d238dcd86bda1830cda3de9a9745
+guid: a3bffa895f259ec6eb1641d1e118e48c
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -8,7 +8,7 @@ ScriptedImporter:
   assetBundleName: 
   assetBundleVariant: 
   script: {fileID: 12408, guid: 0000000000000000e000000000000000, type: 0}
-  svgType: 2
+  svgType: 3
   texturedSpriteMeshType: 0
   svgPixelsPerUnit: 100
   gradientResolution: 64

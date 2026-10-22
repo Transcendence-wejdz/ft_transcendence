@@ -3893,7 +3893,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7963190186526951910}
   m_Layer: 0
-  m_Name: DashRow
+  m_Name: DodgeRow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4183,7 +4183,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Dash
+  m_text: Dodge
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: ef344888509892f60b728aca5a53791e, type: 2}
   m_sharedMaterial: {fileID: 4013812617392462940, guid: ef344888509892f60b728aca5a53791e, type: 2}
@@ -10233,8 +10233,8 @@ MonoBehaviour:
     secondaryButton: {fileID: 605076588678252561}
     gamepadLabel: {fileID: 6251273521347736915}
     gamepadButton: {fileID: 4415741186455978953}
-  - actionName: Dash
-    displayLabel: Dash
+  - actionName: Dodge
+    displayLabel: Dodge
     primaryDevicePrefix: <Keyboard>
     secondaryDevicePrefix: 
     primaryLabel: {fileID: 2622654262512617314}

@@ -12,12 +12,12 @@ public partial class Player
     // Only meaningful on a class whose Animator Controller actually has a "ShieldHeld" bool param (see ClassKit.ShieldHoldAnimation); Animator.SetBool on a missing param is a harmless no-op elsewhere.
     private static readonly int ShieldHeldHash = Animator.StringToHash("ShieldHeld");
 
-    private readonly NetworkVariable<bool> isShieldActive = new NetworkVariable<bool>(
+    private readonly NetworkVariable<bool> isShieldActive = new OfflineSafeNetworkVariable<bool>(
         false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    private readonly NetworkVariable<float> shieldHealth = new NetworkVariable<float>(
+    private readonly NetworkVariable<float> shieldHealth = new OfflineSafeNetworkVariable<float>(
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     // Trails the live mouse aim at a capped turn rate instead of snapping to it, so re-aiming the raised shield feels heavy.
-    private readonly NetworkVariable<float> shieldFacingAngle = new NetworkVariable<float>(
+    private readonly NetworkVariable<float> shieldFacingAngle = new OfflineSafeNetworkVariable<float>(
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     private float shieldEndTime;
@@ -156,7 +156,8 @@ public partial class Player
     // Called server-side (EnemyActions.ResolveHit already runs with server authority); a line between attacker and target that crosses an active shield's real collider gets absorbed by it instead of reaching the target.
     public static bool TryAbsorbWithShield(Vector2 attackerPos, Vector2 targetPos, float damage)
     {
-        int count = Physics2D.LinecastNonAlloc(attackerPos, targetPos, ShieldLineBuffer);
+        ContactFilter2D filter = new ContactFilter2D { useLayerMask = true, layerMask = Physics2D.DefaultRaycastLayers, useTriggers = Physics2D.queriesHitTriggers };
+        int count = Physics2D.Linecast(attackerPos, targetPos, filter, ShieldLineBuffer);
         for (int i = 0; i < count; i++)
         {
             ShieldHoldFX shield = ShieldLineBuffer[i].collider.GetComponent<ShieldHoldFX>();

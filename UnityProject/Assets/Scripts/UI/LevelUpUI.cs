@@ -38,9 +38,12 @@ public class LevelUpUI : MonoBehaviour
         }
     }
 
+    // Releases the input block too if the scene unloads while the choice is still open.
     void OnDestroy()
     {
         IsShowing = false;
+        if (shown)
+            PauseManager.SetExternalPause(false);
     }
 
     void Update()

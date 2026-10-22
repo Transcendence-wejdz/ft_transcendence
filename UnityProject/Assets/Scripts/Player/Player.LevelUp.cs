@@ -3,12 +3,13 @@ using UnityEngine;
 
 public partial class Player
 {
-    private readonly NetworkVariable<bool> hasChosenLevelUpBonus = new NetworkVariable<bool>(
+    private readonly NetworkVariable<bool> hasChosenLevelUpBonus = new OfflineSafeNetworkVariable<bool>(
         false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    private readonly NetworkVariable<LevelUpBonusStacks> levelUpBonusStacks = new NetworkVariable<LevelUpBonusStacks>(
+    private readonly NetworkVariable<LevelUpBonusStacks> levelUpBonusStacks = new OfflineSafeNetworkVariable<LevelUpBonusStacks>(
         default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     public bool HasChosenLevelUpBonus => hasChosenLevelUpBonus.Value;
+    public LevelUpBonusStacks BonusStacks => levelUpBonusStacks.Value;
 
     public float AttackSpeedMultiplier =>
         1f + levelUpBonusStacks.Value.attackSpeed * LevelUpBonusCatalog.AttackCooldownReductionPerStack;
@@ -34,6 +35,16 @@ public partial class Player
 
     // Raises a move-lock speed fraction toward 1 (no slowdown), never past it.
     private float ApplyAttackMobilityBonus(float baseMultiplier) => Mathf.Min(1f, baseMultiplier + AttackMobilityBonus);
+
+    // Offline only: re-applies the bonuses an offline solo player earned before a scene change (see RunCarryOver).
+    private void StartLevelUp()
+    {
+        if (NetworkObject.IsSpawned || !this.IsLocallyControlled() || !RunCarryOver.IsForActiveScene || !RunCarryOver.HasOfflineBonusStacks)
+            return;
+
+        levelUpBonusStacks.Value = RunCarryOver.OfflineBonusStacks;
+        ResetToFull();
+    }
 
     // Called by this player's own level-up UI.
     public void ChooseLevelUpBonus(LevelUpBonusType type)

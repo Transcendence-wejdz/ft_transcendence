@@ -76,19 +76,19 @@ public class FriendsPanelUI : MonoBehaviour
         addButton.interactable = FriendsManager.IsReady;
 
         foreach (Relationship request in FriendsManager.Incoming)
-            AddRow(request, "Request", "Accept", () => Run(FriendsManager.AcceptAsync(request.Member.Id)),
-                "Decline", () => Run(FriendsManager.DeclineAsync(request.Member.Id)));
+            AddRow(request, "Request", "Accept", () => _ = Run(FriendsManager.AcceptAsync(request.Member.Id)),
+                "Decline", () => _ = Run(FriendsManager.DeclineAsync(request.Member.Id)));
 
         foreach (Relationship friend in FriendsManager.Friends)
         {
             bool inSession = FriendsManager.IsMemberOfCurrentSession(friend.Member.Id);
             string tag = inSession ? "In session" : PresenceTag(friend);
             Action invite = inSession ? null : () => Invite(friend.Member.Id);
-            AddRow(friend, tag, "Invite", invite, "Remove", () => Run(FriendsManager.RemoveAsync(friend.Member.Id)));
+            AddRow(friend, tag, "Invite", invite, "Remove", () => _ = Run(FriendsManager.RemoveAsync(friend.Member.Id)));
         }
 
         foreach (Relationship request in FriendsManager.Outgoing)
-            AddRow(request, "Request", "Cancel", () => Run(FriendsManager.CancelRequestAsync(request.Member.Id)));
+            AddRow(request, "Request", "Cancel", () => _ = Run(FriendsManager.CancelRequestAsync(request.Member.Id)));
     }
 
     // Online for any reachable availability, otherwise Offline.

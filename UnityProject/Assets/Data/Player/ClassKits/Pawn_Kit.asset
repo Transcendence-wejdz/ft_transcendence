@@ -23,21 +23,44 @@ MonoBehaviour:
   attackMoveLockDuration: 0.5
   attackMoveSpeedMultiplier: 0.15
   attackAnimSpeed: 1
+  attackSize: 1
+  attackIgnoreAimRotation: 0
+  attackFollowCaster: 1
   hasProjectile: 0
   projectileSpeed: 12
   projectileMaxDistance: 10
   pierceCount: 1
   specialCooldown: 2.5
+  specialManaCost: 0
   specialFxPrefab: {fileID: 0}
   specialFxDistance: 1
   specialDamage: 15
   specialMoveLockDuration: 0.3
   specialMoveSpeedMultiplier: 0.35
   specialAnimSpeed: 1
+  specialSize: 1
+  specialIgnoreAimRotation: 0
+  specialFollowCaster: 1
   ultimateCooldown: 6
+  ultimateManaCost: 0
   ultimateFxPrefab: {fileID: 0}
   ultimateFxDistance: 1
   ultimateDamage: 15
   ultimateMoveLockDuration: 0.3
   ultimateMoveSpeedMultiplier: 0.35
   ultimateAnimSpeed: 1
+  ultimateSize: 1
+  ultimateIgnoreAimRotation: 0
+  ultimateFollowCaster: 1
+  hasShield: 0
+  shieldHoldDuration: 10
+  shieldHealth: 150
+  shieldKnockbackForce: 8
+  shieldKnockbackDuration: 0.25
+  shieldPushInterval: 0.5
+  shieldTurnSpeed: 120
+  shieldHoldAnimation: 0
+  dodgeCharges: 2
+  dodgeRechargeSeconds: 3
+  dodgeDistance: 2.5
+  dodgeDuration: 0.2

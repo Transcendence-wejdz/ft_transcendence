@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(PlayerInput))]
@@ -10,10 +12,16 @@ public class InteractionManager : MonoBehaviour
     private InteractableZone currentZone;
     private PlayerInput playerInput;
     private InputAction interactAction;
+    private Player player;
+    private MenuPanel interactionPanel;
+
+    // Every player copy carries this and shares the same actions; only the locally controlled one may react.
+    private bool IsLocal => player == null || player.IsLocallyControlled();
 
     private void Awake()
     {
         playerInput = GetComponent<PlayerInput>();
+        player = GetComponent<Player>();
     }
 
     private void OnEnable()
@@ -34,6 +42,9 @@ public class InteractionManager : MonoBehaviour
 
     private void Update()
     {
+        if (!IsLocal)
+            return;
+
         if (PauseManager.IsPaused)
         {
             if (currentZone != null)
@@ -71,12 +82,31 @@ public class InteractionManager : MonoBehaviour
         return nearest;
     }
 
+    // Closes the panel this key opened (the pause key still closes it too), otherwise interacts; ignored while typing in a text field.
     private void OnInteractPerformed(InputAction.CallbackContext ctx)
     {
+        if (!IsLocal || IsTyping())
+            return;
+
+        if (interactionPanel != null && MenuPanel.CurrentOpen == interactionPanel)
+        {
+            interactionPanel.Close();
+            interactionPanel = null;
+            return;
+        }
+
         if (PauseManager.IsPaused)
             return;
 
         currentZone?.Interact();
+        interactionPanel = MenuPanel.CurrentOpen;
+    }
+
+    private static bool IsTyping()
+    {
+        GameObject selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        TMP_InputField field = selected != null ? selected.GetComponent<TMP_InputField>() : null;
+        return field != null && field.isFocused;
     }
 
     public static void Register(InteractableZone zone)

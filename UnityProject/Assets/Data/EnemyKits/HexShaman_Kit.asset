@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a66c09d7042c9ffa9f15490369cf586, type: 3}
+  m_Name: HexShaman_Kit
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyKit
+  tier: 4
+  maxHealth: 60
+  xpReward: 35
+  moveSpeed: 2.4
+  attackRange: 7
+  attackAngle: 20
+  damage: 18
+  attackCooldown: 2.2
+  attackHitDelay: 0.5
+  attackAnimationDuration: 1
+  attackMoveSpeedMultiplier: 0
+  hitRangeTolerance: 1.1
+  isRanged: 1
+  projectilePrefab: {fileID: 7623626265396232753, guid: 0904d580b2e6efa1da5f5de853db2e0d, type: 3}
+  projectileSpeed: 7
+  projectileMaxDistance: 14
+  projectileArcHeight: 0
+  retargetInterval: 0.25
+  steerInterval: 0.1
+  directChaseRange: 8
+  lineOfSightInterval: 0.3
+  maxDistanceFromPlayers: 40
+  leashCheckInterval: 2
+  enemyPrefab: {fileID: 5945911845321801242, guid: b83d894c7f4d5bcd4adba53a21376496, type: 3}
+  idleStateName: Idle
+  runStateName: Run
+  attackStateName: Attack

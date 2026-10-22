@@ -45,7 +45,7 @@ public class EnemyAI : NetworkBehaviour
     public EnemyKit Kit { get => kit; set => kit = value; }
 
     // Replicates which EnemyKit to use, so remote clients (skipped by WaveSpawner's direct Initialize call) can resolve it too.
-    private readonly NetworkVariable<int> kitIndex = new NetworkVariable<int>(
+    private readonly NetworkVariable<int> kitIndex = new OfflineSafeNetworkVariable<int>(
         -1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     void Awake()

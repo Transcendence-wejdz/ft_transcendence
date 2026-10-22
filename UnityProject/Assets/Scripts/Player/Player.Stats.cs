@@ -10,7 +10,7 @@ public partial class Player
     private float maxHealth;
     private float maxMana;
 
-    private readonly NetworkVariable<float> currentHealth = new NetworkVariable<float>(
+    private readonly NetworkVariable<float> currentHealth = new OfflineSafeNetworkVariable<float>(
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     public float MaxHealth => maxHealth + LevelUpHealthBonus;
@@ -115,7 +115,7 @@ public partial class Player
 
     public void TakeDamage(float amount)
     {
-        if (!this.IsLocallyControlled())
+        if (!this.IsLocallyControlled() || IsDodging)
             return;
 
         float minHealth = DeathProtected ? 1f : 0f;

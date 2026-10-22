@@ -60,3 +60,7 @@ MonoBehaviour:
   shieldPushInterval: 0.2
   shieldTurnSpeed: 100
   shieldHoldAnimation: 1
+  dodgeCharges: 2
+  dodgeRechargeSeconds: 3
+  dodgeDistance: 2.5
+  dodgeDuration: 0.2

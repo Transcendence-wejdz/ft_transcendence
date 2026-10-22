@@ -52,3 +52,15 @@ MonoBehaviour:
   ultimateSize: 1
   ultimateIgnoreAimRotation: 0
   ultimateFollowCaster: 1
+  hasShield: 0
+  shieldHoldDuration: 10
+  shieldHealth: 150
+  shieldKnockbackForce: 8
+  shieldKnockbackDuration: 0.25
+  shieldPushInterval: 0.5
+  shieldTurnSpeed: 120
+  shieldHoldAnimation: 0
+  dodgeCharges: 2
+  dodgeRechargeSeconds: 10
+  dodgeDistance: 2
+  dodgeDuration: 0.2

@@ -114,8 +114,7 @@ public partial class ProceduralMapGenerator : MonoBehaviour
         activeBiome = biomes != null && biomes.Length > 0 ? biomes[((seed % biomes.Length) + biomes.Length) % biomes.Length] : null;
         InitDecorOffsets();
 
-        Transform tracked = GetTrackedPlayer();
-        Vector3Int cell = landTilemap.WorldToCell(tracked != null ? tracked.position : transform.position);
+        Vector3Int cell = landTilemap.WorldToCell(SpawnAreaCenter());
         spawnCell = new Vector2Int(cell.x, cell.y);
         Vector3Int center = landTilemap.WorldToCell(transform.position);
         islandCenter = new Vector2(center.x, center.y);
@@ -127,6 +126,13 @@ public partial class ProceduralMapGenerator : MonoBehaviour
         waterBackgroundTiles = new TileBase[cellCount];
         coastFoamTiles = new TileBase[cellCount];
         clearTiles = new TileBase[cellCount];
+    }
+
+    // Same point on every peer (the scene's spawn altar, else the generator), so host and clients clear the same decor; the local player's position differs per machine.
+    private Vector3 SpawnAreaCenter()
+    {
+        PlayerSpawner spawner = FindAnyObjectByType<PlayerSpawner>();
+        return spawner != null ? spawner.transform.position : transform.position;
     }
 
     // Each client streams chunks around its own local character.

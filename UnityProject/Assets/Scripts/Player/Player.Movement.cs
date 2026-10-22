@@ -7,11 +7,10 @@ public partial class Player
 {
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] private float runSpeed = 10f;
 
     private Camera cam;
 
-    private readonly NetworkVariable<float> aimAngle = new NetworkVariable<float>(
+    private readonly NetworkVariable<float> aimAngle = new OfflineSafeNetworkVariable<float>(
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     public float AimAngleDegrees => aimAngle.Value;
@@ -21,7 +20,6 @@ public partial class Player
     private Vector2 facing = Vector2.down;
     private bool facingApplied;
     private float moveSpeedMult = 1f;
-    private bool isRunning;
 
     private PauseManager pauseManager;
 
@@ -39,11 +37,18 @@ public partial class Player
     private static readonly int LastInputXHash = Animator.StringToHash("LastInputX");
     private static readonly int LastInputYHash = Animator.StringToHash("LastInputY");
 
-    // Also applies keybinds here, covering the offline player which never goes through OnNetworkSpawn.
+    // PlayerInput ships disabled so a remote player's copy never grabs devices; the local (or offline) player turns it on here.
     private void StartMovement()
     {
-        if (playerInput != null)
-            KeybindOverrides.Apply(playerInput.actions);
+        if (playerInput == null)
+            return;
+
+        KeybindOverrides.Apply(playerInput.actions);
+        if (this.IsLocallyControlled())
+        {
+            playerInput.enabled = true;
+            BindDodgeInput();
+        }
     }
 
     // Only the owner reads input and renders a camera.
@@ -59,7 +64,11 @@ public partial class Player
         }
 
         if (playerInput != null)
+        {
             KeybindOverrides.Apply(playerInput.actions);
+            playerInput.enabled = true;
+            BindDodgeInput();
+        }
 
         if (NetworkManager.SceneManager != null)
             NetworkManager.SceneManager.OnLoadComplete += HandleSceneLoadComplete;
@@ -111,6 +120,9 @@ public partial class Player
                 moveInput = moveAction.ReadValue<Vector2>();
         }
 
+        if (ApplyDodgeMovement())
+            return;
+
         Vector2 aimDir = IsDead ? GetMovementFacingDirection() : GetMouseAimDirection();
         aimAngle.Value = Mathf.Atan2(aimDir.y, aimDir.x) * Mathf.Rad2Deg;
 
@@ -133,7 +145,7 @@ public partial class Player
             return;
         }
 
-        rb.linearVelocity = moveInput * (isRunning ? runSpeed : moveSpeed) * speedMult * MoveSpeedBonusMultiplier;
+        rb.linearVelocity = moveInput * moveSpeed * speedMult * MoveSpeedBonusMultiplier;
     }
 
     public void Move(InputAction.CallbackContext ctx)
@@ -148,21 +160,6 @@ public partial class Player
             return;
 
         animator.SetBool(IsWalkingHash, hasDirection);
-    }
-
-    public void Run(InputAction.CallbackContext ctx)
-    {
-        if (!this.IsLocallyControlled())
-            return;
-        if (ctx.canceled)
-        {
-            isRunning = false;
-            return;
-        }
-        if (IsBlocked)
-            return;
-
-        isRunning = true;
     }
 
     public void OnPause(InputAction.CallbackContext ctx)

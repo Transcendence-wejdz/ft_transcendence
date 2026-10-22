@@ -14,6 +14,8 @@ public class GameOverUI : MonoBehaviour
     [SerializeField] private Button restartButton;
     [SerializeField] private Button lobbyButton;
     [SerializeField] private TMP_Text waitingText;
+    [SerializeField] private TMP_Text titleText;
+    [SerializeField] private string victoryTitle = "Victory";
     [SerializeField] private float showDelay = 0.3f;
     [SerializeField] private float fadeDuration = 0.25f;
 
@@ -22,6 +24,7 @@ public class GameOverUI : MonoBehaviour
     private float triggerTime = -1f;
     private bool shown;
     private CoopRunStats runStats;
+    private string defeatTitle;
 
     public static bool IsShowing { get; private set; }
 
@@ -30,6 +33,8 @@ public class GameOverUI : MonoBehaviour
         IsShowing = false;
         panelGroup = panel.GetComponent<CanvasGroup>();
         panel.SetActive(false);
+        if (titleText != null)
+            defeatTitle = titleText.text;
 
         restartButton.onClick.AddListener(() => Choose(restart: true));
         lobbyButton.onClick.AddListener(() => Choose(restart: false));
@@ -90,6 +95,8 @@ public class GameOverUI : MonoBehaviour
         restartButton.gameObject.SetActive(canChoose);
         lobbyButton.gameObject.SetActive(canChoose);
         waitingText.gameObject.SetActive(!canChoose);
+        if (titleText != null)
+            titleText.text = check.IsVictory ? victoryTitle : defeatTitle;
 
         LeaderboardUI board = panel.GetComponentInChildren<LeaderboardUI>(true);
         if (board != null && runStats != null)

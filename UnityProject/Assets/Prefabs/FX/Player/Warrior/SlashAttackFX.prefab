@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 1403506641711836100}
   - component: {fileID: 6975898263053509851}
   - component: {fileID: 8522239293584041305}
+  - component: {fileID: 5163888127663142681}
   m_Layer: 0
   m_Name: SlashAttackFX
   m_TagString: Untagged
@@ -171,7 +172,6 @@ MonoBehaviour:
   - {fileID: -4080306036332590020, guid: f5a5f65dcb4c83aa9b77927ef90adcc5, type: 3}
   - {fileID: -9075176817609584010, guid: f5a5f65dcb4c83aa9b77927ef90adcc5, type: 3}
   frameRate: 48
-  damage: 15
 --- !u!50 &8522239293584041305
 Rigidbody2D:
   serializedVersion: 5
@@ -199,3 +199,15 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!114 &5163888127663142681
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7559628715613984797}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 535bcc650c079a48eb45cb60b30a7966, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FXSortingAuto

@@ -12,6 +12,7 @@ public class LayeredAttackFX : MonoBehaviour, IAttackFX
 
     private GameObject owner;
     private float damage;
+    private int frontBaseOrder;
     private int frameIndex;
     private float frameTimer;
     private Collider2D hitbox;
@@ -35,8 +36,9 @@ public class LayeredAttackFX : MonoBehaviour, IAttackFX
 
         SortingLayer_Auto attackerSorting = attacker.GetComponent<SortingLayer_Auto>();
         int baseOrder = attackerSorting != null ? attackerSorting.CurrentSortingOrder : 0;
+        frontBaseOrder = baseOrder + 1;
         if (frontRenderer != null)
-            frontRenderer.sortingOrder = baseOrder + 1;
+            frontRenderer.sortingOrder = frontBaseOrder;
         if (backRenderer != null)
             backRenderer.sortingOrder = baseOrder - 1;
 
@@ -78,6 +80,13 @@ public class LayeredAttackFX : MonoBehaviour, IAttackFX
             if (backRenderer != null && backFrames != null && frameIndex < backFrames.Length)
                 backRenderer.sprite = backFrames[frameIndex];
         }
+    }
+
+    // Keeps the front layer over any fxDrawsOver decor it currently overlaps.
+    void LateUpdate()
+    {
+        if (frontRenderer != null)
+            frontRenderer.sortingOrder = SortingLayer_Auto.RaiseOverFxUnderlays(frontBaseOrder, frontRenderer.bounds);
     }
 
     void OnTriggerEnter2D(Collider2D other)

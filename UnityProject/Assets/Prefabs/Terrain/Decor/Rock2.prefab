@@ -142,8 +142,8 @@ MonoBehaviour:
   sortingOffset: 0
   sortPivotOffset: {x: 0, y: 0, z: 0}
   fxDrawsOver: 1
---- !u!61 &3978603694561241822
-BoxCollider2D:
+--- !u!58 &3978603694561241822
+CircleCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -177,14 +177,4 @@ BoxCollider2D:
   m_CompositeOperation: 0
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: -0.15}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0, y: 0}
-    oldSize: {x: 0, y: 0}
-    newSize: {x: 0, y: 0}
-    adaptiveTilingThreshold: 0
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Size: {x: 0.67, y: 0.3}
-  m_EdgeRadius: 0
+  m_Radius: 0.242

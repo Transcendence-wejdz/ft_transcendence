@@ -22,14 +22,11 @@ public class ProceduralMapGeneratorEditor : Editor
     {
         new("References", "References",
             "landTilemap", "waterTilemap", "waterBackgroundTilemap", "coastFoamTilemap", "player"),
-        new("Generation", "Generation", "seed"),
+        new("Generation", "Generation", "seed", "seedSource"),
         new("ChunkStreaming", "Chunk Streaming",
             "chunkSize", "viewDistanceInChunks", "maxChunkGenerationsPerFrame"),
-        new("Biomes", "Biomes", "groundNoiseScale", "biomes"),
-        new("Water", "Water",
-            "waterNoiseScale", "waterThreshold", "waterTile", "waterBackgroundTile", "coastFoamTile"),
-        new("Island", "Island",
-            "islandRadius", "islandEdgeVariation", "islandEdgeNoiseScale", "decorCoastOffset"),
+        new("Biomes", "Biomes",
+            "groundNoiseScale", "groundNoiseOctaves", "groundNoisePersistence", "groundNoiseContrast", "biomes"),
         new("EditorPreview", "Editor Preview", "previewInEditor", "previewRadiusInChunks"),
     };
 

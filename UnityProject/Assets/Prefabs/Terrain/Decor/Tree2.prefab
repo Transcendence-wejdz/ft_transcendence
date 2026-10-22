@@ -150,8 +150,8 @@ Transform:
   - {fileID: 5490407511480047223}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!61 &7556114431103707331
-BoxCollider2D:
+--- !u!58 &7556114431103707331
+CircleCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -185,17 +185,7 @@ BoxCollider2D:
   m_CompositeOperation: 0
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0.3}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0, y: 0}
-    oldSize: {x: 0, y: 0}
-    newSize: {x: 0, y: 0}
-    adaptiveTilingThreshold: 0
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Size: {x: 0.6, y: 0.4}
-  m_EdgeRadius: 0
+  m_Radius: 0.2
 --- !u!114 &1873383164177547610
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -210,4 +200,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SortingLayer_Auto
   spriteRenderer: {fileID: 78416827784744582}
   sortingOffset: 0
-  sortPivotOffset: {x: 0, y: 0.2, z: 0}
+  sortPivotOffset: {x: 0, y: 0.29992622, z: 0}
+  fxDrawsOver: 0

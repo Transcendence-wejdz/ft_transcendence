@@ -236,6 +236,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SeaClouds
       objectReference: {fileID: 0}
+    - target: {fileID: 6136929481880951982, guid: d95ea394c3de6f8c5a1200a7583e466e, type: 3}
+      propertyPath: cloudCount
+      value: 20
+      objectReference: {fileID: 0}
     - target: {fileID: 7394030231172085167, guid: d95ea394c3de6f8c5a1200a7583e466e, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0

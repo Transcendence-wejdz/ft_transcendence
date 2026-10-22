@@ -305,6 +305,7 @@ MonoBehaviour:
   coastFoamTilemap: {fileID: 1764850520938813138}
   player: {fileID: 8664487228250979934, guid: 0c5fd484e0ae59378a6141dc3c220519, type: 3}
   seed: 1
+  seedSource: 2
   chunkSize: 16
   viewDistanceInChunks: 8
   maxChunkGenerationsPerFrame: 4
@@ -469,6 +470,51 @@ MonoBehaviour:
       density: 0.05
       noiseScale: 0.25
       noiseThreshold: 0.7
+    - prefab: {fileID: 3965439484568466488, guid: 7e6acfbaf3ef7ca388e16178ecc59c18, type: 3}
+      surface: 1
+      density: 0.1
+      noiseScale: 0.25
+      noiseThreshold: 0.6
+    - prefab: {fileID: 2097706737646764478, guid: f77a21673d4827165b46af6ec452728c, type: 3}
+      surface: 1
+      density: 0.1
+      noiseScale: 0.25
+      noiseThreshold: 0.6
+    - prefab: {fileID: 9175538198328060603, guid: ca6ef86f6dd2560b9af68659b5d3046c, type: 3}
+      surface: 1
+      density: 0.1
+      noiseScale: 0.25
+      noiseThreshold: 0.6
+    - prefab: {fileID: 931983565565048284, guid: 78763b22c9cc3fa25a210f0d8dae60da, type: 3}
+      surface: 1
+      density: 0.1
+      noiseScale: 0.25
+      noiseThreshold: 0.6
+  - name: Snow
+    groundTiles:
+    - {fileID: 11400000, guid: b6056022e00044b590ace7f77d39d546, type: 2}
+    spawnSafeRadius: 10
+    decor:
+    - prefab: {fileID: 5682110923380568844, guid: 83899a0550004ec3c8190a0e8261341c, type: 3}
+      surface: 0
+      density: 0.12
+      noiseScale: 0.18
+      noiseThreshold: 0.6
+    - prefab: {fileID: 8180021866609941328, guid: e57e560ea96187addaa992869673c5ba, type: 3}
+      surface: 0
+      density: 0.12
+      noiseScale: 0.18
+      noiseThreshold: 0.6
+    - prefab: {fileID: 6061384922041497983, guid: 8cf9d9201fbe09523872aaee4c89b5e5, type: 3}
+      surface: 0
+      density: 0.12
+      noiseScale: 0.18
+      noiseThreshold: 0.6
+    - prefab: {fileID: 636951289468101223, guid: 5822640d431382c44a687014b83e4a83, type: 3}
+      surface: 0
+      density: 0.12
+      noiseScale: 0.18
+      noiseThreshold: 0.6
     - prefab: {fileID: 3965439484568466488, guid: 7e6acfbaf3ef7ca388e16178ecc59c18, type: 3}
       surface: 1
       density: 0.1

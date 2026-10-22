@@ -28,20 +28,19 @@ public partial class Player
     public float ShieldMaxHealth => activeKit != null ? activeKit.ShieldHealth : 0f;
     public float ShieldFacingAngle => shieldFacingAngle.Value;
 
-    // Routed here from Ultimate() when activeKit.HasShield; press to raise, release to lower.
+    // Routed here from Ultimate() when activeKit.HasShield; a press raises it, a second press lowers it early (it also drops on its own when the hold timer or its HP runs out).
     private void UltimateShield(InputAction.CallbackContext ctx)
     {
-        if (!this.IsLocallyControlled())
+        if (!this.IsLocallyControlled() || !ctx.performed)
             return;
 
-        if (ctx.canceled)
+        if (isShieldActive.Value)
         {
-            if (isShieldActive.Value)
-                EndShield();
+            EndShield();
             return;
         }
 
-        if (!ctx.performed || !CanFight || isShieldActive.Value || Time.time < ultimateReadyTime)
+        if (!CanFight || Time.time < ultimateReadyTime)
             return;
         if (!TrySpendMana(activeKit.UltimateManaCost))
             return;
@@ -111,7 +110,7 @@ public partial class Player
     // Padding added on top of the shield's actual collider size for the push query only - the solid collider already stops enemies at its surface (touching, not overlapping), so an unpadded query of the same shape would never actually detect them.
     private const float PushQueryPadding = 0.8f;
 
-    // Knocks back any enemy near the shield's actual collider shape (read from its FX prefab) on the facing side - matches the physical wall instead of an abstract radius.
+    // Knocks back any enemy near the shield's actual collider shape (read from its FX prefab, scaled like the spawned FX) on the facing side - matches the physical wall instead of an abstract radius.
     private void ApplyPush(Vector2 center, float facingDegrees)
     {
         CapsuleCollider2D template = ShieldHitboxTemplate();
@@ -120,7 +119,7 @@ public partial class Player
 
         Vector2 facing = DirFromAngle(facingDegrees);
         Vector2 shieldCenter = center + facing * activeKit.UltimateFxDistance;
-        Vector2 querySize = template.size + new Vector2(PushQueryPadding, PushQueryPadding);
+        Vector2 querySize = ShieldWallSize(template) + new Vector2(PushQueryPadding, PushQueryPadding);
 
         ContactFilter2D filter = new ContactFilter2D { useTriggers = false };
         filter.SetLayerMask(EnemyLayerMask);
@@ -139,6 +138,14 @@ public partial class Player
             Vector2 pushDir = toEnemy.sqrMagnitude > 0.0001f ? toEnemy.normalized : facing;
             enemy.ApplyKnockback(pushDir * activeKit.ShieldKnockbackForce, activeKit.ShieldKnockbackDuration);
         }
+    }
+
+    // Same scale SpawnLocalFx applies to the FX: prefab scale x Ultimate Size x level-up size bonus.
+    private Vector2 ShieldWallSize(CapsuleCollider2D template)
+    {
+        Vector2 prefabScale = template.transform.lossyScale;
+        float size = activeKit.UltimateSize * SizeBonusMultiplier;
+        return new Vector2(template.size.x * Mathf.Abs(prefabScale.x), template.size.y * Mathf.Abs(prefabScale.y)) * size;
     }
 
     private CapsuleCollider2D ShieldHitboxTemplate()

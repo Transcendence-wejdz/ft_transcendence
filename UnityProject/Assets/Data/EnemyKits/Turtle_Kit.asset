@@ -16,8 +16,11 @@ MonoBehaviour:
   maxHealth: 180
   xpReward: 25
   moveSpeed: 1.2
-  attackRange: 1.9
+  attackShape: 1
+  attackRange: 2
   attackAngle: 90
+  attackWidth: 1.5
+  attackOrigin: {x: 0.35, y: 0}
   damage: 14
   attackCooldown: 1.4
   attackHitDelay: 0.6
@@ -26,8 +29,8 @@ MonoBehaviour:
   hitRangeTolerance: 1.25
   isRanged: 0
   projectilePrefab: {fileID: 0}
-  projectileFrames: []
-  projectileFrameRate: 16
+  projectileSpeed: 12
+  projectileMaxDistance: 8
   projectileArcHeight: 0.8
   retargetInterval: 0.25
   steerInterval: 0.1

@@ -1,30 +1,39 @@
 using System.Collections;
 using UnityEngine;
 
-// Red ground warning shown during an enemy's attack windup; procedurally drawn as a wedge matching the actual hit check.
+// Ground warning shown during an attack windup: outlines the exact hit zone and sweeps a fill out to its edge, reaching it when the hit lands.
 public class AttackTelegraph : MonoBehaviour
 {
-    private const int Segments = 20;
+    private const int ArcSegments = 32;
+    private const int CircleSegments = 64;
     private const string GroundSortingLayer = "Ground";
-    private const float FadeInFraction = 0.25f;
-    private const float PulseAmplitude = 0.12f;
-    private const float PulseSpeed = 14f;
-    private static readonly Color FillColor = new Color(1f, 0.15f, 0.1f, 0.32f);
-    private static readonly Color EdgeColor = new Color(1f, 0.2f, 0.15f, 0.9f);
+    private const float FadeInSeconds = 0.08f;
+    private const float FlashSeconds = 0.15f;
+
+    private static readonly int ShapeId = Shader.PropertyToID("_Shape");
+    private static readonly int ProgressId = Shader.PropertyToID("_Progress");
+    private static readonly int FlashId = Shader.PropertyToID("_Flash");
+    private static readonly int AlphaId = Shader.PropertyToID("_Alpha");
 
     private static Material cachedMaterial;
 
     private MeshRenderer meshRenderer;
-    private MeshFilter meshFilter;
-    private Color[] baseColors;
+    private MaterialPropertyBlock block;
 
-    // Parented to the enemy (if given) so it tracks any drift during the windup, instead of staying frozen in world space.
+    // Parented to the attacker (if given) so it tracks any drift during the windup, instead of staying frozen in world space.
     public static void Show(Transform anchor, Vector3 position, Vector2 direction, float coneAngleDegrees, float radius, float duration)
     {
         if (radius <= 0f || duration <= 0f || direction.sqrMagnitude < 0.0001f)
             return;
 
-        Spawn(anchor, position, BuildWedgeMesh(direction, coneAngleDegrees, radius, out Color[] colors), colors, duration);
+        if (coneAngleDegrees >= 359f)
+        {
+            Spawn(anchor, position, Vector2.right, BuildFanMesh(radius, 360f, CircleSegments), new Vector4(2f, radius, 0f, 0f), duration);
+            return;
+        }
+
+        float halfAngle = coneAngleDegrees * 0.5f * Mathf.Deg2Rad;
+        Spawn(anchor, position, direction, BuildFanMesh(radius, coneAngleDegrees, ArcSegments), new Vector4(0f, radius, halfAngle, 0f), duration);
     }
 
     // Straight lane from position along direction, e.g. a boss charge path.
@@ -33,112 +42,112 @@ public class AttackTelegraph : MonoBehaviour
         if (length <= 0f || width <= 0f || duration <= 0f || direction.sqrMagnitude < 0.0001f)
             return;
 
-        Spawn(anchor, position, BuildLaneMesh(direction.normalized, length, width, out Color[] colors), colors, duration);
+        Spawn(anchor, position, direction, BuildLaneMesh(length, width), new Vector4(1f, length, width * 0.5f, 0f), duration);
     }
 
-    private static void Spawn(Transform anchor, Vector3 position, Mesh mesh, Color[] colors, float duration)
+    // The mesh is built pointing along +x and the object is rotated, so the shader reads the shape straight from local space.
+    private static void Spawn(Transform anchor, Vector3 position, Vector2 direction, Mesh mesh, Vector4 shape, float duration)
     {
+        Material material = GetMaterial();
+        if (material == null)
+            return;
+
         var go = new GameObject("AttackTelegraph", typeof(MeshFilter), typeof(MeshRenderer));
-        go.transform.position = position;
+        go.transform.SetPositionAndRotation(position, Quaternion.Euler(0f, 0f, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg));
         if (anchor != null)
             go.transform.SetParent(anchor, worldPositionStays: true);
 
         AttackTelegraph telegraph = go.AddComponent<AttackTelegraph>();
-        telegraph.Init(mesh, colors, duration);
+        telegraph.Init(mesh, material, shape, duration);
     }
 
-    private void Init(Mesh mesh, Color[] colors, float duration)
+    private void Init(Mesh mesh, Material material, Vector4 shape, float duration)
     {
-        meshFilter = GetComponent<MeshFilter>();
+        GetComponent<MeshFilter>().mesh = mesh;
         meshRenderer = GetComponent<MeshRenderer>();
-        meshRenderer.material = GetOrBuildMaterial();
+        meshRenderer.sharedMaterial = material;
         meshRenderer.sortingLayerName = GroundSortingLayer;
 
-        meshFilter.mesh = mesh;
-        baseColors = colors;
+        block = new MaterialPropertyBlock();
+        block.SetVector(ShapeId, shape);
+        Apply(0f, 0f, 0f);
         StartCoroutine(Animate(duration));
     }
 
+    // Fill sweeps over the windup, then a short flash marks the moment the hit lands.
     private IEnumerator Animate(float duration)
     {
-        Mesh mesh = meshFilter.mesh;
-        Color[] colors = new Color[baseColors.Length];
-        float fadeInDuration = duration * FadeInFraction;
         float t = 0f;
         while (t < duration)
         {
             t += Time.deltaTime;
-            float fadeIn = fadeInDuration > 0f ? Mathf.Clamp01(t / fadeInDuration) : 1f;
-            float pulse = 1f + Mathf.Sin(t * PulseSpeed) * PulseAmplitude;
-            float alphaMul = fadeIn * pulse;
-            for (int i = 0; i < colors.Length; i++)
-            {
-                Color baseColor = baseColors[i];
-                colors[i] = new Color(baseColor.r, baseColor.g, baseColor.b, baseColor.a * alphaMul);
-            }
-            mesh.colors = colors;
+            Apply(Mathf.Clamp01(t / duration), 0f, Mathf.Clamp01(t / FadeInSeconds));
             yield return null;
         }
+
+        float flash = 0f;
+        while (flash < FlashSeconds)
+        {
+            flash += Time.deltaTime;
+            float k = Mathf.Clamp01(flash / FlashSeconds);
+            Apply(1f, 1f - k * 0.5f, 1f - k);
+            yield return null;
+        }
+
+        Destroy(GetComponent<MeshFilter>().mesh);
         Destroy(gameObject);
     }
 
-    // Apex at the enemy's position, fanning out to an arc at radius - the same wedge ResolveHit checks against.
-    private static Mesh BuildWedgeMesh(Vector2 direction, float coneAngleDegrees, float radius, out Color[] colors)
+    private void Apply(float progress, float flash, float alpha)
     {
-        float halfAngleRad = coneAngleDegrees * 0.5f * Mathf.Deg2Rad;
-        float centerAngleRad = Mathf.Atan2(direction.y, direction.x);
+        block.SetFloat(ProgressId, progress);
+        block.SetFloat(FlashId, flash);
+        block.SetFloat(AlphaId, alpha);
+        meshRenderer.SetPropertyBlock(block);
+    }
 
-        var vertices = new Vector3[Segments + 2];
-        colors = new Color[Segments + 2];
+    // Fan from the origin out to an arc of the given angle, centered on +x.
+    private static Mesh BuildFanMesh(float radius, float angleDegrees, int segments)
+    {
+        float halfAngle = angleDegrees * 0.5f * Mathf.Deg2Rad;
+        var vertices = new Vector3[segments + 2];
         vertices[0] = Vector3.zero;
-        colors[0] = FillColor;
-
-        for (int i = 0; i <= Segments; i++)
+        for (int i = 0; i <= segments; i++)
         {
-            float lerp = (float)i / Segments;
-            float angle = centerAngleRad - halfAngleRad + lerp * (2f * halfAngleRad);
+            float angle = -halfAngle + (float)i / segments * 2f * halfAngle;
             vertices[i + 1] = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * radius;
-            colors[i + 1] = EdgeColor;
         }
 
-        var triangles = new int[Segments * 3];
-        for (int i = 0; i < Segments; i++)
+        var triangles = new int[segments * 3];
+        for (int i = 0; i < segments; i++)
         {
             triangles[i * 3] = 0;
             triangles[i * 3 + 1] = i + 1;
             triangles[i * 3 + 2] = i + 2;
         }
 
-        var mesh = new Mesh { name = "AttackTelegraphWedge" };
+        var mesh = new Mesh { name = "AttackTelegraphFan" };
         mesh.SetVertices(vertices);
         mesh.SetTriangles(triangles, 0);
-        mesh.SetColors(colors);
         mesh.RecalculateBounds();
         return mesh;
     }
 
-    // Rectangle with a faint start edge and a strong far edge, matching the boss charge hit lane.
-    private static Mesh BuildLaneMesh(Vector2 direction, float length, float width, out Color[] colors)
+    private static Mesh BuildLaneMesh(float length, float width)
     {
-        Vector3 forward = direction * length;
-        Vector3 side = new Vector3(-direction.y, direction.x, 0f) * (width * 0.5f);
-        var vertices = new[] { -side, side, forward + side, forward - side };
-        colors = new[] { FillColor, FillColor, EdgeColor, EdgeColor };
-
+        float halfWidth = width * 0.5f;
         var mesh = new Mesh { name = "AttackTelegraphLane" };
-        mesh.SetVertices(vertices);
+        mesh.SetVertices(new[] { new Vector3(0f, -halfWidth, 0f), new Vector3(0f, halfWidth, 0f), new Vector3(length, halfWidth, 0f), new Vector3(length, -halfWidth, 0f) });
         mesh.SetTriangles(new[] { 0, 1, 2, 0, 2, 3 }, 0);
-        mesh.SetColors(colors);
         mesh.RecalculateBounds();
         return mesh;
     }
 
-    private static Material GetOrBuildMaterial()
+    // Lives in Resources so the shader ships in builds.
+    private static Material GetMaterial()
     {
-        if (cachedMaterial != null)
-            return cachedMaterial;
-
-        cachedMaterial = new Material(Shader.Find("Sprites/Default"));
+        if (cachedMaterial == null)
+            cachedMaterial = Resources.Load<Material>("Materials/AttackTelegraph");
         return cachedMaterial;
     }
 }

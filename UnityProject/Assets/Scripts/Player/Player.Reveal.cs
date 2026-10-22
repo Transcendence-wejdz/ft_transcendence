@@ -43,5 +43,6 @@ public partial class Player
 
         foreach (RevealOccluder occluder in RevealOccluder.Active)
             occluder.SetTarget(revealRadius > 0f && occluder.Covers(center, layer, order), revealSpeed);
+        RevealOccluder.TickAll(Time.deltaTime);
     }
 }

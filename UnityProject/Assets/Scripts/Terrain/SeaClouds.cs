@@ -27,6 +27,7 @@ public class SeaClouds : MonoBehaviour
     private Transform[] clouds;
     private SpriteRenderer[] renderers;
     private float[] speeds;
+    private float[] alphas;
 
     void Start()
     {
@@ -43,6 +44,7 @@ public class SeaClouds : MonoBehaviour
         clouds = new Transform[cloudCount];
         renderers = new SpriteRenderer[cloudCount];
         speeds = new float[cloudCount];
+        alphas = new float[cloudCount];
         Rect area = GetArea();
 
         for (int i = 0; i < cloudCount; i++)
@@ -58,7 +60,11 @@ public class SeaClouds : MonoBehaviour
             Restyle(i);
             clouds[i].position = new Vector3(Random.Range(area.xMin, area.xMax), Random.Range(area.yMin, area.yMax), 0f);
             if (revealPlayer)
-                cloud.AddComponent<RevealOccluder>().AlwaysInFront = true;
+            {
+                RevealOccluder occluder = cloud.AddComponent<RevealOccluder>();
+                occluder.AlwaysInFront = true;
+                occluder.Moves = true;
+            }
         }
     }
 
@@ -82,7 +88,11 @@ public class SeaClouds : MonoBehaviour
 
             float edgeDistance = Mathf.Min(pos.x - area.xMin, area.xMax - pos.x, pos.y - area.yMin, area.yMax - pos.y);
             float alpha = opacity * (edgeFade > 0f ? Mathf.Clamp01(edgeDistance / edgeFade) : 1f);
-            renderers[i].color = new Color(1f, 1f, 1f, alpha);
+            if (Mathf.Abs(alpha - alphas[i]) > 0.004f)
+            {
+                alphas[i] = alpha;
+                renderers[i].color = new Color(1f, 1f, 1f, alpha);
+            }
         }
     }
 
@@ -103,6 +113,7 @@ public class SeaClouds : MonoBehaviour
     {
         renderers[i].sprite = cloudSprites[Random.Range(0, cloudSprites.Length)];
         renderers[i].color = new Color(1f, 1f, 1f, opacity);
+        alphas[i] = opacity;
         renderers[i].flipX = Random.value < 0.5f;
         clouds[i].localScale = Vector3.one * Random.Range(scaleRange.x, scaleRange.y);
         speeds[i] = Random.Range(speedRange.x, speedRange.y);

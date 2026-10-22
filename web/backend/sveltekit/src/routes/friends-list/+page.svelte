@@ -1,0 +1,441 @@
+<script lang="ts">
+    type Friend = {
+        id: string;
+        displayName: string;
+        color: string;
+        online: boolean;
+    };
+
+    type FriendRequest = {
+        id: string;
+        displayName: string;
+        color: string;
+    };
+
+    let search = $state('');
+    let identifier = $state('');
+    let error = $state('');
+    let loading = $state(false);
+
+    let friends = $state<Friend[]>([]);
+    let requests = $state<FriendRequest[]>([]);
+
+    const filteredFriends = $derived(
+        friends.filter((friend) =>
+            friend.displayName.toLowerCase().includes(search.toLowerCase())
+        )
+    );
+
+    function acceptRequest(id: string) {
+        const request = requests.find((item) => item.id === id);
+        if (!request) return;
+
+        friends.push({
+            ...request,
+            online: false
+        });
+
+        requests = requests.filter((item) => item.id !== id);
+    }
+
+    function declineRequest(id: string) {
+        requests = requests.filter((item) => item.id !== id);
+    }
+
+    async function sendRequest(event: SubmitEvent) {
+        event.preventDefault();
+        error = '';
+
+        const name = identifier.trim();
+
+        if (!name) {
+            error = 'Enter a display name.';
+            return;
+        }
+
+        // Temporary UI behavior: the API will be added later.
+        error = 'Friend requests are not connected to the server yet.';
+    }
+</script>
+
+<svelte:head>
+    <title>Friends</title>
+    <meta
+        name="description"
+        content="Manage your friends and friendship requests."
+    />
+</svelte:head>
+
+<section class="friends-page">
+    <header class="page-header">
+        <p class="eyebrow">YOUR COMMUNITY</p>
+        <h1>Friends</h1>
+        <p class="description">
+            Find your allies, manage requests, and get ready for your next match.
+        </p>
+    </header>
+
+    <section class="panel">
+        <div class="section-heading">
+            <div>
+                <h2>Your friends</h2>
+                <p class="section-description">
+                    {friends.length} {friends.length === 1 ? 'friend' : 'friends'}
+                </p>
+            </div>
+        </div>
+
+        <label for="friend-search">Search friends</label>
+        <input
+            id="friend-search"
+            type="search"
+            bind:value={search}
+            placeholder="Search by display name..."
+        />
+
+        {#if filteredFriends.length > 0}
+            <ul class="friend-list">
+                {#each filteredFriends as friend (friend.id)}
+                    <li class="friend-item">
+                        <div
+                            class="avatar"
+                            style={`--avatar-color: ${friend.color}`}
+                            aria-hidden="true"
+                        >
+                            {friend.displayName.charAt(0).toUpperCase()}
+                        </div>
+
+                        <div class="friend-info">
+                            <span class="friend-name">{friend.displayName}</span>
+                            <span class:online={friend.online} class="friend-status">
+                                <span class="status-dot"></span>
+                                {friend.online ? 'Online' : 'Offline'}
+                            </span>
+                        </div>
+
+                        <button
+                            class="button secondary"
+                            type="button"
+                            onclick={() => {
+                                friends = friends.filter(
+                                    (item) => item.id !== friend.id
+                                );
+                            }}
+                        >
+                            Remove
+                        </button>
+                    </li>
+                {/each}
+            </ul>
+        {:else}
+            <p class="empty-state">
+                {search ? 'No friends match your search.' : 'Your friend list is empty.'}
+            </p>
+        {/if}
+    </section>
+
+    <section class="panel">
+        <div class="section-heading">
+            <div>
+                <h2>Friend requests</h2>
+                <p class="section-description">
+                    {requests.length} pending
+                </p>
+            </div>
+        </div>
+
+        {#if requests.length > 0}
+            <ul class="friend-list">
+                {#each requests as request (request.id)}
+                    <li class="friend-item">
+                        <div
+                            class="avatar"
+                            style={`--avatar-color: ${request.color}`}
+                            aria-hidden="true"
+                        >
+                            {request.displayName.charAt(0).toUpperCase()}
+                        </div>
+
+                        <div class="friend-info">
+                            <span class="friend-name">{request.displayName}</span>
+                            <span class="friend-status">Wants to be your friend</span>
+                        </div>
+
+                        <div class="request-actions">
+                            <button
+                                class="button"
+                                type="button"
+                                onclick={() => acceptRequest(request.id)}
+                            >
+                                Accept
+                            </button>
+                            <button
+                                class="button secondary"
+                                type="button"
+                                onclick={() => declineRequest(request.id)}
+                            >
+                                Decline
+                            </button>
+                        </div>
+                    </li>
+                {/each}
+            </ul>
+        {:else}
+            <p class="empty-state">No pending friend requests.</p>
+        {/if}
+    </section>
+
+    <section class="panel">
+        <h2>Add a friend</h2>
+        <p class="section-description">
+            Enter the display name of the player you want to add.
+        </p>
+
+        <form onsubmit={sendRequest}>
+            <label for="friend-identifier">Display name</label>
+            <input
+                id="friend-identifier"
+                type="text"
+                bind:value={identifier}
+                placeholder="Enter a player's name"
+                autocomplete="off"
+                required
+            />
+
+            {#if error}
+                <p class="error" role="alert">{error}</p>
+            {/if}
+
+            <button class="button" type="submit" disabled={loading}>
+                {loading ? 'Sending request...' : 'Send friend request'}
+            </button>
+        </form>
+    </section>
+</section>
+
+<style>
+    .friends-page {
+        width: min(100% - 2rem, 760px);
+        margin: 2rem auto 4rem;
+    }
+
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .eyebrow {
+        margin: 0 0 0.65rem;
+        color: #f5b85c;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.15em;
+    }
+
+    h1 {
+        margin: 0;
+        font-size: clamp(2.2rem, 8vw, 3rem);
+        letter-spacing: -0.05em;
+    }
+
+    h2 {
+        margin: 0;
+        font-size: 1.2rem;
+    }
+
+    .description,
+    .section-description {
+        color: #aeb8d3;
+        line-height: 1.6;
+    }
+
+    .description {
+        margin: 0.55rem 0 0;
+    }
+
+    .section-description {
+        margin: 0.25rem 0 0;
+        font-size: 0.88rem;
+    }
+
+    .panel {
+        margin-bottom: 1.25rem;
+        padding: clamp(1.1rem, 4vw, 1.6rem);
+        border: 1px solid rgba(189, 204, 242, 0.13);
+        border-radius: 1.25rem;
+        background: linear-gradient(
+            145deg,
+            rgba(29, 37, 65, 0.92),
+            rgba(19, 24, 43, 0.92)
+        );
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.15);
+    }
+
+    .section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    label {
+        display: block;
+        margin: 0.5rem 0;
+        color: #d6def3;
+        font-size: 0.88rem;
+        font-weight: 650;
+    }
+
+    input {
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 3rem;
+        padding: 0.8rem 0.9rem;
+        border: 1px solid rgba(189, 204, 242, 0.18);
+        border-radius: 0.65rem;
+        outline: none;
+        color: #f3f5ff;
+        background: rgba(9, 13, 27, 0.55);
+    }
+
+    input:focus {
+        border-color: #f5b85c;
+        box-shadow: 0 0 0 3px rgba(245, 184, 92, 0.13);
+    }
+
+    input::placeholder {
+        color: #737f9c;
+    }
+
+    .friend-list {
+        display: grid;
+        gap: 0.75rem;
+        margin: 1rem 0 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .friend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        min-width: 0;
+        padding: 0.85rem;
+        border: 1px solid rgba(189, 204, 242, 0.09);
+        border-radius: 0.85rem;
+        background: rgba(9, 13, 27, 0.3);
+    }
+
+    .avatar {
+        display: grid;
+        flex: 0 0 2.8rem;
+        width: 2.8rem;
+        height: 2.8rem;
+        place-items: center;
+        border: 1px solid var(--avatar-color);
+        border-radius: 50%;
+        color: var(--avatar-color);
+        background: color-mix(in srgb, var(--avatar-color) 15%, transparent);
+        font-weight: 800;
+    }
+
+    .friend-info {
+        display: grid;
+        flex: 1;
+        gap: 0.3rem;
+        min-width: 0;
+    }
+
+    .friend-name {
+        overflow-wrap: anywhere;
+        color: #f3f5ff;
+        font-weight: 650;
+    }
+
+    .friend-status {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: #8994b0;
+        font-size: 0.8rem;
+    }
+
+    .friend-status.online {
+        color: #91d7a5;
+    }
+
+    .status-dot {
+        width: 0.45rem;
+        height: 0.45rem;
+        border-radius: 50%;
+        background: currentColor;
+    }
+
+    .request-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+    }
+
+    .button {
+        min-height: 2.5rem;
+        padding: 0.6rem 0.9rem;
+        border: 1px solid #f5b85c;
+        border-radius: 0.65rem;
+        color: #171b2a;
+        background: #f5b85c;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .button.secondary {
+        border-color: rgba(189, 204, 242, 0.2);
+        color: #d6def3;
+        background: rgba(9, 13, 27, 0.4);
+    }
+
+    .button:hover:not(:disabled) {
+        filter: brightness(1.08);
+    }
+
+    .button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    form {
+        display: grid;
+        gap: 0.7rem;
+        margin-top: 1rem;
+    }
+
+    form label {
+        margin-bottom: 0;
+    }
+
+    .empty-state {
+        margin: 1rem 0 0;
+        padding: 1rem;
+        border: 1px dashed rgba(189, 204, 242, 0.16);
+        border-radius: 0.75rem;
+        color: #aeb8d3;
+        text-align: center;
+    }
+
+    .error {
+        margin: 0.25rem 0;
+        color: #ff9eaa;
+        font-size: 0.9rem;
+    }
+
+    @media (max-width: 520px) {
+        .friend-item {
+            flex-wrap: wrap;
+        }
+
+        .request-actions {
+            width: 100%;
+            padding-left: 3.65rem;
+        }
+    }
+</style>

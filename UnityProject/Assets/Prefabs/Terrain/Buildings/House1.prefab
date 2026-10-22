@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 4167668755485882974}
   - component: {fileID: 7759458390550834308}
   - component: {fileID: 8622925284854015101}
+  - component: {fileID: 5352004317820057792}
   m_Layer: 0
   m_Name: House1
   m_TagString: Untagged
@@ -155,3 +156,16 @@ MonoBehaviour:
   spriteRenderer: {fileID: 4167668755485882974}
   sortingOffset: 0
   sortPivotOffset: {x: 0, y: -1, z: 0}
+  fxDrawsOver: 0
+--- !u!114 &5352004317820057792
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4722301006849064978}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62b3f53c378aa9c24b95a797c56cd225, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RevealOccluder

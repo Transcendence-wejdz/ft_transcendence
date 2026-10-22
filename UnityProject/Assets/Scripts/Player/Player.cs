@@ -104,5 +104,6 @@ public partial class Player : NetworkBehaviour, IDamageable
     {
         LateUpdateMount();
         LateUpdateMountSorting();
+        LateUpdateReveal();
     }
 }

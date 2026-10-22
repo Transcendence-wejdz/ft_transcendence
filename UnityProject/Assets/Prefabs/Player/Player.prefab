@@ -706,7 +706,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3713705290
+  GlobalObjectIdHash: 1691225531
   InScenePlacedSourceGlobalObjectIdHash: 1691225531
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -998,6 +998,11 @@ MonoBehaviour:
   pigScale: 1.5
   transformFxPrefab: {fileID: -2253911629886400664, guid: 9ab4d137f132008c899723fb836e3080, type: 3}
   transformFxOffset: {x: 0, y: -1.1}
+  revealRadius: 0.8
+  revealAlpha: 0.3
+  revealSoftness: 0.4
+  revealPixelsPerUnit: 128
+  revealSpeed: 6
 --- !u!1 &2971884042829530053
 GameObject:
   m_ObjectHideFlags: 0

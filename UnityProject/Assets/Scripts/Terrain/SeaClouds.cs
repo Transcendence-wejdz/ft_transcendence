@@ -17,6 +17,8 @@ public class SeaClouds : MonoBehaviour
     [Range(0f, 30f)]
     [Tooltip("Clouds fade out over this distance before reaching the area edge, so the wrap to the other side is invisible.")]
     [SerializeField] private float edgeFade = 8f;
+    [Tooltip("Clouds turn see-through around the local player when they cover them.")]
+    [SerializeField] private bool revealPlayer = true;
     [SerializeField] private string sortingLayer = "Sky";
     [SerializeField] private int sortingOrder;
     [Tooltip("Leave empty for the default sprite material.")]
@@ -55,6 +57,8 @@ public class SeaClouds : MonoBehaviour
                 renderers[i].sharedMaterial = cloudMaterial;
             Restyle(i);
             clouds[i].position = new Vector3(Random.Range(area.xMin, area.xMax), Random.Range(area.yMin, area.yMax), 0f);
+            if (revealPlayer)
+                cloud.AddComponent<RevealOccluder>().AlwaysInFront = true;
         }
     }
 

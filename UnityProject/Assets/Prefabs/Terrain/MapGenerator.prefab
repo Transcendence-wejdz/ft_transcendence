@@ -100,7 +100,7 @@ TilemapRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 2100000, guid: 27d3caf10cc769f18961f1e675ea053b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -721,34 +721,45 @@ MonoBehaviour:
   waterBackgroundTilemap: {fileID: 2018492521597931657}
   coastFoamTilemap: {fileID: 7727905884122412025}
   player: {fileID: 0}
+  seed: 10
   chunkSize: 16
   viewDistanceInChunks: 2
   maxChunkGenerationsPerFrame: 2
-  seed: 10
   groundNoiseScale: 0.1
   biomes:
   - name: Biome 1
     groundTiles:
     - {fileID: 11400000, guid: fe10effbe23c4a03ac99d50817ef8a7d, type: 2}
+    spawnSafeRadius: 5
     decor: []
   - name: Biome 2
     groundTiles:
     - {fileID: 11400000, guid: 087f48f83ae844658f373a68cbc2256e, type: 2}
+    spawnSafeRadius: 5
     decor: []
   - name: Biome 3
     groundTiles:
     - {fileID: 11400000, guid: 0f1a7ca835a84090a60ff084f76602d9, type: 2}
+    spawnSafeRadius: 5
     decor: []
   - name: Biome 4
     groundTiles:
     - {fileID: 11400000, guid: 55c1b6c41d3b47ae987f15689eceeae2, type: 2}
+    spawnSafeRadius: 5
     decor: []
   - name: Biome 5
     groundTiles:
     - {fileID: 11400000, guid: c963d9d33e034fdebc5abd2991de4403, type: 2}
+    spawnSafeRadius: 5
     decor: []
   waterNoiseScale: 0.1
   waterThreshold: 0.3
   waterTile: {fileID: 11400000, guid: da1f07ab417c38a8fbaf4b560b7cebc8, type: 2}
   waterBackgroundTile: {fileID: 11400000, guid: f02d7af0d5b224b25b5e1980817b96b6, type: 2}
   coastFoamTile: {fileID: 11400000, guid: d2462fe4b13543caa3c538201f70cebe, type: 2}
+  islandRadius: 0
+  islandEdgeVariation: 0.15
+  islandEdgeNoiseScale: 0.05
+  decorCoastOffset: 3
+  previewInEditor: 0
+  previewRadiusInChunks: 4

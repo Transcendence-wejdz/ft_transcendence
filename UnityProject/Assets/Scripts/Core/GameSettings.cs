@@ -8,6 +8,10 @@ public static class GameSettings
     private const string ShowDamageNumbersKey = "Settings.ShowDamageNumbers";
     private const string ShowFpsKey = "Settings.ShowFps";
     private const string ShowPingKey = "Settings.ShowPing";
+    private const string GraphicsQualityKey = "Settings.GraphicsQuality";
+    private const string HdrEnabledKey = "Settings.HdrEnabled";
+
+    public static readonly string[] GraphicsQualityNames = { "Low", "Medium", "High", "Ultra" };
 
     public static event System.Action OnChanged;
 
@@ -61,6 +65,31 @@ public static class GameSettings
         set
         {
             PlayerPrefs.SetInt(ShowPingKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            OnChanged?.Invoke();
+        }
+    }
+
+    // Browsers pay a lot more per pixel, so WebGL starts on High without HDR and everything else on Ultra with HDR.
+    private static bool IsWebGL => Application.platform == RuntimePlatform.WebGLPlayer;
+
+    public static int GraphicsQuality
+    {
+        get => Mathf.Clamp(PlayerPrefs.GetInt(GraphicsQualityKey, IsWebGL ? 2 : 3), 0, GraphicsQualityNames.Length - 1);
+        set
+        {
+            PlayerPrefs.SetInt(GraphicsQualityKey, Mathf.Clamp(value, 0, GraphicsQualityNames.Length - 1));
+            PlayerPrefs.Save();
+            OnChanged?.Invoke();
+        }
+    }
+
+    public static bool HdrEnabled
+    {
+        get => PlayerPrefs.GetInt(HdrEnabledKey, IsWebGL ? 0 : 1) != 0;
+        set
+        {
+            PlayerPrefs.SetInt(HdrEnabledKey, value ? 1 : 0);
             PlayerPrefs.Save();
             OnChanged?.Invoke();
         }

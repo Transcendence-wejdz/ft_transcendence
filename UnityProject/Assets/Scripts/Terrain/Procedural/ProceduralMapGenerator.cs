@@ -27,6 +27,8 @@ public partial class ProceduralMapGenerator : MonoBehaviour, ISerializationCallb
     [Range(1, 16)]
     [Tooltip("Max newly-needed chunks generated per frame after the initial load, to spread bursts across frames.")]
     [SerializeField] private int maxChunkGenerationsPerFrame = 2;
+    [Tooltip("Island maps only: generate the whole island plus a camera-wide ring of ocean once at start, then never stream chunks again (no hitches when crossing chunk borders).")]
+    [SerializeField] private bool loadWholeIsland = true;
 
     [Header("Biomes")]
     [PowerRange(0.005f, 0.5f, 2f)]
@@ -320,6 +322,16 @@ public partial class ProceduralMapGenerator : MonoBehaviour, ISerializationCallb
         if (!TryInitialize())
             return;
 
+        if (loadWholeIsland && Island.radius > 0f)
+        {
+            if (!hasGeneratedOnce)
+            {
+                hasGeneratedOnce = true;
+                GenerateWholeIsland();
+            }
+            return;
+        }
+
         Vector2Int playerChunk = WorldToChunk(GetTrackedPlayer().position);
         bool firstRun = !hasGeneratedOnce;
 
@@ -358,6 +370,36 @@ public partial class ProceduralMapGenerator : MonoBehaviour, ISerializationCallb
             UnloadChunk(chunk);
             return true;
         });
+    }
+
+    // One-shot load of every chunk the island (and the ocean the camera can see past its coast) can ever need.
+    private void GenerateWholeIsland()
+    {
+        int radius = IslandChunkRadius() + CameraChunkMargin();
+        Vector2Int center = WorldToChunk(transform.position);
+        for (int y = -radius; y <= radius; y++)
+        {
+            for (int x = -radius; x <= radius; x++)
+            {
+                Vector2Int chunk = center + new Vector2Int(x, y);
+                if (loadedChunks.Add(chunk))
+                    GenerateChunk(chunk);
+            }
+        }
+    }
+
+    // Chunks from the generator to the farthest possible coastline plus the decor coast offset.
+    private int IslandChunkRadius()
+    {
+        IslandSettings island = Island;
+        return Mathf.CeilToInt((island.radius * (1f + island.edgeVariation) + Mathf.Max(0f, island.decorCoastOffset)) / chunkSize) + 1;
+    }
+
+    // Half the camera view in chunks, so the ocean never ends on screen while standing on the coast.
+    private int CameraChunkMargin()
+    {
+        int withBuffer = ComputeEffectiveViewDistance();
+        return Camera.main != null ? Mathf.Max(1, withBuffer - viewDistanceInChunks) : 2;
     }
 
     // Generates up to budget queued chunks, dropping ones no longer desired.

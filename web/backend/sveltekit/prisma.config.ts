@@ -4,7 +4,7 @@ import { defineConfig } from 'prisma/config';
 dotenv.config({ path: '../../.env' });
 
 const databaseUrl = process.env.DATABASE_URL ?? (() => {
-	const url = new URL(`postgresql://${process.env.POSTGRES_HOST || 'db'}:${process.env.POSTGRES_PORT || 5432}`);
+	const url = new URL(`postgresql://${process.env.POSTGRES_HOST || 'db'}:${process.env.POSTGRES_PORT || 4443}`);
 	url.username = process.env.POSTGRES_USER || '';
 	url.password = process.env.POSTGRES_PASSWORD || '';
 	url.pathname = `/${process.env.POSTGRES_DB || ''}`;

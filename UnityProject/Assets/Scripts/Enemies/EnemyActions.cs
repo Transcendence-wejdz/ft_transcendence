@@ -73,13 +73,7 @@ public class EnemyActions : NetworkBehaviour
         if (kit.IsRanged || swingTarget == null || swingTarget.IsDead)
             return;
 
-        Vector2 toVictim = EnemyAI.TargetCenter(swingTarget) - ai.BodyCenter;
-        float reach = kit.AttackRange * kit.HitRangeTolerance;
-        if (toVictim.sqrMagnitude > reach * reach)
-            return;
-
-        Vector2 swingDirection = SwingDirection();
-        if (Vector2.Angle(swingDirection, toVictim) > kit.AttackAngle * 0.5f)
+        if (!kit.HitZoneContains(ai.BodyCenter, SwingDirection(), EnemyAI.TargetCenter(swingTarget)))
             return;
 
         if (Player.TryAbsorbWithShield(ai.BodyCenter, EnemyAI.TargetCenter(swingTarget), kit.Damage))
@@ -107,6 +101,6 @@ public class EnemyActions : NetworkBehaviour
             return;
         }
 
-        AttackTelegraph.Show(transform, ai.BodyCenter, direction, kit.AttackAngle, kit.AttackRange * kit.HitRangeTolerance, kit.AttackHitDelay);
+        kit.ShowTelegraph(transform, ai.BodyCenter, direction, kit.AttackHitDelay);
     }
 }

@@ -5,6 +5,7 @@ using UnityEngine;
 public class RevealOccluder : MonoBehaviour
 {
     public static readonly List<RevealOccluder> Active = new List<RevealOccluder>();
+    private static readonly List<RevealOccluder> Animating = new List<RevealOccluder>();
 
     private static readonly int RevealOpenId = Shader.PropertyToID("_RevealOpen");
     private static Material litRevealMaterial;
@@ -13,6 +14,8 @@ public class RevealOccluder : MonoBehaviour
 
     [Tooltip("Ignore sorting and reveal whenever it covers the player, for sprites drawn on a layer above everything (e.g. Sky clouds).")]
     [SerializeField] private bool alwaysInFront;
+    [Tooltip("Recompute the covered area every frame, for occluders that move (e.g. drifting clouds); static decor computes it once.")]
+    [SerializeField] private bool moves;
 
     public bool AlwaysInFront
     {
@@ -20,13 +23,22 @@ public class RevealOccluder : MonoBehaviour
         set => alwaysInFront = value;
     }
 
+    public bool Moves
+    {
+        get => moves;
+        set => moves = value;
+    }
+
     private SpriteRenderer[] renderers;
     private Material[] originalMaterials;
     private MaterialPropertyBlock block;
     private bool swapped;
+    private bool animating;
     private float open;
     private float targetOpen;
     private float speed = 8f;
+    private Rect area;
+    private int areaFrame = -1;
 
     // Sprites under a nested occluder (e.g. houses inside HouseBunch) belong to that one, so no sprite is driven twice.
     void Awake()
@@ -44,37 +56,61 @@ public class RevealOccluder : MonoBehaviour
         block = new MaterialPropertyBlock();
     }
 
+    // Area is recomputed on the first query after (re)enabling, once the spawner has placed it for this frame.
     void OnEnable()
     {
         Active.Add(this);
+        areaFrame = -1;
     }
 
     // Pooled decor comes back with its own material.
     void OnDisable()
     {
         Active.Remove(this);
+        if (animating)
+        {
+            Animating.Remove(this);
+            animating = false;
+        }
         targetOpen = 0f;
         open = 0f;
         Restore();
     }
 
-    // Called every frame by the local player; the circle eases open or closed here.
+    // Called every frame by the local player; only occluders whose circle has to move get queued for TickAll.
     public void SetTarget(bool covering, float openSpeed)
     {
         targetOpen = covering ? 1f : 0f;
         speed = openSpeed;
+        if (!animating && open != targetOpen)
+        {
+            animating = true;
+            Animating.Add(this);
+        }
     }
 
-    void Update()
+    // Eases every queued occluder towards its target, dropping it from the queue once settled.
+    public static void TickAll(float deltaTime)
     {
-        if (open == targetOpen && !swapped)
-            return;
+        for (int i = Animating.Count - 1; i >= 0; i--)
+        {
+            RevealOccluder occluder = Animating[i];
+            if (occluder != null && occluder.Step(deltaTime))
+                continue;
+            if (occluder != null)
+                occluder.animating = false;
+            Animating.RemoveAt(i);
+        }
+    }
 
-        open = Mathf.MoveTowards(open, targetOpen, speed * Time.deltaTime);
+    // Returns false once the circle is settled (fully closed and restored, or fully open).
+    private bool Step(float deltaTime)
+    {
+        open = Mathf.MoveTowards(open, targetOpen, speed * deltaTime);
         if (open <= 0f)
         {
             Restore();
-            return;
+            return false;
         }
 
         for (int i = 0; i < renderers.Length; i++)
@@ -92,6 +128,7 @@ public class RevealOccluder : MonoBehaviour
             renderers[i].SetPropertyBlock(block);
         }
         swapped = true;
+        return open != targetOpen;
     }
 
     private void Restore()
@@ -124,12 +161,38 @@ public class RevealOccluder : MonoBehaviour
         return unlit ? unlitRevealMaterial : litRevealMaterial;
     }
 
-    // True when one of its visible sprites covers the point and sorts above the given order on that layer (or always, when alwaysInFront).
-    public bool Covers(Vector3 point, int sortingLayerId, int sortingOrder)
+    // Union of the owned sprites' bounds, cached for static decor so the per-frame test stays in managed code.
+    private Rect Area()
     {
+        if (areaFrame >= 0 && (!moves || areaFrame == Time.frameCount))
+            return area;
+
+        areaFrame = Time.frameCount;
+        bool any = false;
+        Bounds union = default;
         foreach (SpriteRenderer spriteRenderer in renderers)
         {
-            if (spriteRenderer == null || !spriteRenderer.enabled || !spriteRenderer.isVisible)
+            if (spriteRenderer == null)
+                continue;
+            if (!any)
+                union = spriteRenderer.bounds;
+            else
+                union.Encapsulate(spriteRenderer.bounds);
+            any = true;
+        }
+        area = any ? new Rect(union.min.x, union.min.y, union.size.x, union.size.y) : new Rect(float.MaxValue, float.MaxValue, 0f, 0f);
+        return area;
+    }
+
+    // Cheap cached-area rejection first; only occluders actually around the point pay for the per-sprite sorting checks.
+    public bool Covers(Vector3 point, int sortingLayerId, int sortingOrder)
+    {
+        if (!Area().Contains(point))
+            return false;
+
+        foreach (SpriteRenderer spriteRenderer in renderers)
+        {
+            if (spriteRenderer == null || !spriteRenderer.enabled)
                 continue;
             if (!alwaysInFront && (spriteRenderer.sortingLayerID != sortingLayerId || spriteRenderer.sortingOrder <= sortingOrder))
                 continue;

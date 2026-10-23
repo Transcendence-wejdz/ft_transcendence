@@ -64,8 +64,11 @@ public class ClassKit : ScriptableObject
     [Range(1, 20)]
     [Tooltip("Enemies a projectile can pass through before it stops.")]
     [SerializeField] private int pierceCount = 1;
-    [PowerRange(0.05f, 30f, 2f)]
+    [Tooltip("FX on hit.")]
+	[SerializeField] private bool hasFXOnHit = false;
+	[SerializeField] private GameObject onHitFX;
     [Tooltip("Seconds before the action can be used again.")]
+	[PowerRange(0.05f, 30f, 2f)]
     [SerializeField] private float specialCooldown = 2f;
     [Range(0f, 300f)]
     [Tooltip("Mana spent on use.")]
@@ -160,6 +163,9 @@ public class ClassKit : ScriptableObject
     public float ProjectileSpeed => projectileSpeed;
     public float ProjectileMaxDistance => projectileMaxDistance;
     public int PierceCount => pierceCount;
+
+	public bool HasFXOnHit => hasFXOnHit;
+	public GameObject OnHitFX => onHitFX;
 
     public float SpecialCooldown => specialCooldown;
     public float SpecialManaCost => specialManaCost;

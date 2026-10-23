@@ -85,7 +85,7 @@ public class ClassKitEditor : Editor
         new("GENERAL", "Mana", "maxMana", "manaRegenPerSecond"),
         new("GENERAL", "Dodge", "dodgeCharges", "dodgeRechargeSeconds", "dodgeDistance", "dodgeDuration"),
         new("ACTIONS", "Attack", "attackCooldown", "attackFxPrefab", "attackFxDistance", "attackDamage", "attackMoveLockDuration", "attackMoveSpeedMultiplier",
-            "attackAnimSpeed", "attackSize", "attackIgnoreAimRotation", "attackFollowCaster", "hasProjectile", "projectileSpeed", "projectileMaxDistance", "pierceCount"),
+            "attackAnimSpeed", "attackSize", "attackIgnoreAimRotation", "attackFollowCaster", "hasProjectile", "projectileSpeed", "projectileMaxDistance", "pierceCount", "hasFXOnHit", "onHitFX"),
         new("ACTIONS", "Special", "specialCooldown", "specialManaCost", "specialFxPrefab", "specialFxDistance", "specialDamage", "specialMoveLockDuration",
             "specialMoveSpeedMultiplier", "specialAnimSpeed", "specialSize", "specialIgnoreAimRotation", "specialFollowCaster"),
         new("ACTIONS", "Ultimate", "ultimateCooldown", "ultimateManaCost", "ultimateFxPrefab", "ultimateFxDistance", "ultimateDamage", "ultimateMoveLockDuration",

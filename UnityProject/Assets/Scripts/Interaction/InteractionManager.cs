@@ -3,7 +3,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.UI;
 
 [RequireComponent(typeof(PlayerInput))]
 public class InteractionManager : MonoBehaviour
@@ -91,9 +90,6 @@ public class InteractionManager : MonoBehaviour
 
         if (interactionPanel != null && MenuPanel.CurrentOpen == interactionPanel)
         {
-            if (IsUIControl(ctx.control))
-                return;
-
             interactionPanel.Close();
             interactionPanel = null;
             return;
@@ -104,27 +100,6 @@ public class InteractionManager : MonoBehaviour
 
         currentZone?.Interact();
         interactionPanel = MenuPanel.CurrentOpen;
-    }
-
-    // A key shared with UI navigation (e.g. Interact rebound to Cross) stays with the UI instead of closing the panel.
-    private static bool IsUIControl(InputControl control)
-    {
-        InputSystemUIInputModule module = EventSystem.current != null ? EventSystem.current.currentInputModule as InputSystemUIInputModule : null;
-        return module != null && (Uses(module.submit, control) || Uses(module.cancel, control) || Uses(module.move, control));
-    }
-
-    private static bool Uses(InputActionReference reference, InputControl control)
-    {
-        InputAction action = reference != null ? reference.action : null;
-        if (action == null)
-            return false;
-
-        foreach (InputControl bound in action.controls)
-        {
-            if (bound == control)
-                return true;
-        }
-        return false;
     }
 
     private static bool IsTyping()

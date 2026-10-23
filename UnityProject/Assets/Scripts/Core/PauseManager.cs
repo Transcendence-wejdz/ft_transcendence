@@ -73,15 +73,6 @@ public class PauseManager : MonoBehaviour
             pausePanel.SetActive(true);
     }
 
-    // Gamepad B: Settings goes back to Pause, Pause resumes.
-    public void Back()
-    {
-        if (settingsPanel != null && settingsPanel.activeSelf)
-            CloseSettings();
-        else if (IsPaused)
-            Resume();
-    }
-
     // Host in a mode scene brings everyone to the Lobby; others leave the session first.
     public void LeaveOrReturn()
     {

@@ -10,11 +10,6 @@ public static class GameSettings
     private const string ShowPingKey = "Settings.ShowPing";
     private const string GraphicsQualityKey = "Settings.GraphicsQuality";
     private const string HdrEnabledKey = "Settings.HdrEnabled";
-    private const string StickDeadzoneKey = "Settings.StickDeadzone";
-
-    public const float StickDeadzoneMin = 0.05f;
-    public const float StickDeadzoneMax = 0.5f;
-    public const float StickDeadzoneStep = 0.05f;
 
     public static readonly string[] GraphicsQualityNames = { "Low", "Medium", "High", "Ultra" };
 
@@ -95,17 +90,6 @@ public static class GameSettings
         set
         {
             PlayerPrefs.SetInt(HdrEnabledKey, value ? 1 : 0);
-            PlayerPrefs.Save();
-            OnChanged?.Invoke();
-        }
-    }
-
-    public static float StickDeadzone
-    {
-        get => Mathf.Clamp(PlayerPrefs.GetFloat(StickDeadzoneKey, 0.15f), StickDeadzoneMin, StickDeadzoneMax);
-        set
-        {
-            PlayerPrefs.SetFloat(StickDeadzoneKey, Mathf.Clamp(value, StickDeadzoneMin, StickDeadzoneMax));
             PlayerPrefs.Save();
             OnChanged?.Invoke();
         }

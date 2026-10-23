@@ -312,335 +312,229 @@ MonoBehaviour:
   groundNoiseScale: 0.1
   biomes:
   - name: Forest
-    grounds:
-    - label: Ground_1_Rule
-      tile: {fileID: 11400000, guid: fe10effbe23c4a03ac99d50817ef8a7d, type: 2}
-      weight: 1
-    - label: Ground_2_Rule
-      tile: {fileID: 11400000, guid: 087f48f83ae844658f373a68cbc2256e, type: 2}
-      weight: 1
-    - label: Ground_3_Rule
-      tile: {fileID: 11400000, guid: 0f1a7ca835a84090a60ff084f76602d9, type: 2}
-      weight: 1
+    groundTiles:
+    - {fileID: 11400000, guid: fe10effbe23c4a03ac99d50817ef8a7d, type: 2}
+    - {fileID: 11400000, guid: 087f48f83ae844658f373a68cbc2256e, type: 2}
+    - {fileID: 11400000, guid: 0f1a7ca835a84090a60ff084f76602d9, type: 2}
     spawnSafeRadius: 10
     decor:
-    - label: Tree1 (Land)
-      prefab: {fileID: 1598588655992799798, guid: a907899a7ecfb906d99ebfb5729ae1e7, type: 3}
+    - prefab: {fileID: 1598588655992799798, guid: a907899a7ecfb906d99ebfb5729ae1e7, type: 3}
       surface: 0
-      density: 0.05
-      noiseScale: 0.1
-      noiseRange: {x: 0, y: 0.5}
-      noiseThreshold: -1
-    - label: Tree2 (Land)
-      prefab: {fileID: 6524784339964986097, guid: f17f1362e54a17aad9c2d40bfe7a3ab9, type: 3}
+      density: 0.09
+      noiseScale: 0.12
+      noiseThreshold: 0.5
+    - prefab: {fileID: 6524784339964986097, guid: f17f1362e54a17aad9c2d40bfe7a3ab9, type: 3}
       surface: 0
-      density: 0.05
-      noiseScale: 0.1
-      noiseRange: {x: 0, y: 0.5}
-      noiseThreshold: -1
-    - label: Tree3 (Land)
-      prefab: {fileID: 6944997123655819113, guid: ae4b4d6855f722986a9e1c663af8072b, type: 3}
+      density: 0.2
+      noiseScale: 0.12
+      noiseThreshold: 0.598
+    - prefab: {fileID: 6944997123655819113, guid: ae4b4d6855f722986a9e1c663af8072b, type: 3}
       surface: 0
-      density: 0.1
+      density: 0.25
       noiseScale: 0.15
-      noiseRange: {x: 0.5, y: 1}
-      noiseThreshold: -1
-    - label: Bush1 (Land)
-      prefab: {fileID: 6802664848772536556, guid: e70649dc53e4d18f1a9de87a529193dc, type: 3}
+      noiseThreshold: 0.62
+    - prefab: {fileID: 6802664848772536556, guid: e70649dc53e4d18f1a9de87a529193dc, type: 3}
       surface: 0
       density: 0.1
       noiseScale: 0.25
-      noiseRange: {x: 0.6, y: 1}
-      noiseThreshold: -1
-    - label: Bush2 (Land)
-      prefab: {fileID: 4021531436006504528, guid: a477c60a0563118e2bf50a87756eeb1d, type: 3}
+      noiseThreshold: 0.6
+    - prefab: {fileID: 4021531436006504528, guid: a477c60a0563118e2bf50a87756eeb1d, type: 3}
       surface: 0
       density: 0.1
       noiseScale: 0.25
-      noiseRange: {x: 0.6, y: 1}
-      noiseThreshold: -1
-    - label: Bush3 (Land)
-      prefab: {fileID: 5890264081347668165, guid: 3b03faf92c453cd839e46422d9d8d004, type: 3}
+      noiseThreshold: 0.6
+    - prefab: {fileID: 5890264081347668165, guid: 3b03faf92c453cd839e46422d9d8d004, type: 3}
       surface: 0
       density: 0.08
       noiseScale: 0.25
-      noiseRange: {x: 0.65, y: 1}
-      noiseThreshold: -1
-    - label: Rock1 (Land)
-      prefab: {fileID: 5682110923380568844, guid: 83899a0550004ec3c8190a0e8261341c, type: 3}
+      noiseThreshold: 0.65
+    - prefab: {fileID: 5682110923380568844, guid: 83899a0550004ec3c8190a0e8261341c, type: 3}
       surface: 0
       density: 0.02
       noiseScale: 0.25
-      noiseRange: {x: 0.75, y: 1}
-      noiseThreshold: -1
-    - label: Rock2 (Land)
-      prefab: {fileID: 8180021866609941328, guid: e57e560ea96187addaa992869673c5ba, type: 3}
+      noiseThreshold: 0.75
+    - prefab: {fileID: 8180021866609941328, guid: e57e560ea96187addaa992869673c5ba, type: 3}
       surface: 0
       density: 0.02
       noiseScale: 0.25
-      noiseRange: {x: 0.75, y: 1}
-      noiseThreshold: -1
-    - label: WaterRock1 (Water)
-      prefab: {fileID: 3965439484568466488, guid: 7e6acfbaf3ef7ca388e16178ecc59c18, type: 3}
+      noiseThreshold: 0.75
+    - prefab: {fileID: 3965439484568466488, guid: 7e6acfbaf3ef7ca388e16178ecc59c18, type: 3}
       surface: 1
       density: 0.03
       noiseScale: 0.3
-      noiseRange: {x: 0.75, y: 1}
-      noiseThreshold: -1
-    - label: WaterRock2 (Water)
-      prefab: {fileID: 2097706737646764478, guid: f77a21673d4827165b46af6ec452728c, type: 3}
+      noiseThreshold: 0.75
+    - prefab: {fileID: 2097706737646764478, guid: f77a21673d4827165b46af6ec452728c, type: 3}
       surface: 1
       density: 0.03
       noiseScale: 0.3
-      noiseRange: {x: 0.75, y: 1}
-      noiseThreshold: -1
-    water:
-      noiseScale: 0.0596
-      threshold: 0
-      tile: {fileID: 11400000, guid: da1f07ab417c38a8fbaf4b560b7cebc8, type: 2}
-      backgroundTile: {fileID: 11400000, guid: f02d7af0d5b224b25b5e1980817b96b6, type: 2}
-      coastFoamTile: {fileID: 11400000, guid: d2462fe4b13543caa3c538201f70cebe, type: 2}
-    island:
-      radius: 18
-      edgeVariation: 0.137
-      edgeNoiseScale: 0.05
-      decorCoastOffset: 3
-    hasOwnWaterIsland: 1
-    groundTiles: []
-    groundWeights: []
+      noiseThreshold: 0.75
   - name: Plains
-    grounds:
-    - label: Ground_2_Rule
-      tile: {fileID: 11400000, guid: 087f48f83ae844658f373a68cbc2256e, type: 2}
-      weight: 1
-    - label: Ground_4_Rule
-      tile: {fileID: 11400000, guid: 55c1b6c41d3b47ae987f15689eceeae2, type: 2}
-      weight: 1
+    groundTiles:
+    - {fileID: 11400000, guid: 087f48f83ae844658f373a68cbc2256e, type: 2}
+    - {fileID: 11400000, guid: 55c1b6c41d3b47ae987f15689eceeae2, type: 2}
     spawnSafeRadius: 10
     decor:
-    - label: Bush1 (Land)
-      prefab: {fileID: 6802664848772536556, guid: e70649dc53e4d18f1a9de87a529193dc, type: 3}
+    - prefab: {fileID: 6802664848772536556, guid: e70649dc53e4d18f1a9de87a529193dc, type: 3}
       surface: 0
-      density: 0.0043
-      noiseScale: 0.0262
-      noiseRange: {x: 0.46367934, y: 1}
-      noiseThreshold: -1
-    - label: Bush2 (Land)
-      prefab: {fileID: 4021531436006504528, guid: a477c60a0563118e2bf50a87756eeb1d, type: 3}
-      surface: 0
-      density: 0.0038
+      density: 0.1
       noiseScale: 0.2
-      noiseRange: {x: 0.408, y: 1}
-      noiseThreshold: -1
-    - label: Bush3 (Land)
-      prefab: {fileID: 5890264081347668165, guid: 3b03faf92c453cd839e46422d9d8d004, type: 3}
+      noiseThreshold: 0.55
+    - prefab: {fileID: 4021531436006504528, guid: a477c60a0563118e2bf50a87756eeb1d, type: 3}
       surface: 0
-      density: 0.1276
+      density: 0.1
       noiseScale: 0.2
-      noiseRange: {x: 0.55, y: 1}
-      noiseThreshold: -1
-    - label: Bush4 (Land)
-      prefab: {fileID: 4040083552489541714, guid: 419f8b9230cf78d888ebc2af680d8a43, type: 3}
+      noiseThreshold: 0.55
+    - prefab: {fileID: 5890264081347668165, guid: 3b03faf92c453cd839e46422d9d8d004, type: 3}
       surface: 0
-      density: 0.135
+      density: 0.1
       noiseScale: 0.2
-      noiseRange: {x: 0.55, y: 1}
-      noiseThreshold: -1
-    - label: Tree1 (Land)
-      prefab: {fileID: 1598588655992799798, guid: a907899a7ecfb906d99ebfb5729ae1e7, type: 3}
+      noiseThreshold: 0.55
+    - prefab: {fileID: 4040083552489541714, guid: 419f8b9230cf78d888ebc2af680d8a43, type: 3}
+      surface: 0
+      density: 0.1
+      noiseScale: 0.2
+      noiseThreshold: 0.55
+    - prefab: {fileID: 1598588655992799798, guid: a907899a7ecfb906d99ebfb5729ae1e7, type: 3}
       surface: 0
       density: 0.08
       noiseScale: 0.3
-      noiseRange: {x: 0.78, y: 1}
-      noiseThreshold: -1
-    - label: Tree2 (Land)
-      prefab: {fileID: 6524784339964986097, guid: f17f1362e54a17aad9c2d40bfe7a3ab9, type: 3}
+      noiseThreshold: 0.78
+    - prefab: {fileID: 6524784339964986097, guid: f17f1362e54a17aad9c2d40bfe7a3ab9, type: 3}
       surface: 0
       density: 0.08
       noiseScale: 0.3
-      noiseRange: {x: 0.78, y: 1}
-      noiseThreshold: -1
-    - label: Tree4 (Land)
-      prefab: {fileID: 8020669809099554080, guid: 0a3122ed4d24dbc71bd2ed5f4e545e2a, type: 3}
-      surface: 0
-      density: 0.04
-      noiseScale: 0.3
-      noiseRange: {x: 0.7, y: 1}
-      noiseThreshold: -1
-    - label: Tree3 (Land)
-      prefab: {fileID: 6944997123655819113, guid: ae4b4d6855f722986a9e1c663af8072b, type: 3}
-      surface: 0
-      density: 0.04
-      noiseScale: 0.3
-      noiseRange: {x: 0.7, y: 1}
-      noiseThreshold: -1
-    - label: Rock3 (Land)
-      prefab: {fileID: 6061384922041497983, guid: 8cf9d9201fbe09523872aaee4c89b5e5, type: 3}
+      noiseThreshold: 0.78
+    - prefab: {fileID: 6061384922041497983, guid: 8cf9d9201fbe09523872aaee4c89b5e5, type: 3}
       surface: 0
       density: 0.02
       noiseScale: 0.25
-      noiseRange: {x: 0.75, y: 1}
-      noiseThreshold: -1
-    - label: Rock4 (Land)
-      prefab: {fileID: 636951289468101223, guid: 5822640d431382c44a687014b83e4a83, type: 3}
+      noiseThreshold: 0.75
+    - prefab: {fileID: 636951289468101223, guid: 5822640d431382c44a687014b83e4a83, type: 3}
       surface: 0
       density: 0.02
       noiseScale: 0.25
-      noiseRange: {x: 0.75, y: 1}
-      noiseThreshold: -1
-    - label: WaterRock1 (Water)
-      prefab: {fileID: 3965439484568466488, guid: 7e6acfbaf3ef7ca388e16178ecc59c18, type: 3}
+      noiseThreshold: 0.75
+    - prefab: {fileID: 3965439484568466488, guid: 7e6acfbaf3ef7ca388e16178ecc59c18, type: 3}
       surface: 1
       density: 0.04
       noiseScale: 0.3
-      noiseRange: {x: 0.7, y: 1}
-      noiseThreshold: -1
-    - label: WaterRock3 (Water)
-      prefab: {fileID: 9175538198328060603, guid: ca6ef86f6dd2560b9af68659b5d3046c, type: 3}
+      noiseThreshold: 0.7
+    - prefab: {fileID: 9175538198328060603, guid: ca6ef86f6dd2560b9af68659b5d3046c, type: 3}
       surface: 1
       density: 0.04
       noiseScale: 0.3
-      noiseRange: {x: 0.7, y: 1}
-      noiseThreshold: -1
-    water:
-      noiseScale: 0.102
-      threshold: 0
-      tile: {fileID: 11400000, guid: da1f07ab417c38a8fbaf4b560b7cebc8, type: 2}
-      backgroundTile: {fileID: 11400000, guid: f02d7af0d5b224b25b5e1980817b96b6, type: 2}
-      coastFoamTile: {fileID: 11400000, guid: d2462fe4b13543caa3c538201f70cebe, type: 2}
-    island:
-      radius: 18
-      edgeVariation: 0.137
-      edgeNoiseScale: 0.05
-      decorCoastOffset: 3
-    hasOwnWaterIsland: 1
-    groundTiles: []
-    groundWeights: []
-  - name: Mountain
-    grounds:
-    - label: Ground_7_Rule
-      tile: {fileID: 11400000, guid: f903363b9c79447c8937d65bebdc96f5, type: 2}
-      weight: 0.114
-    - label: Ground_8_Rule
-      tile: {fileID: 11400000, guid: aa59017c3b86452cba0b2ecd1ac471ee, type: 2}
-      weight: 1
-    - label: Ground_6_Rule
-      tile: {fileID: 11400000, guid: b6056022e00044b590ace7f77d39d546, type: 2}
-      weight: 1
+      noiseThreshold: 0.7
+  - name: Rocky
+    groundTiles:
+    - {fileID: 11400000, guid: c963d9d33e034fdebc5abd2991de4403, type: 2}
+    - {fileID: 11400000, guid: 087f48f83ae844658f373a68cbc2256e, type: 2}
     spawnSafeRadius: 10
     decor:
-    - label: BigRock 1_Snow (Land)
-      prefab: {fileID: 636951289468101223, guid: 735f04e26ea34eac9358dd7ff3df0469, type: 3}
+    - prefab: {fileID: 5682110923380568844, guid: 83899a0550004ec3c8190a0e8261341c, type: 3}
       surface: 0
-      density: 0.01
-      noiseScale: 0.25
-      noiseRange: {x: 0.1683748, y: 0.568}
-      noiseThreshold: -1
-    - label: BigRock_Snow (Land)
-      prefab: {fileID: 636951289468101223, guid: 27e2284a57694b3981d9d36b5e100b7b, type: 3}
-      surface: 0
-      density: 0.0049
-      noiseScale: 0.1274
-      noiseRange: {x: 0.6, y: 1}
-      noiseThreshold: -1
-    - label: Rock1_Snow (Land)
-      prefab: {fileID: 5682110923380568844, guid: 12518b64ddaf412486649f27499b5cd1, type: 3}
-      surface: 0
-      density: 0.0006
+      density: 0.12
       noiseScale: 0.18
-      noiseRange: {x: 0.6, y: 1}
-      noiseThreshold: -1
-    - label: Rock2_Snow (Land)
-      prefab: {fileID: 8180021866609941328, guid: 214771af459740a385afe58f5f7b22d4, type: 3}
+      noiseThreshold: 0.6
+    - prefab: {fileID: 8180021866609941328, guid: e57e560ea96187addaa992869673c5ba, type: 3}
       surface: 0
-      density: 0.0002
+      density: 0.12
       noiseScale: 0.18
-      noiseRange: {x: 0.6, y: 1}
-      noiseThreshold: -1
-    - label: Rock3_Snow (Land)
-      prefab: {fileID: 6061384922041497983, guid: 348ff2b0c7154bae98684456df52ae5b, type: 3}
+      noiseThreshold: 0.6
+    - prefab: {fileID: 6061384922041497983, guid: 8cf9d9201fbe09523872aaee4c89b5e5, type: 3}
       surface: 0
-      density: 0.01
+      density: 0.12
       noiseScale: 0.18
-      noiseRange: {x: 0.6, y: 1}
-      noiseThreshold: -1
-    - label: Rock4_Snow (Land)
-      prefab: {fileID: 636951289468101223, guid: a627beb2ea6b4d01986aa065bb1c36e8, type: 3}
+      noiseThreshold: 0.6
+    - prefab: {fileID: 636951289468101223, guid: 5822640d431382c44a687014b83e4a83, type: 3}
       surface: 0
-      density: 0.01
+      density: 0.12
       noiseScale: 0.18
-      noiseRange: {x: 0.6, y: 1}
-      noiseThreshold: -1
-    - label: Tree1_Snow (Land)
-      prefab: {fileID: 1598588655992799798, guid: 76697e1d3ed44d70b789039a8c8fb8e1, type: 3}
+      noiseThreshold: 0.6
+    - prefab: {fileID: 6944997123655819113, guid: ae4b4d6855f722986a9e1c663af8072b, type: 3}
       surface: 0
-      density: 0.308
-      noiseScale: 0.12
-      noiseRange: {x: 0.6665842, y: 1}
-      noiseThreshold: -1
-    - label: Tree2_Snow (Land)
-      prefab: {fileID: 6524784339964986097, guid: 1e6c3aed14744923865374fed712ad9b, type: 3}
+      density: 0.06
+      noiseScale: 0.3
+      noiseThreshold: 0.78
+    - prefab: {fileID: 8020669809099554080, guid: 0a3122ed4d24dbc71bd2ed5f4e545e2a, type: 3}
       surface: 0
-      density: 0.2705
-      noiseScale: 0.12
-      noiseRange: {x: 0.5750029, y: 1}
-      noiseThreshold: -1
-    - label: Bush3_Snow (Land)
-      prefab: {fileID: 5890264081347668165, guid: dcc8294f23894e3581604c81c7ed5669, type: 3}
+      density: 0.06
+      noiseScale: 0.3
+      noiseThreshold: 0.78
+    - prefab: {fileID: 5890264081347668165, guid: 3b03faf92c453cd839e46422d9d8d004, type: 3}
       surface: 0
       density: 0.05
       noiseScale: 0.25
-      noiseRange: {x: 0.7, y: 1}
-      noiseThreshold: -1
-    - label: Bush4_Snow (Land)
-      prefab: {fileID: 4040083552489541714, guid: e7bfa84d5b754bbea54b3f677055bf19, type: 3}
+      noiseThreshold: 0.7
+    - prefab: {fileID: 4040083552489541714, guid: 419f8b9230cf78d888ebc2af680d8a43, type: 3}
       surface: 0
-      density: 0.013
+      density: 0.05
       noiseScale: 0.25
-      noiseRange: {x: 0.7, y: 1}
-      noiseThreshold: -1
-    - label: WaterRock1 (Water)
-      prefab: {fileID: 3965439484568466488, guid: 7e6acfbaf3ef7ca388e16178ecc59c18, type: 3}
+      noiseThreshold: 0.7
+    - prefab: {fileID: 3965439484568466488, guid: 7e6acfbaf3ef7ca388e16178ecc59c18, type: 3}
       surface: 1
-      density: 0.048
+      density: 0.1
       noiseScale: 0.25
-      noiseRange: {x: 0.6, y: 1}
-      noiseThreshold: -1
-    - label: WaterRock2 (Water)
-      prefab: {fileID: 2097706737646764478, guid: f77a21673d4827165b46af6ec452728c, type: 3}
+      noiseThreshold: 0.6
+    - prefab: {fileID: 2097706737646764478, guid: f77a21673d4827165b46af6ec452728c, type: 3}
       surface: 1
-      density: 0.032
+      density: 0.1
       noiseScale: 0.25
-      noiseRange: {x: 0.6, y: 1}
-      noiseThreshold: -1
-    - label: WaterRock3 (Water)
-      prefab: {fileID: 9175538198328060603, guid: ca6ef86f6dd2560b9af68659b5d3046c, type: 3}
+      noiseThreshold: 0.6
+    - prefab: {fileID: 9175538198328060603, guid: ca6ef86f6dd2560b9af68659b5d3046c, type: 3}
       surface: 1
-      density: 0.045
+      density: 0.1
       noiseScale: 0.25
-      noiseRange: {x: 0.6, y: 1}
-      noiseThreshold: -1
-    - label: WaterRock4 (Water)
-      prefab: {fileID: 931983565565048284, guid: 78763b22c9cc3fa25a210f0d8dae60da, type: 3}
+      noiseThreshold: 0.6
+    - prefab: {fileID: 931983565565048284, guid: 78763b22c9cc3fa25a210f0d8dae60da, type: 3}
       surface: 1
-      density: 0.026
+      density: 0.1
       noiseScale: 0.25
-      noiseRange: {x: 0.6, y: 1}
-      noiseThreshold: -1
-    water:
-      noiseScale: 0.102
-      threshold: 0
-      tile: {fileID: 11400000, guid: da1f07ab417c38a8fbaf4b560b7cebc8, type: 2}
-      backgroundTile: {fileID: 11400000, guid: f02d7af0d5b224b25b5e1980817b96b6, type: 2}
-      coastFoamTile: {fileID: 11400000, guid: d2462fe4b13543caa3c538201f70cebe, type: 2}
-    island:
-      radius: 18
-      edgeVariation: 0.278
-      edgeNoiseScale: 0.1219
-      decorCoastOffset: 0.48
-    hasOwnWaterIsland: 1
-    groundTiles: []
-    groundWeights: []
+      noiseThreshold: 0.6
+  - name: Snow
+    groundTiles:
+    - {fileID: 11400000, guid: b6056022e00044b590ace7f77d39d546, type: 2}
+    spawnSafeRadius: 10
+    decor:
+    - prefab: {fileID: 5682110923380568844, guid: 83899a0550004ec3c8190a0e8261341c, type: 3}
+      surface: 0
+      density: 0.12
+      noiseScale: 0.18
+      noiseThreshold: 0.6
+    - prefab: {fileID: 8180021866609941328, guid: e57e560ea96187addaa992869673c5ba, type: 3}
+      surface: 0
+      density: 0.12
+      noiseScale: 0.18
+      noiseThreshold: 0.6
+    - prefab: {fileID: 6061384922041497983, guid: 8cf9d9201fbe09523872aaee4c89b5e5, type: 3}
+      surface: 0
+      density: 0.12
+      noiseScale: 0.18
+      noiseThreshold: 0.6
+    - prefab: {fileID: 636951289468101223, guid: 5822640d431382c44a687014b83e4a83, type: 3}
+      surface: 0
+      density: 0.12
+      noiseScale: 0.18
+      noiseThreshold: 0.6
+    - prefab: {fileID: 3965439484568466488, guid: 7e6acfbaf3ef7ca388e16178ecc59c18, type: 3}
+      surface: 1
+      density: 0.1
+      noiseScale: 0.25
+      noiseThreshold: 0.6
+    - prefab: {fileID: 2097706737646764478, guid: f77a21673d4827165b46af6ec452728c, type: 3}
+      surface: 1
+      density: 0.1
+      noiseScale: 0.25
+      noiseThreshold: 0.6
+    - prefab: {fileID: 9175538198328060603, guid: ca6ef86f6dd2560b9af68659b5d3046c, type: 3}
+      surface: 1
+      density: 0.1
+      noiseScale: 0.25
+      noiseThreshold: 0.6
+    - prefab: {fileID: 931983565565048284, guid: 78763b22c9cc3fa25a210f0d8dae60da, type: 3}
+      surface: 1
+      density: 0.1
+      noiseScale: 0.25
+      noiseThreshold: 0.6
   waterNoiseScale: 0.102
   waterThreshold: 0
   waterTile: {fileID: 11400000, guid: da1f07ab417c38a8fbaf4b560b7cebc8, type: 2}

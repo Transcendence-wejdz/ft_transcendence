@@ -23,36 +23,13 @@ public class KeybindsPanelUI : MonoBehaviour
         public Button secondaryButton;
         public TMP_Text gamepadLabel;
         public Button gamepadButton;
-        [System.NonSerialized] public Image gamepadIcon;
     }
 
     [SerializeField] private Row[] rows;
     [SerializeField] private GameObject waitingPrompt;
     [SerializeField] private TMP_Text statusText;
-    [SerializeField] private float gamepadIconSize = 26f;
-    [SerializeField] private GameObject swapPrompt;
-    [SerializeField] private TMP_Text swapPromptText;
-    [SerializeField] private Button swapConfirmButton;
-    [SerializeField] private Button swapCancelButton;
 
     private InputActionRebindingExtensions.RebindingOperation activeRebind;
-    private string iconStyle;
-    private string rebindOldPath;
-    private PendingSwap pendingSwap;
-    private static KeybindsPanelUI openPanel;
-
-    // True while waiting for a key or for the swap answer, so gamepad B is not taken as Back.
-    public static bool IsBusy => openPanel != null && (openPanel.activeRebind != null || openPanel.pendingSwap != null);
-
-    private class PendingSwap
-    {
-        public InputAction action;
-        public int bindingIndex;
-        public string oldPath;
-        public InputAction otherAction;
-        public int otherIndex;
-        public Button slotButton;
-    }
 
     private void Awake()
     {
@@ -62,45 +39,11 @@ public class KeybindsPanelUI : MonoBehaviour
             captured.primaryButton.onClick.AddListener(() => StartRebind(captured, Slot.Primary));
             captured.secondaryButton.onClick.AddListener(() => StartRebind(captured, Slot.Secondary));
             captured.gamepadButton.onClick.AddListener(() => StartRebind(captured, Slot.Gamepad));
-            captured.gamepadIcon = CreateGamepadIcon(captured.gamepadButton.transform);
         }
-        swapConfirmButton.onClick.AddListener(ConfirmSwap);
-        swapCancelButton.onClick.AddListener(CancelSwap);
-        LinkHorizontally(swapConfirmButton, swapCancelButton);
-    }
-
-    // Keeps gamepad navigation inside the two-button swap prompt.
-    private static void LinkHorizontally(Button left, Button right)
-    {
-        left.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnRight = right };
-        right.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnLeft = left };
-    }
-
-    // Redraws the gamepad icons when the player switches to a pad of another brand.
-    private void Update()
-    {
-        if (activeRebind == null && GamepadIcons.CurrentStyle() != iconStyle)
-            RefreshAllLabels();
-    }
-
-    private Image CreateGamepadIcon(Transform button)
-    {
-        GameObject go = new GameObject("GamepadIcon", typeof(RectTransform), typeof(Image));
-        go.layer = button.gameObject.layer;
-        RectTransform rt = (RectTransform)go.transform;
-        rt.SetParent(button, false);
-        rt.sizeDelta = new Vector2(gamepadIconSize, gamepadIconSize);
-
-        Image image = go.GetComponent<Image>();
-        image.preserveAspect = true;
-        image.raycastTarget = false;
-        image.enabled = false;
-        return image;
     }
 
     private void OnEnable()
     {
-        openPanel = this;
         SetStatus(string.Empty, false);
         RefreshAllLabels();
     }
@@ -108,9 +51,6 @@ public class KeybindsPanelUI : MonoBehaviour
     private void OnDisable()
     {
         activeRebind?.Cancel();
-        CancelSwap();
-        if (openPanel == this)
-            openPanel = null;
     }
 
     // Wired to the waiting-for-key prompt's own Cancel button, since Escape is avoided project-wide (WebGL fullscreen).
@@ -155,7 +95,7 @@ public class KeybindsPanelUI : MonoBehaviour
 
     private void StartRebind(Row row, Slot slot)
     {
-        if (activeRebind != null || pendingSwap != null)
+        if (activeRebind != null)
             return;
 
         string prefix = DevicePrefix(row, slot);
@@ -171,18 +111,11 @@ public class KeybindsPanelUI : MonoBehaviour
             return;
         }
 
-        rebindOldPath = action.bindings[bindingIndex].effectivePath;
         TMP_Text label = SlotLabel(row, slot);
         action.Disable();
         label.text = "...";
-        if (slot == Slot.Gamepad)
-            row.gamepadIcon.enabled = false;
         if (waitingPrompt != null)
-        {
             waitingPrompt.SetActive(true);
-            if (slot != Slot.Gamepad)
-                GamepadUINavigator.Focus(waitingPrompt.GetComponentInChildren<Button>());
-        }
 
         InputActionRebindingExtensions.RebindingOperation rebind = action.PerformInteractiveRebinding(bindingIndex);
         rebind = prefix == "<Gamepad>"
@@ -206,15 +139,11 @@ public class KeybindsPanelUI : MonoBehaviour
 
         if (!cancelled)
         {
-            InputAction otherAction;
-            int otherIndex;
-            Row conflict = FindConflict(action.actionMap.asset, action, bindingIndex, out otherAction, out otherIndex);
+            Row conflict = FindConflict(action.actionMap.asset, action, bindingIndex);
             if (conflict != null)
             {
-                pendingSwap = new PendingSwap { action = action, bindingIndex = bindingIndex, oldPath = rebindOldPath, otherAction = otherAction, otherIndex = otherIndex, slotButton = SlotButton(row, slot) };
-                swapPromptText.text = "Already used by " + conflict.displayLabel + ".\nSwap them?";
-                swapPrompt.SetActive(true);
-                GamepadUINavigator.Focus(swapConfirmButton);
+                action.RemoveBindingOverride(bindingIndex);
+                SetStatus("Already used by " + conflict.displayLabel + ".", true);
             }
             else
             {
@@ -223,57 +152,12 @@ public class KeybindsPanelUI : MonoBehaviour
             }
         }
 
-        if (pendingSwap == null)
-            GamepadUINavigator.Focus(SlotButton(row, slot));
-
         RefreshAllLabels();
-    }
-
-    // Gives the conflicting slot the key the rebound slot had before.
-    private void ConfirmSwap()
-    {
-        if (pendingSwap == null)
-            return;
-
-        SetPath(pendingSwap.otherAction, pendingSwap.otherIndex, pendingSwap.oldPath);
-        KeybindOverrides.Save(pendingSwap.action.actionMap.asset);
-        CloseSwapPrompt();
-    }
-
-    // Reverts the rebound slot to its previous key.
-    private void CancelSwap()
-    {
-        if (pendingSwap == null)
-            return;
-
-        SetPath(pendingSwap.action, pendingSwap.bindingIndex, pendingSwap.oldPath);
-        CloseSwapPrompt();
-    }
-
-    private void CloseSwapPrompt()
-    {
-        Button slotButton = pendingSwap.slotButton;
-        pendingSwap = null;
-        swapPrompt.SetActive(false);
-        GamepadUINavigator.Focus(slotButton);
-        SetStatus(string.Empty, false);
-        RefreshAllLabels();
-    }
-
-    // Drops the override instead of storing one when the path is the action asset's default.
-    private static void SetPath(InputAction action, int bindingIndex, string path)
-    {
-        if (path == action.bindings[bindingIndex].path)
-            action.RemoveBindingOverride(bindingIndex);
-        else
-            action.ApplyBindingOverride(bindingIndex, path);
     }
 
     // Effective path clash against any other rebindable slot, across every row, within the same asset.
-    private Row FindConflict(InputActionAsset asset, InputAction changedAction, int changedBindingIndex, out InputAction conflictAction, out int conflictIndex)
+    private Row FindConflict(InputActionAsset asset, InputAction changedAction, int changedBindingIndex)
     {
-        conflictAction = null;
-        conflictIndex = -1;
         string changedPath = changedAction.bindings[changedBindingIndex].effectivePath;
 
         foreach (Row row in rows)
@@ -295,11 +179,7 @@ public class KeybindsPanelUI : MonoBehaviour
                     continue;
 
                 if (other.bindings[idx].effectivePath == changedPath)
-                {
-                    conflictAction = other;
-                    conflictIndex = idx;
                     return row;
-                }
             }
         }
         return null;
@@ -322,7 +202,7 @@ public class KeybindsPanelUI : MonoBehaviour
     // Falls back to the binding path's last segment for control keys Unity can't render as text.
     private static string DisplayName(InputAction action, int bindingIndex)
     {
-        string display = action.GetBindingDisplayString(bindingIndex, InputBinding.DisplayStringOptions.DontIncludeInteractions);
+        string display = action.GetBindingDisplayString(bindingIndex);
         if (!string.IsNullOrEmpty(display) && display.Trim().Length > 0)
             return display;
 
@@ -334,7 +214,6 @@ public class KeybindsPanelUI : MonoBehaviour
 
     private void RefreshAllLabels()
     {
-        iconStyle = GamepadIcons.CurrentStyle();
         InputActionAsset asset = CurrentAsset();
         foreach (Row row in rows)
         {
@@ -355,20 +234,8 @@ public class KeybindsPanelUI : MonoBehaviour
                 int bindingIndex = FindBindingIndex(action, prefix);
                 button.interactable = bindingIndex >= 0;
                 label.text = bindingIndex >= 0 ? DisplayName(action, bindingIndex) : "-";
-
-                if (slot == Slot.Gamepad)
-                    ShowGamepadIcon(row, bindingIndex >= 0 ? GamepadIcons.ForPath(action.bindings[bindingIndex].effectivePath) : null);
             }
         }
-    }
-
-    // Icon replaces the text label, which stays as the fallback for controls the sheet has no sprite for.
-    private static void ShowGamepadIcon(Row row, Sprite sprite)
-    {
-        row.gamepadIcon.sprite = sprite;
-        row.gamepadIcon.enabled = sprite != null;
-        if (sprite != null)
-            row.gamepadLabel.text = string.Empty;
     }
 
     private void SetStatus(string message, bool isError)

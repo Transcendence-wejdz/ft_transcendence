@@ -183,6 +183,7 @@ MonoBehaviour:
   - {fileID: 5311199380433355387, guid: 38a423723d37b6bb09cc8e93773d8fb2, type: 3}
   frameRate: 24
   impactPrefab: {fileID: 1342101473884631499, guid: 926950d5af147fa89a8f301f344b1cdb, type: 3}
+  fadeDuration: 0.15
 --- !u!114 &6820915567780723640
 MonoBehaviour:
   m_ObjectHideFlags: 0

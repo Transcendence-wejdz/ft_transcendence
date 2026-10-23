@@ -99,7 +99,6 @@ public class ClassKitEditor : Editor
 
         bool hasProjectile = serializedObject.FindProperty("hasProjectile").boolValue;
         bool hasShield = serializedObject.FindProperty("hasShield").boolValue;
-        bool hasFXOnHit = serializedObject.FindProperty("hasFXOnHit").boolValue;
         ClassKit kit = (ClassKit)target;
 
         InspectorSections.Draw(serializedObject, "ClassKitEditor.Section.", Sections, name =>

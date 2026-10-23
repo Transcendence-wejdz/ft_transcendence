@@ -10,6 +10,7 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
     [SerializeField] private Sprite[] frames;
     [SerializeField] private float frameRate = 24f;
     [SerializeField] private GameObject impactPrefab;
+    [SerializeField] private float fadeDuration = 0.15f;
 
     private GameObject owner;
     private bool hasHitbox;
@@ -23,6 +24,8 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
     private SpriteRenderer animatedRenderer;
     private float frameTimer;
     private int frameIndex;
+    private float fadeTimer = -1f;
+    private Color fadeColorAlpha;
     private readonly HashSet<IDamageable> hitTargets = new HashSet<IDamageable>();
 
     public void Init(GameObject attacker, bool hasHitboxValue, ClassKit kit, AbilityType ability, float damageMultiplier)
@@ -55,11 +58,10 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
     // Optional looping flipbook for projectiles with their own animated frames; a single assigned sprite with no frames array behaves exactly as before.
     void Update()
     {
-        if (Vector3.Distance(startPosition, transform.position) >= maxDistance)
-        {
-            Destroy(gameObject);
-            return;
-        }
+        if (fadeTimer >= 0f)
+            UpdateFade();
+        else if (Vector3.Distance(startPosition, transform.position) >= maxDistance)
+            StartFade();
 
         if (frames == null || frames.Length <= 1)
             return;
@@ -117,4 +119,26 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
             Instantiate(impactPrefab, transform.position, Quaternion.identity).transform.localScale = transform.localScale;
         Destroy(gameObject);
     }
+
+    private void StartFade()
+    {
+        fadeColorAlpha = animatedRenderer.color;
+        fadeTimer = 0f;
+    }
+
+    private void UpdateFade()
+    {
+        fadeTimer += Time.deltaTime; 
+        float alpha = 1f - (fadeTimer / fadeDuration);
+        Debug.LogError("Hellloooooo: " + alpha);
+
+        if (alpha <= 0) {
+            Destroy(gameObject);
+            return ;
+        }
+
+        fadeColorAlpha.a = alpha;
+        animatedRenderer.color = fadeColorAlpha;
+    }
+    
 }

@@ -322,7 +322,7 @@ MonoBehaviour:
     - label: Ground_3_Rule
       tile: {fileID: 11400000, guid: 0f1a7ca835a84090a60ff084f76602d9, type: 2}
       weight: 1
-    spawnSafeRadius: 10
+    spawnSafeRadius: 15
     decor:
     - label: Tree1 (Land)
       prefab: {fileID: 1598588655992799798, guid: a907899a7ecfb906d99ebfb5729ae1e7, type: 3}
@@ -416,7 +416,7 @@ MonoBehaviour:
     - label: Ground_4_Rule
       tile: {fileID: 11400000, guid: 55c1b6c41d3b47ae987f15689eceeae2, type: 2}
       weight: 1
-    spawnSafeRadius: 10
+    spawnSafeRadius: 15
     decor:
     - label: Bush1 (Land)
       prefab: {fileID: 6802664848772536556, guid: e70649dc53e4d18f1a9de87a529193dc, type: 3}
@@ -527,7 +527,7 @@ MonoBehaviour:
     - label: Ground_6_Rule
       tile: {fileID: 11400000, guid: b6056022e00044b590ace7f77d39d546, type: 2}
       weight: 1
-    spawnSafeRadius: 10
+    spawnSafeRadius: 15
     decor:
     - label: BigRock 1_Snow (Land)
       prefab: {fileID: 636951289468101223, guid: 735f04e26ea34eac9358dd7ff3df0469, type: 3}

@@ -16,6 +16,10 @@ MonoBehaviour:
   healthRegenPerSecond: 2
   maxMana: 75
   manaRegenPerSecond: 2
+  dodgeCharges: 2
+  dodgeRechargeSeconds: 3
+  dodgeDistance: 2.5
+  dodgeDuration: 0.2
   attackCooldown: 1
   attackFxPrefab: {fileID: 4015171861668935641, guid: 4dcb863a98523a8de8ac257b0da82862, type: 3}
   attackFxDistance: 1
@@ -30,6 +34,8 @@ MonoBehaviour:
   projectileSpeed: 10
   projectileMaxDistance: 8
   pierceCount: 1
+  hasFXOnHit: 1
+  onHitFX: {fileID: 1342101473884631499, guid: 926950d5af147fa89a8f301f344b1cdb, type: 3}
   specialCooldown: 1.5
   specialManaCost: 0
   specialFxPrefab: {fileID: 0}
@@ -60,7 +66,3 @@ MonoBehaviour:
   shieldPushInterval: 0.5
   shieldTurnSpeed: 120
   shieldHoldAnimation: 0
-  dodgeCharges: 2
-  dodgeRechargeSeconds: 3
-  dodgeDistance: 2.5
-  dodgeDuration: 0.2

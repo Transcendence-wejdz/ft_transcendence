@@ -13,6 +13,7 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
     [SerializeField] private SpriteRenderer fxSpriteRenderer;
     [SerializeField] private Sprite[] frames;
     [SerializeField] private float frameRate = 24f;
+    [SerializeField] private GameObject impactPrefab;
 
     private GameObject owner;
     private bool hasHitbox;
@@ -86,7 +87,15 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
             Player.DealAttackDamage(owner, damageable, damage);
         enemiesHit++;
         if (enemiesHit >= pierceCount)
-            Destroy(gameObject);
+            Impact();
+    }
+
+    // Ends the shot, bursting its impact FX at the same spot and scale when the prefab has one.
+    private void Impact()
+    {
+        if (impactPrefab != null)
+            Instantiate(impactPrefab, transform.position, Quaternion.identity).transform.localScale = transform.localScale;
+        Destroy(gameObject);
     }
 
     // Checks this physics step's path ahead; a blocked arrow breaks, and the attacker's copy (the only one with a hitbox) damages the shield.
@@ -167,7 +176,7 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
         damageable = other.GetComponentInParent<IDamageable>();
         if (damageable == null)
         {
-            Destroy(gameObject);
+            Impact();
             return;
         }
         if (!IsOwnerOrMount(damageable) && !Player.IsProtectedAlly(owner, damageable))

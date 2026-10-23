@@ -9,6 +9,7 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
     [SerializeField] private SpriteRenderer fxSpriteRenderer;
     [SerializeField] private Sprite[] frames;
     [SerializeField] private float frameRate = 24f;
+    [SerializeField] private GameObject impactPrefab;
 
     private GameObject owner;
     private bool hasHitbox;
@@ -89,6 +90,7 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
         if (damageable == null)
         {
             Destroy(gameObject);
+            Impact();
             return;
         }
 
@@ -105,5 +107,14 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
         enemiesHit++;
         if (enemiesHit >= pierceCount)
             Destroy(gameObject);
+        Impact();
+    }
+
+    // Ends the shot, bursting its impact FX at the same spot and scale when the prefab has one.
+    private void Impact()
+    {
+        if (impactPrefab != null)
+            Instantiate(impactPrefab, transform.position, Quaternion.identity).transform.localScale = transform.localScale;
+        Destroy(gameObject);
     }
 }

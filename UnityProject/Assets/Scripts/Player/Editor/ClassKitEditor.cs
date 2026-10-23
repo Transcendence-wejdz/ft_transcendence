@@ -9,7 +9,6 @@ public class ClassKitEditor : Editor
 {
     private static readonly string[] ProjectileOnlyFields = { "projectileSpeed", "projectileMaxDistance", "pierceCount" };
     private static readonly string[] ShieldOnlyFields = { "shieldHoldDuration", "shieldHealth", "shieldKnockbackForce", "shieldKnockbackDuration", "shieldPushInterval", "shieldTurnSpeed", "shieldHoldAnimation" };
-    private static readonly string[] OnHitFXOnlyFields = { "onHitFX" };
     private const string PlayerPrefabPath = "Assets/Prefabs/Player/Player.prefab";
     private const string ControllerFolder = "Assets/Animations/Playable/";
     private const float PreviewHeight = 240f;
@@ -105,8 +104,7 @@ public class ClassKitEditor : Editor
 
         InspectorSections.Draw(serializedObject, "ClassKitEditor.Section.", Sections, name =>
             (!hasProjectile && System.Array.IndexOf(ProjectileOnlyFields, name) >= 0)
-            || (!hasShield && System.Array.IndexOf(ShieldOnlyFields, name) >= 0)
-            || (!hasFXOnHit && System.Array.IndexOf(OnHitFXOnlyFields, name) >= 0),
+            || (!hasShield && System.Array.IndexOf(ShieldOnlyFields, name) >= 0),
             section =>
             {
                 if (System.Enum.TryParse(section, out Action action))

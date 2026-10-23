@@ -34,8 +34,6 @@ MonoBehaviour:
   projectileSpeed: 10
   projectileMaxDistance: 8
   pierceCount: 1
-  hasFXOnHit: 1
-  onHitFX: {fileID: 1342101473884631499, guid: 926950d5af147fa89a8f301f344b1cdb, type: 3}
   specialCooldown: 1.5
   specialManaCost: 0
   specialFxPrefab: {fileID: 0}

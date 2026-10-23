@@ -54,7 +54,7 @@ public static class KeybindOverrides
             if (binding.isComposite || binding.isPartOfComposite || binding.path == null || !binding.path.StartsWith("<Keyboard>"))
                 continue;
 
-            string display = action.GetBindingDisplayString(i);
+            string display = action.GetBindingDisplayString(i, InputBinding.DisplayStringOptions.DontIncludeInteractions);
             if (!string.IsNullOrEmpty(display) && display.Trim().Length > 0)
                 return display;
 

@@ -14,6 +14,9 @@ public class SettingsPanelUI : MonoBehaviour
     [SerializeField] private Button qualityNextButton;
     [SerializeField] private TMP_Text qualityLabel;
     [SerializeField] private Toggle hdrToggle;
+    [SerializeField] private Button deadzonePreviousButton;
+    [SerializeField] private Button deadzoneNextButton;
+    [SerializeField] private TMP_Text deadzoneLabel;
 
     private void Awake()
     {
@@ -25,6 +28,8 @@ public class SettingsPanelUI : MonoBehaviour
         qualityPreviousButton.onClick.AddListener(() => StepQuality(-1));
         qualityNextButton.onClick.AddListener(() => StepQuality(1));
         hdrToggle.onValueChanged.AddListener(value => GameSettings.HdrEnabled = value);
+        deadzonePreviousButton.onClick.AddListener(() => StepDeadzone(-1));
+        deadzoneNextButton.onClick.AddListener(() => StepDeadzone(1));
     }
 
     private void OnEnable()
@@ -36,6 +41,7 @@ public class SettingsPanelUI : MonoBehaviour
         showPingToggle.SetIsOnWithoutNotify(GameSettings.ShowPing);
         hdrToggle.SetIsOnWithoutNotify(GameSettings.HdrEnabled);
         RefreshQuality();
+        RefreshDeadzone();
     }
 
     // Wraps around, so the arrows cycle Low, Medium, High, Ultra.
@@ -49,5 +55,18 @@ public class SettingsPanelUI : MonoBehaviour
     private void RefreshQuality()
     {
         qualityLabel.text = GameSettings.GraphicsQualityNames[GameSettings.GraphicsQuality];
+    }
+
+    // Clamped, not wrapped, so holding an arrow stops at the minimum or maximum.
+    private void StepDeadzone(int direction)
+    {
+        float next = Mathf.Round((GameSettings.StickDeadzone + direction * GameSettings.StickDeadzoneStep) / GameSettings.StickDeadzoneStep) * GameSettings.StickDeadzoneStep;
+        GameSettings.StickDeadzone = next;
+        RefreshDeadzone();
+    }
+
+    private void RefreshDeadzone()
+    {
+        deadzoneLabel.text = Mathf.RoundToInt(GameSettings.StickDeadzone * 100f) + "%";
     }
 }

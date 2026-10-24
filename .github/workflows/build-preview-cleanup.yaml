@@ -18,4 +18,4 @@ jobs:
             docker compose -p "tr-$slug" -f "$dir/compose.yaml" down -v --remove-orphans
           fi
           rm -rf "$dir"
-          echo "> Remove preview for $REF ($slug)"
+          echo "Remove preview for $REF ($slug)"

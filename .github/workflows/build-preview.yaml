@@ -74,10 +74,10 @@ jobs:
           mv "$DIR.new" "$DIR"
 
       - name: init-env
-        env:
-          PREVIEW_HOST: ${{ vars.PREVIEW_HOST }}
         run: |
-          test -n "$PREVIEW_HOST" || { echo "::error::variable PREVIEW_HOST is not set"; exit 1; }
+          set -a; . "$HOME/.preview/env"; set +a
+          test -n "$PREVIEW_HOST" || { echo "::error::PREVIEW_HOST missing in ~/.preview/env"; exit 1; }
+          echo "PREVIEW_HOST=$PREVIEW_HOST" >> "$GITHUB_ENV"
           cat > "$DIR/.env" <<EOF
           POSTGRES_HOST=db
           POSTGRES_PORT=5432

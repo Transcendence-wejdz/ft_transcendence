@@ -202,7 +202,27 @@
     }
 
     .game-route .topbar {
-        flex: 0 0 auto;
+        position: fixed;
+        top: 0;
+        right: 0;
+        left: 0;
+        z-index: 10;
+        transform: translateY(-100%);
+        transition: transform 200ms ease 300ms;
+    }
+
+    .game-route .topbar::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        bottom: -12px;
+        left: 0;
+        height: 12px;
+    }
+
+    .game-route .topbar:hover, .game-route .topbar:focus-within {
+        transform: translateY(0);
+        transition-delay: 0ms;
     }
 
     @media (max-width: 720px) {

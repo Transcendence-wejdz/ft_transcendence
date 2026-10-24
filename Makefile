@@ -40,13 +40,11 @@ fclean: clean
 
 UNITY_PROJECT := UnityProject
 GAME_DIR := $(CURDIR)/web/backend/sveltekit/static/public/game
-GAME_DEV_DIR := $(CURDIR)/$(UNITY_PROJECT)/Builds/WebGL-dev
 
 # Release WebGL player served by the site (close the Unity Editor first)
 webgl:
 	unity build $(UNITY_PROJECT) --profile webgl-release -o $(GAME_DIR)
-	rm -rf $(GAME_DIR)/*_BurstDebugInformation_DoNotShip
 
-# Same build with the Development option, kept out of the site (gitignored)
+# Same build with the Development option, served by the site too (never commit it)
 webgl-dev:
-	unity build $(UNITY_PROJECT) --profile webgl-dev -o $(GAME_DEV_DIR)
+	unity build $(UNITY_PROJECT) --profile webgl-dev -o $(GAME_DIR)

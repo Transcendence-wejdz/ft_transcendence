@@ -12,6 +12,7 @@ jobs:
   deploy:
     name: deploy
     runs-on: [self-hosted]
+    timeout-minutes: 60
     steps:
       - name: health-check
         run: |

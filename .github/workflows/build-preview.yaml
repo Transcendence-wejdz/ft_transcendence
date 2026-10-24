@@ -1,0 +1,117 @@
+name: build-preview
+
+on:
+  push:
+    branches: ['**']
+
+concurrency:
+  group: preview-${{github.ref_name}}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: [self-hosted]
+    timeout-minutes: 60
+    environment:
+      name: preview-${{ github.ref_name }}
+      url: ${{ steps.up.outputs.url }}
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - name: health-check
+        run: |
+          echo "branch: $GITHUB_REF_NAME"
+          docker compose version
+
+      - uses: actions/checkout@v4
+        with:
+          clean: false
+
+      - name: name
+        run: |
+          slug=$(echo "$GITHUB_REF_NAME" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g' | cut -c1-40) 
+          echo "SLUG=$slug" >> "$GITHUB_ENV"
+          echo "DIR=/srv/previews/$slug" >> "$GITHUB_ENV"
+          echo "COMPOSE_PROJECT_NAME=tr-$slug" >> "$GITHUB_ENV"
+          echo "COMPOSE_FILE=/srv/previews/$slug/compose.yaml:/srv/previews/$slug/compose.preview.yaml" >> "$GITHUB_ENV"
+          echo "slug: $SLUG"
+
+      - name: cleanup
+        run: |
+          rm -rf build
+
+      - name: load-unity-license
+        run: |
+          set -a; . "$HOME/.unity/credentials"; set +a
+          echo "::add-mask::$UNITY_PASSWORD"
+          echo "UNITY_EMAIL=$UNITY_EMAIL" >> "$GITHUB_ENV"
+          echo "UNITY_PASSWORD=$UNITY_PASSWORD" >> "$GITHUB_ENV"
+          { echo "UNITY_LICENSE<<ULF_EOF"; cat "$HOME/.unity/Unity_lic.ulf"; echo "ULF_EOF"; } >> "$GITHUB_ENV"
+
+      - name: build-unity-webgl
+        uses: game-ci/unity-builder@v4
+        with:
+          projectPath: UnityProject
+          unityVersion: 6000.5.6f1
+          targetPlatform: WebGL
+          buildProfile: "Assets/Settings/Build Profiles/webgl-dev.asset"
+          buildName: game
+          buildsPath: build
+          versioning: None
+          runAsHostUser: true
+
+      - name: build-unity-check
+        run: |
+          test -f build/WebGL/game/Build/game.loader.js
+
+      - name: stop-previous-preview
+        run: |
+          if [ -f "$DIR/compose.yaml" ]; then
+            COMPOSE_FILE="$DIR/compose.yaml" docker compose down -v --remove-orphans
+          fi
+
+      - name: copy-code
+        run: |
+          rm -rf "$DIR.new"
+          cp -a web "$DIR.new"
+          rm -rf "$DIR.new/backend/sveltekit/static/public/game"
+          cp -a build/WebGL/game "$DIR.new/backend/sveltekit/static/public/game"
+          rm -rf "$DIR"
+          mv "$DIR.new" "$DIR"
+
+      - name: init-env
+        run: |
+          set -a; . "$HOME/.preview/env"; set +a
+          test -n "$PREVIEW_DOMAIN" || { echo "::error::PREVIEW_DOMAIN missing in ~/.preview/env"; exit 1; }
+          echo "PREVIEW_DOMAIN=$PREVIEW_DOMAIN" >> "$GITHUB_ENV"
+          cat > "$DIR/.env" <<EOF
+          POSTGRES_HOST=db
+          POSTGRES_PORT=5432
+          POSTGRES_USER=transcendence
+          POSTGRES_PASSWORD=$(openssl rand -hex 16)
+          POSTGRES_DB=transcendence
+          ORIGIN=https://$SLUG.$PREVIEW_DOMAIN
+          PREVIEW_SLUG=$SLUG
+          PREVIEW_DOMAIN=$PREVIEW_DOMAIN
+          EOF
+
+      - name: build-web
+        run: docker compose build
+
+      - name: run
+        run: docker compose up -d
+
+      - name: wait-until-up
+        id: up
+        run: |
+          host="$SLUG.$PREVIEW_DOMAIN"
+          curl -kfsS -o /dev/null --retry 30 --retry-delay 5 --retry-all-errors --resolve "$host:443:127.0.0.1" "https://$host/"
+          curl -kfsS -o /dev/null --resolve "$host:443:127.0.0.1" "https://$host/public/game/Build/game.loader.js"
+          echo "url=https://$host" >> "$GITHUB_OUTPUT"
+          echo "### Preview is up: https://$host" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: logs-on-failure
+        if: failure()
+        run: docker compose logs --tail 128

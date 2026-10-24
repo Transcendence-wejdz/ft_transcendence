@@ -1,0 +1,18 @@
+services:
+  nginx:
+    ports: !reset []
+    networks: [default, previews]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${PREVIEW_SLUG}.rule=Host(`${PREVIEW_SLUG}.${PREVIEW_DOMAIN}`)
+      - traefik.http.routers.${PREVIEW_SLUG}.entrypoints=websecure
+      - traefik.http.routers.${PREVIEW_SLUG}.tls=true
+      - traefik.http.services.${PREVIEW_SLUG}.loadbalancer.server.port=4443
+      - traefik.http.services.${PREVIEW_SLUG}.loadbalancer.server.scheme=https
+
+  adminer:
+    ports: !reset []
+
+networks:
+  previews:
+    external: true

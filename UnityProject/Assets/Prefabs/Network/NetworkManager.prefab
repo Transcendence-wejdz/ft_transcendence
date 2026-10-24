@@ -54,7 +54,7 @@ MonoBehaviour:
     Prefabs:
       NetworkPrefabsLists:
       - {fileID: 11400000, guid: 42fab3d0802ee23aa8a7cb9d6d98b823, type: 2}
-    TickRate: 30
+    TickRate: 50
     ClientConnectionBufferTimeout: 10
     ConnectionApproval: 0
     ConnectionData: 
@@ -92,7 +92,7 @@ MonoBehaviour:
   m_ProtocolType: 0
   m_UseWebSockets: 0
   m_UseEncryption: 1
-  m_MaxPacketQueueSize: 128
+  m_MaxPacketQueueSize: 512
   m_MaxPayloadSize: 6144
   m_HeartbeatTimeoutMS: 500
   m_ConnectTimeoutMS: 1000
@@ -123,7 +123,6 @@ MonoBehaviour:
   multiplayerPanel: {fileID: 0}
   gameModeManagerPrefab: {fileID: 4421769525994616640, guid: aff9998613da735098ddf828e741457b, type: 3}
   ipInputField: {fileID: 0}
-  spawnPoint: {fileID: 0}
   maxPlayers: 4
   hostButton: {fileID: 0}
   joinButton: {fileID: 0}

@@ -1,6 +1,7 @@
+using Unity.Netcode;
 using UnityEngine;
 
-// Cosmetic clouds living in a fixed world area over the map, drifting with the wind and drawn above everything on the Sky sorting layer.
+// Cosmetic Sky-layer clouds over the map; positions derive from the map seed and the shared network clock, so peers match without syncing.
 public class SeaClouds : MonoBehaviour
 {
     [SerializeField] private Sprite[] cloudSprites;
@@ -19,6 +20,8 @@ public class SeaClouds : MonoBehaviour
     [SerializeField] private float edgeFade = 8f;
     [Tooltip("Clouds turn see-through around the local player when they cover them.")]
     [SerializeField] private bool revealPlayer = true;
+    [Tooltip("Used when the scene has no map generator (e.g. Lobby), so peers still share the same sky.")]
+    [SerializeField] private int fallbackSeed;
     [SerializeField] private string sortingLayer = "Sky";
     [SerializeField] private int sortingOrder;
     [Tooltip("Leave empty for the default sprite material.")]
@@ -26,8 +29,13 @@ public class SeaClouds : MonoBehaviour
 
     private Transform[] clouds;
     private SpriteRenderer[] renderers;
+    private Vector2[] startOffsets;
     private float[] speeds;
     private float[] alphas;
+    private Vector2Int[] wrapKeys;
+    private int cloudSeed;
+    private bool waitForMapSeed;
+    private bool spawned;
 
     void Start()
     {
@@ -36,16 +44,20 @@ public class SeaClouds : MonoBehaviour
             enabled = false;
             return;
         }
-        Spawn();
+        waitForMapSeed = FindAnyObjectByType<ProceduralMapGenerator>(FindObjectsInactive.Include) != null;
     }
 
-    private void Spawn()
+    // Each cloud gets its start point and speed from the seed, so they match across peers.
+    private void Spawn(int seed)
     {
+        cloudSeed = seed;
         clouds = new Transform[cloudCount];
         renderers = new SpriteRenderer[cloudCount];
+        startOffsets = new Vector2[cloudCount];
         speeds = new float[cloudCount];
         alphas = new float[cloudCount];
-        Rect area = GetArea();
+        wrapKeys = new Vector2Int[cloudCount];
+        System.Random rng = new(seed);
 
         for (int i = 0; i < cloudCount; i++)
         {
@@ -57,8 +69,9 @@ public class SeaClouds : MonoBehaviour
             renderers[i].sortingOrder = sortingOrder;
             if (cloudMaterial != null)
                 renderers[i].sharedMaterial = cloudMaterial;
-            Restyle(i);
-            clouds[i].position = new Vector3(Random.Range(area.xMin, area.xMax), Random.Range(area.yMin, area.yMax), 0f);
+            startOffsets[i] = new Vector2((float)rng.NextDouble(), (float)rng.NextDouble());
+            speeds[i] = Mathf.Lerp(speedRange.x, speedRange.y, (float)rng.NextDouble());
+            wrapKeys[i] = new Vector2Int(int.MinValue, int.MinValue);
             if (revealPlayer)
             {
                 RevealOccluder occluder = cloud.AddComponent<RevealOccluder>();
@@ -66,27 +79,41 @@ public class SeaClouds : MonoBehaviour
                 occluder.Moves = true;
             }
         }
+        spawned = true;
     }
 
     void Update()
     {
+        if (!spawned)
+        {
+            int? seed = waitForMapSeed ? ProceduralMapGenerator.RuntimeSeed : fallbackSeed;
+            if (!seed.HasValue)
+                return;
+            Spawn(seed.Value);
+        }
+
         Rect area = GetArea();
-        Vector3 wind = windDirection.normalized;
+        Vector2 wind = windDirection.normalized;
+        double time = SharedTime();
 
         for (int i = 0; i < cloudCount; i++)
         {
-            Vector3 pos = clouds[i].position + wind * (speeds[i] * Time.deltaTime);
+            double travelled = speeds[i] * time;
+            double rawX = startOffsets[i].x * area.width + wind.x * travelled;
+            double rawY = startOffsets[i].y * area.height + wind.y * travelled;
+            Vector2Int wrap = new((int)System.Math.Floor(rawX / area.width), (int)System.Math.Floor(rawY / area.height));
+            float x = area.xMin + (float)(rawX - wrap.x * (double)area.width);
+            float y = area.yMin + (float)(rawY - wrap.y * (double)area.height);
 
-            if (!area.Contains(pos))
+            if (wrap != wrapKeys[i])
             {
-                pos.x = area.xMin + Mathf.Repeat(pos.x - area.xMin, area.width);
-                pos.y = area.yMin + Mathf.Repeat(pos.y - area.yMin, area.height);
-                Restyle(i);
+                wrapKeys[i] = wrap;
+                Restyle(i, wrap);
             }
 
-            clouds[i].position = new Vector3(pos.x, pos.y, 0f);
+            clouds[i].position = new Vector3(x, y, 0f);
 
-            float edgeDistance = Mathf.Min(pos.x - area.xMin, area.xMax - pos.x, pos.y - area.yMin, area.yMax - pos.y);
+            float edgeDistance = Mathf.Min(x - area.xMin, area.xMax - x, y - area.yMin, area.yMax - y);
             float alpha = opacity * (edgeFade > 0f ? Mathf.Clamp01(edgeDistance / edgeFade) : 1f);
             if (Mathf.Abs(alpha - alphas[i]) > 0.004f)
             {
@@ -94,6 +121,15 @@ public class SeaClouds : MonoBehaviour
                 renderers[i].color = new Color(1f, 1f, 1f, alpha);
             }
         }
+    }
+
+    // Netcode's server time is the same on every peer; offline falls back to the local clock.
+    private static double SharedTime()
+    {
+        NetworkManager network = NetworkManager.Singleton;
+        if (network != null && network.IsListening && (network.IsServer || network.IsConnectedClient))
+            return network.ServerTime.Time;
+        return Time.timeAsDouble;
     }
 
     private Rect GetArea()
@@ -108,14 +144,25 @@ public class SeaClouds : MonoBehaviour
         Gizmos.DrawWireCube(transform.position, new Vector3(areaSize.x, areaSize.y, 0f));
     }
 
-    // New look each time a cloud re-enters, so the wrap is not noticeable.
-    private void Restyle(int i)
+    // New look each time a cloud re-enters, picked from the seed and wrap count so every peer agrees.
+    private void Restyle(int i, Vector2Int wrap)
     {
-        renderers[i].sprite = cloudSprites[Random.Range(0, cloudSprites.Length)];
-        renderers[i].color = new Color(1f, 1f, 1f, opacity);
-        alphas[i] = opacity;
-        renderers[i].flipX = Random.value < 0.5f;
-        clouds[i].localScale = Vector3.one * Random.Range(scaleRange.x, scaleRange.y);
-        speeds[i] = Random.Range(speedRange.x, speedRange.y);
+        System.Random rng = new(Hash(cloudSeed, i, wrap.x, wrap.y));
+        renderers[i].sprite = cloudSprites[rng.Next(cloudSprites.Length)];
+        renderers[i].color = new Color(1f, 1f, 1f, alphas[i]);
+        renderers[i].flipX = rng.NextDouble() < 0.5;
+        clouds[i].localScale = Vector3.one * Mathf.Lerp(scaleRange.x, scaleRange.y, (float)rng.NextDouble());
+    }
+
+    private static int Hash(int a, int b, int c, int d)
+    {
+        unchecked
+        {
+            int h = a;
+            h = h * 486187739 + b;
+            h = h * 486187739 + c;
+            h = h * 486187739 + d;
+            return h;
+        }
     }
 }

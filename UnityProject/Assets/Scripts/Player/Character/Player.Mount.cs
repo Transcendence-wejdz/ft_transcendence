@@ -180,7 +180,7 @@ public partial class Player
         return false;
     }
 
-    // Local rendering only, runs for every observer; auto Y-sort is unreliable this close, so pin just in front of the pig instead.
+    // Local rendering only, runs for every observer; the rider pins itself in front of the pig and the pig right under it (after the pig's own Update).
     private void LateUpdateMountSorting()
     {
         Player parentPlayer = transform.parent != null ? transform.parent.GetComponent<Player>() : null;
@@ -195,5 +195,11 @@ public partial class Player
             ? parentPlayer.sortingLayerAuto.CurrentSortingOrder
             : parentPlayer.spriteRenderer.sortingOrder;
         spriteRenderer.sortingOrder = pigSortingOrder + mountedSortingOrderBump;
+
+        if (parentPlayer.pigRenderer != null)
+        {
+            parentPlayer.pigRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
+            parentPlayer.pigRenderer.sortingOrder = spriteRenderer.sortingOrder - 1;
+        }
     }
 }

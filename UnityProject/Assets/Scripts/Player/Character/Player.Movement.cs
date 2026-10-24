@@ -27,6 +27,10 @@ public partial class Player
 
     private const float FacingSwitchDeadzoneDeg = 10f;
     private const float BackwardDotThreshold = -0.1f;
+    private const float SoftCollisionShare = 0.5f;
+    private const float MaxPushSpeed = 8f;
+
+    private Vector2 pendingPush;
 
     private static readonly Vector2[] FacingOctants =
     {
@@ -53,13 +57,15 @@ public partial class Player
         }
     }
 
-    // Only the owner reads input and renders a camera.
+    // Only the owner reads input and renders a camera; other copies go kinematic so no peer's physics can shove them off the owner's position.
     private void SpawnMovement()
     {
         if (!IsOwner)
         {
             if (playerInput != null)
                 playerInput.enabled = false;
+            if (rb != null)
+                rb.bodyType = RigidbodyType2D.Kinematic;
 
             PlayerCameraRig.SetActive(transform, active: false);
             return;
@@ -106,6 +112,8 @@ public partial class Player
         if (!this.IsLocallyControlled())
             return;
 
+        Vector2 pushVelocity = ConsumePushVelocity();
+
         if (IsBlocked)
         {
             rb.linearVelocity = Vector2.zero;
@@ -122,7 +130,7 @@ public partial class Player
                 moveInput = moveAction.ReadValue<Vector2>();
         }
 
-        if (ApplyDodgeMovement())
+        if (ApplyKnockbackMovement() || ApplyDodgeMovement())
             return;
 
         Vector2 aimDir = IsDead ? GetMovementFacingDirection() : InputModeTracker.UsingGamepad ? GetStickAimDirection() : GetMouseAimDirection();
@@ -143,11 +151,59 @@ public partial class Player
         float speedMult = MovementSpeedMultiplier;
         if (speedMult <= 0f)
         {
-            rb.linearVelocity = Vector2.zero;
+            rb.linearVelocity = pushVelocity;
             return;
         }
 
-        rb.linearVelocity = moveInput * moveSpeed * speedMult * MoveSpeedBonusMultiplier;
+        rb.linearVelocity = moveInput * moveSpeed * speedMult * MoveSpeedBonusMultiplier + pushVelocity;
+    }
+
+    // Queues a displacement (soft collision, shield) that the next movement step turns into velocity, so walls still stop it.
+    public void AddPush(Vector2 displacement)
+    {
+        pendingPush += displacement;
+    }
+
+    private Vector2 ConsumePushVelocity()
+    {
+        Vector2 push = pendingPush;
+        pendingPush = Vector2.zero;
+        if (push == Vector2.zero || Time.deltaTime <= 0f)
+            return Vector2.zero;
+        return Vector2.ClampMagnitude(push / Time.deltaTime, MaxPushSpeed);
+    }
+
+    // Player bodies never block each other physically (each owner is authoritative); instead this peer's own player slides out of half of any overlap, so running into someone pushes them on their own machine too.
+    private void UpdateSoftPlayerCollision()
+    {
+        if (!this.IsLocallyControlled() || bodyCollider == null || rb == null)
+            return;
+
+        Vector2 center = bodyCollider.bounds.center;
+        float radius = Mathf.Min(bodyCollider.bounds.extents.x, bodyCollider.bounds.extents.y);
+        Vector2 separation = Vector2.zero;
+
+        foreach (Player other in AllActiveInstances)
+        {
+            if (other == this || other.bodyCollider == null)
+                continue;
+
+            Physics2D.IgnoreCollision(bodyCollider, other.bodyCollider, true);
+            if (isMounted || other.isMounted || transform.parent == other.transform || other.transform.parent == transform)
+                continue;
+
+            Vector2 offset = center - (Vector2)other.bodyCollider.bounds.center;
+            float minDistance = radius + Mathf.Min(other.bodyCollider.bounds.extents.x, other.bodyCollider.bounds.extents.y);
+            float distance = offset.magnitude;
+            if (distance >= minDistance)
+                continue;
+
+            Vector2 away = distance > 0.0001f ? offset / distance : Vector2.right;
+            separation += away * ((minDistance - distance) * SoftCollisionShare);
+        }
+
+        if (separation != Vector2.zero)
+            AddPush(separation);
     }
 
     public void Move(InputAction.CallbackContext ctx)
@@ -248,13 +304,5 @@ public partial class Player
 
         moveSpeedMult = next;
         animator.SetFloat(MoveSpeedMultHash, moveSpeedMult);
-    }
-
-    private void FlipTowards(float directionX)
-    {
-        if (directionX < 0)
-            spriteRenderer.flipX = true;
-        else if (directionX > 0)
-            spriteRenderer.flipX = false;
     }
 }

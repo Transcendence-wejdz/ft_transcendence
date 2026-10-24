@@ -73,10 +73,16 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
         }
     }
 
+    // A rider is parented to the pig it rides, so its shots fly through that pig.
+    private bool IsOwnerMount(Transform target)
+    {
+        return owner != null && owner.transform.parent == target;
+    }
+
     // Stops on the first non-damageable solid thing it hits, but pierces up to pierceCount damageables before despawning; trigger-only zones are ignored.
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.isTrigger)
+        if (other.isTrigger || other.GetComponent<ShieldHoldFX>() != null)
             return;
 
         var damageable = other.GetComponentInParent<IDamageable>();
@@ -87,7 +93,7 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
         }
 
         var behaviour = damageable as MonoBehaviour;
-        if (behaviour != null && behaviour.gameObject == owner)
+        if (behaviour != null && (behaviour.gameObject == owner || IsOwnerMount(behaviour.transform)))
             return;
 
         if (!hitTargets.Add(damageable))

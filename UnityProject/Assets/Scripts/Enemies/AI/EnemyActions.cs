@@ -15,26 +15,11 @@ public class EnemyActions : NetworkBehaviour
     // Assigned at spawn time by whoever instantiates this enemy (see Enemy.Initialize); never baked into the prefab.
     public EnemyKit Kit { get => kit; set => kit = value; }
 
-    private readonly NetworkVariable<byte> swingCount = new OfflineSafeNetworkVariable<byte>(
-        0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-
-    // Swing direction in degrees, replicated so remote clients can reproduce the same telegraph the server resolves against.
-    private readonly NetworkVariable<float> swingAngleDegrees = new OfflineSafeNetworkVariable<float>(
-        0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private float swingAngleDegrees;
 
     void Awake()
     {
         ai = GetComponent<EnemyAI>();
-    }
-
-    public override void OnNetworkSpawn()
-    {
-        swingCount.OnValueChanged += HandleSwingCountChanged;
-    }
-
-    public override void OnNetworkDespawn()
-    {
-        swingCount.OnValueChanged -= HandleSwingCountChanged;
     }
 
     void FixedUpdate()
@@ -46,11 +31,12 @@ public class EnemyActions : NetworkBehaviour
             ResolveHit();
     }
 
-    // Replays the swing on remote clients.
-    private void HandleSwingCountChanged(byte previous, byte current)
+    // One RPC carries the angle with the trigger, so remote telegraphs and shots never use the previous swing's direction.
+    [Rpc(SendTo.NotServer)]
+    private void PlaySwingRpc(float angleDegrees)
     {
-        if (!IsServer)
-            PlayAttackAnimation();
+        swingAngleDegrees = angleDegrees;
+        PlayAttackAnimation();
     }
 
     // Melee damage lands attackHitDelay later; ranged shots deal damage on contact (see RangedAttackVisual), the delay only holds the shooter still while it fires.
@@ -60,31 +46,50 @@ public class EnemyActions : NetworkBehaviour
         pendingHitTime = Time.time + kit.AttackHitDelay;
 
         Vector2 direction = (EnemyAI.TargetCenter(target) - ai.BodyCenter).normalized;
-        swingAngleDegrees.Value = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        swingAngleDegrees = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         if (IsSpawned)
-            swingCount.Value = (byte)(swingCount.Value + 1);
+            PlaySwingRpc(swingAngleDegrees);
         PlayAttackAnimation(direction);
     }
 
-    // Checked against the enemy's current position (not a frozen snapshot), so it always agrees with the telegraph, which follows it too.
+    // Shields resolve on the server; a remote victim then judges the hit itself, since only it knows where it really stands.
     private void ResolveHit()
     {
         pendingHitTime = 0f;
         if (kit.IsRanged || swingTarget == null || swingTarget.IsDead)
             return;
 
-        if (!kit.HitZoneContains(ai.BodyCenter, SwingDirection(), EnemyAI.TargetCenter(swingTarget)))
+        Vector2 center = ai.BodyCenter;
+        Vector2 direction = SwingDirection();
+        bool inZoneHere = kit.HitZoneContains(center, direction, EnemyAI.TargetCenter(swingTarget));
+
+        if (inZoneHere && Player.TryAbsorbWithShield(center, EnemyAI.TargetCenter(swingTarget), kit.Damage))
             return;
 
-        if (Player.TryAbsorbWithShield(ai.BodyCenter, EnemyAI.TargetCenter(swingTarget), kit.Damage))
+        if (IsSpawned && swingTarget.OwnerClientId != NetworkManager.LocalClientId)
+        {
+            ResolveHitOnVictimRpc(center, direction, swingTarget.NetworkObject, RpcTarget.Single(swingTarget.OwnerClientId, RpcTargetUse.Temp));
+            return;
+        }
+
+        if (inZoneHere)
+            swingTarget.RequestDamage(kit.Damage);
+    }
+
+    // Runs on the victim's own machine, against its true (not server-delayed) position.
+    [Rpc(SendTo.SpecifiedInParams)]
+    private void ResolveHitOnVictimRpc(Vector2 center, Vector2 direction, NetworkObjectReference targetRef, RpcParams rpcParams)
+    {
+        if (!targetRef.TryGet(out NetworkObject targetObject) || !targetObject.TryGetComponent(out Player target) || target.IsDead)
             return;
 
-        swingTarget.RequestDamage(kit.Damage);
+        if (kit.HitZoneContains(center, direction, EnemyAI.TargetCenter(target)))
+            target.TakeDamage(kit.Damage);
     }
 
     private Vector2 SwingDirection()
     {
-        float radians = swingAngleDegrees.Value * Mathf.Deg2Rad;
+        float radians = swingAngleDegrees * Mathf.Deg2Rad;
         return new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
     }
 

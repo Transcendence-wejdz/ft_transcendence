@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Three-stage flipbook (start/loop/end) for a held shield; polls the owner's IsShieldActive instead of a fixed timer so it reacts to both a timeout and the shield breaking early.
+// Three-stage flipbook (start/loop/end) for a held shield; polls the owner's IsShieldActive, ending only once it was seen active (the spawn RPC can beat that variable to remote peers).
 public class ShieldHoldFX : MonoBehaviour, IAttackFX, IHealthStats
 {
     [SerializeField] private SpriteRenderer spriteRenderer;
@@ -13,6 +13,8 @@ public class ShieldHoldFX : MonoBehaviour, IAttackFX, IHealthStats
 
     private enum Stage { Start, Loop, End }
 
+    private const float ActivationGraceSeconds = 1f;
+
     private Player owner;
     private Sprite[] currentFrames;
     private Stage stage = Stage.Start;
@@ -21,12 +23,15 @@ public class ShieldHoldFX : MonoBehaviour, IAttackFX, IHealthStats
     private float lastReportedHealth = -1f;
     private bool tracksFacing = true;
     private float fxDistance;
+    private bool seenActive;
+    private float initTime;
 
     public Player Owner => owner;
     public float CurrentHealth => owner != null ? owner.CurrentShieldHealth : 0f;
     public float MaxHealth => owner != null ? owner.ShieldMaxHealth : 0f;
     public event System.Action<float, float> OnHealthChanged;
 
+    // On other peers the wall also blocks their own player (includeLayers); on the caster's machine it passes through ally copies, which each peer pushes out itself.
     public void Init(GameObject attacker, bool hasHitbox, ClassKit kit, AbilityType ability, float damageMultiplier)
     {
         owner = attacker.GetComponent<Player>();
@@ -35,9 +40,16 @@ public class ShieldHoldFX : MonoBehaviour, IAttackFX, IHealthStats
         tracksFacing = kit == null || !kit.UltimateIgnoreAimRotation;
         fxDistance = kit != null ? kit.UltimateFxDistance : 0f;
         currentFrames = startFrames;
+        initTime = Time.time;
 
         if (healthBarRoot != null)
             healthBarRoot.SetParent(attacker.transform, false);
+
+        Collider2D wall = GetComponent<Collider2D>();
+        if (wall != null && attacker != LocalPlayer.Get())
+            wall.includeLayers |= 1 << attacker.layer;
+        if (owner != null)
+            owner.RegisterShieldWall(wall);
 
         SortingLayer_Auto attackerSorting = attacker.GetComponent<SortingLayer_Auto>();
         if (attackerSorting != null && spriteRenderer != null)
@@ -68,7 +80,9 @@ public class ShieldHoldFX : MonoBehaviour, IAttackFX, IHealthStats
                 OnHealthChanged?.Invoke(current, MaxHealth);
             }
 
-            if (stage != Stage.End && !owner.IsShieldActive)
+            if (owner.IsShieldActive)
+                seenActive = true;
+            else if (stage != Stage.End && (seenActive || Time.time - initTime > ActivationGraceSeconds))
                 EnterEndStage();
 
             if (tracksFacing)

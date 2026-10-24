@@ -196,6 +196,9 @@ public partial class ProceduralMapGenerator : MonoBehaviour, ISerializationCallb
 
     private static int? previousSeed;
 
+    // Seed of the current scene map at runtime, null until known.
+    public static int? RuntimeSeed { get; private set; }
+
     private static readonly WaterSettings NoWater = new WaterSettings { threshold = 0f };
     private static readonly IslandSettings NoIsland = new IslandSettings();
 
@@ -225,6 +228,12 @@ public partial class ProceduralMapGenerator : MonoBehaviour, ISerializationCallb
         TryInitialize();
     }
 
+    void OnDestroy()
+    {
+        if (Application.isPlaying)
+            RuntimeSeed = null;
+    }
+
     // A Random seed waits for MapSeedSync, which a client only gets once the scene's network objects spawn; without one in the scene it rolls locally instead of never generating.
     private bool TryInitialize()
     {
@@ -245,6 +254,8 @@ public partial class ProceduralMapGenerator : MonoBehaviour, ISerializationCallb
     {
         activeSeed = ResolveSeed();
         initialized = Application.isPlaying;
+        if (Application.isPlaying)
+            RuntimeSeed = activeSeed;
         System.Random rng = new(activeSeed);
         waterOffset = NextOffset(rng);
         islandOffset = NextOffset(rng);

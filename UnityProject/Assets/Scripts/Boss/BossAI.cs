@@ -51,6 +51,8 @@ public class BossAI : NetworkBehaviour
     private float nextChargeTime;
     private float nextSummonTime;
     private readonly HashSet<Player> chargeHits = new HashSet<Player>();
+    private float localChargeEndTime;
+    private bool localChargeHit;
     private readonly List<Player> victims = new List<Player>();
 
     private Vector2 lastPosition;
@@ -102,6 +104,7 @@ public class BossAI : NetworkBehaviour
     void Update()
     {
         UpdateVisuals();
+        UpdateLocalCharge();
     }
 
     // Server-only loop: a running combo owns movement, otherwise start a combo if one fits, else reposition.
@@ -374,10 +377,33 @@ public class BossAI : NetworkBehaviour
         }
     }
 
+    // The server only hits its own player; remote players judge slams and charges on their own machine (see JudgeLocalHit).
     private void HitPlayer(Player player, float damage)
     {
+        if (IsSpawned && player.OwnerClientId != NetworkManager.LocalClientId)
+            return;
         if (!Player.TryAbsorbWithShield(BodyCenter, EnemyAI.TargetCenter(player), damage))
             player.RequestDamage(damage);
+    }
+
+    // Client side: hits this machine's own player if it stands inside the radius around the boss as displayed here.
+    private bool JudgeLocalHit(float radius, float damage)
+    {
+        Player local = LocalPlayer.GetPlayer();
+        if (local == null || local.IsDead || (EnemyAI.TargetCenter(local) - BodyCenter).sqrMagnitude > radius * radius)
+            return false;
+
+        if (!Player.TryAbsorbWithShield(BodyCenter, EnemyAI.TargetCenter(local), damage))
+            local.TakeDamage(damage);
+        return true;
+    }
+
+    // Remote clients check charge contact every frame of the charge they see, at most once per charge.
+    private void UpdateLocalCharge()
+    {
+        if (IsServer || localChargeHit || Time.time >= localChargeEndTime)
+            return;
+        localChargeHit = JudgeLocalHit(ChargeHitWidth * 0.5f, Kit.ChargeDamage);
     }
 
     // Each minion rolls its own kit from the boss's summon list; spawn spots are server-picked, so they travel to clients for the dust FX.
@@ -435,6 +461,18 @@ public class BossAI : NetworkBehaviour
     private void PhaseRpc(BossPattern p, BossPhase ph, Vector2 direction, float duration, float laneLength)
     {
         PlayPhaseVisual(p, ph, direction, duration, laneLength);
+        if (ph != BossPhase.Active)
+            return;
+
+        if (p == BossPattern.Slam)
+        {
+            JudgeLocalHit(Kit.SlamRadius, Kit.SlamDamage);
+        }
+        else if (p == BossPattern.Charge)
+        {
+            localChargeEndTime = Time.time + duration;
+            localChargeHit = false;
+        }
     }
 
     // Telegraphs and animations only; positions come from this peer's own transform.

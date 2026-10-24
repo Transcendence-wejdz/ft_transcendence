@@ -20,7 +20,7 @@ public class RangedAttackVisual : MonoBehaviour
     private Vector3 startPosition;
     private Vector3 spriteBaseLocalPosition;
 
-    // isAuthoritative should be true only for the server/offline-authoritative spawn; every other peer's copy is replay-only and never applies damage.
+    // isAuthoritative is true only on the server/offline copy, which alone applies shield damage; player hits are judged per machine.
     public static void Show(GameObject prefab, Vector3 from, Vector2 direction, float speed, float maxDistance, float arcHeight, float damage, bool isAuthoritative)
     {
         if (prefab == null || speed <= 0f || maxDistance <= 0f || direction.sqrMagnitude < 0.0001f)
@@ -98,7 +98,7 @@ public class RangedAttackVisual : MonoBehaviour
         }
     }
 
-    // Shields absorb the shot; otherwise only a living player's solid body counts, never trigger zones (e.g. revive/interaction areas).
+    // Shields absorb the shot (server-resolved); a player's hit is judged by that player's own machine, never trigger zones (e.g. revive/interaction areas).
     void OnTriggerEnter2D(Collider2D other)
     {
         if (resolved)
@@ -122,8 +122,8 @@ public class RangedAttackVisual : MonoBehaviour
             return;
 
         resolved = true;
-        if (isAuthoritative)
-            player.RequestDamage(damage);
+        if (player.IsLocallyControlled())
+            player.TakeDamage(damage);
         Impact();
     }
 

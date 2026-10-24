@@ -6,6 +6,7 @@ using UnityEngine;
 public class BossStats : NetworkBehaviour, IDamageable, IHealthStats
 {
     private Boss boss;
+    private float predictedHealth = float.MaxValue;
 
     private readonly NetworkVariable<float> currentHealth = new OfflineSafeNetworkVariable<float>(
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -13,7 +14,7 @@ public class BossStats : NetworkBehaviour, IDamageable, IHealthStats
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     public float MaxHealth => maxHealth.Value > 0f ? maxHealth.Value : boss.Kit.MaxHealth;
-    public float CurrentHealth => currentHealth.Value;
+    public float CurrentHealth => Mathf.Min(currentHealth.Value, predictedHealth);
 
     public event Action<float, float> OnHealthChanged;
 
@@ -24,8 +25,13 @@ public class BossStats : NetworkBehaviour, IDamageable, IHealthStats
     void Awake()
     {
         boss = GetComponent<Boss>();
-        currentHealth.OnValueChanged += (_, value) => OnHealthChanged?.Invoke(value, MaxHealth);
-        maxHealth.OnValueChanged += (_, value) => OnHealthChanged?.Invoke(currentHealth.Value, value);
+        currentHealth.OnValueChanged += (_, value) =>
+        {
+            if (value <= predictedHealth)
+                predictedHealth = float.MaxValue;
+            OnHealthChanged?.Invoke(CurrentHealth, MaxHealth);
+        };
+        maxHealth.OnValueChanged += (_, value) => OnHealthChanged?.Invoke(CurrentHealth, value);
         StartCoroutine(InitializeHealthNextFrame());
     }
 
@@ -40,7 +46,7 @@ public class BossStats : NetworkBehaviour, IDamageable, IHealthStats
         currentHealth.Value = maxHealth.Value;
     }
 
-    // Callable from any client; applied on the server.
+    // Callable from any client; applied on the server, predicted on the attacker's screen until the server value arrives.
     public void RequestDamage(float amount)
     {
         if (!NetworkObject.IsSpawned)
@@ -49,6 +55,11 @@ public class BossStats : NetworkBehaviour, IDamageable, IHealthStats
             return;
         }
 
+        if (!IsServer)
+        {
+            predictedHealth = Mathf.Max(0f, CurrentHealth - amount);
+            OnHealthChanged?.Invoke(CurrentHealth, MaxHealth);
+        }
         RequestDamageServerRpc(amount);
     }
 

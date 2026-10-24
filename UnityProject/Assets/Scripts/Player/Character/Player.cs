@@ -89,7 +89,9 @@ public partial class Player : NetworkBehaviour, IDamageable
     void Update()
     {
         UpdateMovement();
+        UpdateSoftPlayerCollision();
         UpdateDodge();
+        UpdateDashDust();
         UpdateMountCollisionIgnore();
         UpdateMount();
         UpdateMountInteractVisibility();
@@ -98,12 +100,15 @@ public partial class Player : NetworkBehaviour, IDamageable
         UpdatePigForm();
         UpdateActions();
         UpdateShield();
+        UpdateShieldContactPush();
     }
 
     void LateUpdate()
     {
         LateUpdateMount();
+        LateUpdateRemotePushPrediction();
         LateUpdateMountSorting();
+        LateUpdateFlip();
         LateUpdateReveal();
     }
 }

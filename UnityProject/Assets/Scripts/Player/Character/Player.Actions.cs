@@ -157,11 +157,10 @@ public partial class Player
             return;
 
         float angle = AimAngleDegrees;
+        SpawnLocalFx(angle, hasHitbox: true, ability);
 
         if (NetworkObject.IsSpawned)
             SpawnAbilityFxServerRpc(angle, ability);
-        else
-            SpawnLocalFx(angle, hasHitbox: true, ability);
     }
 
     [ServerRpc]
@@ -170,12 +169,14 @@ public partial class Player
         SpawnAbilityFxClientRpc(angle, OwnerClientId, ability);
     }
 
-    // Spawns the ability FX on every client; only the attacker's copy deals damage.
+    // Mirrors the FX on the other clients only, the attacker already spawned its own (with the hitbox) instantly.
     [ClientRpc]
     private void SpawnAbilityFxClientRpc(float angle, ulong attackerClientId, AbilityType ability)
     {
-        bool hasHitbox = NetworkManager.Singleton.LocalClientId == attackerClientId;
-        SpawnLocalFx(angle, hasHitbox, ability);
+        if (NetworkManager.Singleton.LocalClientId == attackerClientId)
+            return;
+
+        SpawnLocalFx(angle, hasHitbox: false, ability);
     }
 
     // Position is computed locally from the attacker's current transform, not sent over RPC - round-trip latency would otherwise bake a stale offset into the spawn point.

@@ -34,12 +34,16 @@ jobs:
         run: |
           rm -rf build
 
+      - name: load-unity-license
+        run: |
+          set -a; . "$HOME/.unity/credentials"; set +a
+          echo "::add-mask::$UNITY_PASSWORD"
+          echo "UNITY_EMAIL=$UNITY_EMAIL" >> "$GITHUB_ENV"
+          echo "UNITY_PASSWORD=$UNITY_PASSWORD" >> "$GITHUB_ENV"
+          { echo "UNITY_LICENSE<<ULF_EOF"; cat "$HOME/.unity/Unity_lic.ulf"; echo "ULF_EOF"; } >> "$GITHUB_ENV"
+
       - name: build-unity-webgl
         uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           projectPath: UnityProject
           unityVersion: 6000.5.6f1

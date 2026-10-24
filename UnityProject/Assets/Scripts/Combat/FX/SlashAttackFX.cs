@@ -63,6 +63,9 @@ public class SlashAttackFX : MonoBehaviour, IAttackFX
 
     void OnTriggerEnter2D(Collider2D other)
     {
+        if (other.GetComponent<ShieldHoldFX>() != null)
+            return;
+
         var damageable = other.GetComponentInParent<IDamageable>();
         if (damageable == null || hitTargets.Contains(damageable))
             return;

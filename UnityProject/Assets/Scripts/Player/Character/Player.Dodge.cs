@@ -1,8 +1,17 @@
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public partial class Player
 {
+    [Header("Dodge")]
+    [SerializeField] private ParticleSystem dashDust;
+
+    private const float RemoteDashTailSeconds = 0.15f;
+
+    private float dashDustEndTime;
+    private float remoteDashStartTime;
+    private float remoteDashEndTime;
     private int dodgeCharges = -1;
     private float dodgeRechargeElapsed;
     private float dodgeEndTime;
@@ -51,6 +60,42 @@ public partial class Player
         dodgeCharges = DodgeCharges - 1;
         dodgeEndTime = Time.time + activeKit.DodgeDuration;
         dodgeVelocity = direction * (activeKit.DodgeDistance / activeKit.DodgeDuration);
+
+        dashDustEndTime = dodgeEndTime;
+        if (NetworkObject.IsSpawned)
+            DashDustServerRpc(activeKit.DodgeDuration);
+    }
+
+    [ServerRpc]
+    private void DashDustServerRpc(float duration)
+    {
+        DashDustClientRpc(duration);
+    }
+
+    // Remote copies display the dodge late, so the window is shifted by this peer's own interpolation delay.
+    [ClientRpc]
+    private void DashDustClientRpc(float duration)
+    {
+        if (IsOwner)
+            return;
+
+        remoteDashStartTime = Time.time + Unity.Netcode.Components.NetworkTransform.GetTickLatencyInSeconds();
+        remoteDashEndTime = remoteDashStartTime + duration + RemoteDashTailSeconds;
+    }
+
+    // Owner emits during its dodge window, remote copies during the shifted one; emission is per distance, so it follows the displayed dash.
+    private void UpdateDashDust()
+    {
+        if (dashDust == null)
+            return;
+
+        bool active = IsOwner || !NetworkObject.IsSpawned
+            ? Time.time < dashDustEndTime
+            : Time.time >= remoteDashStartTime && Time.time < remoteDashEndTime;
+
+        ParticleSystem.EmissionModule emission = dashDust.emission;
+        if (emission.enabled != active)
+            emission.enabled = active;
     }
 
     // Owner only: remembers the last keyboard direction and refills one charge at a time, every DodgeRechargeSeconds.

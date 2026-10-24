@@ -20,7 +20,7 @@ MonoBehaviour:
   retargetInterval: 0.5
   steerInterval: 0.1
   patternCooldown: 0.3
-  recoveryDuration: 0.8
+  recoveryDuration: 0.5
   enrageHealthFraction: 0.5
   enrageTempo: 1.35
   chargeMinRange: 6

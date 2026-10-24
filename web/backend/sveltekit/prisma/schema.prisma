@@ -16,8 +16,11 @@ model User {
   class        String    @default("Warrior")
   avatarUrl    String?   @map("avatar_url")
   gameSettings Json?     @map("game_settings")
+  gold         Int       @default(0)
+  upgrades     Json      @default("{}")
   createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   sessions     Session[]
+  gameRuns     GameRun[]
 
   @@map("users")
 }
@@ -30,4 +33,23 @@ model Session {
 
   @@index([userId], map: "sessions_user_id_idx")
   @@map("sessions")
+}
+
+model GameRun {
+  id         String    @id @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  mode       String
+  startedAt  DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz(6)
+  runId      Int?      @map("run_id")
+  score      Int?
+  wave       Int?
+  seconds    Int?
+  kills      Int?
+  victory    Boolean?
+  gold       Int?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startedAt], map: "game_runs_user_id_started_at_idx")
+  @@map("game_runs")
 }

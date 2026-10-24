@@ -12,6 +12,8 @@ declare global {
 				class: string;
 				avatar_url: string | null;
 				game_settings: unknown;
+				gold: number;
+				upgrades: unknown;
 			} | null;
 		}
 		// interface PageData {}

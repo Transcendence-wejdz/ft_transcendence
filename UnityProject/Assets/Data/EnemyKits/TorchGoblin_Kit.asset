@@ -15,9 +15,13 @@ MonoBehaviour:
   tier: 3
   maxHealth: 70
   xpReward: 22
+  scoreReward: 220
   moveSpeed: 3.4
+  attackShape: 0
   attackRange: 1.6
   attackAngle: 110
+  attackWidth: 0.8
+  attackOrigin: {x: 0, y: 0}
   damage: 16
   attackCooldown: 1
   attackHitDelay: 0.45

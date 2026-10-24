@@ -18,6 +18,9 @@ public static class WebBackend
 
     [DllImport("__Internal")]
     private static extern void WebBackend_Patch(string body, int requestId, PatchCallback callback);
+
+    [DllImport("__Internal")]
+    private static extern void WebBackend_Post(string path, string body, int requestId, PatchCallback callback);
 #endif
 
     // PATCHes /api/game/profile with a JSON body; onDone receives the HTTP status (0 = network error).
@@ -31,11 +34,22 @@ public static class WebBackend
 #endif
     }
 
+    // POSTs a JSON body to a same-origin API path (e.g. /api/game/reward); onDone receives the HTTP status (0 = network error).
+    public static void Post(string path, string json, Action<int> onDone = null)
+    {
+#if UNITY_WEBGL && !UNITY_EDITOR
+        int requestId = ++nextRequestId;
+        if (onDone != null)
+            Pending[requestId] = onDone;
+        WebBackend_Post(path, json, requestId, OnPatchDone);
+#endif
+    }
+
     [MonoPInvokeCallback(typeof(PatchCallback))]
     private static void OnPatchDone(int requestId, int status)
     {
         if (status < 200 || status >= 300)
-            Debug.LogWarning($"WebBackend: profile save failed with HTTP {status}.");
+            Debug.LogWarning($"WebBackend: request failed with HTTP {status}.");
 
         if (!Pending.TryGetValue(requestId, out Action<int> onDone))
             return;

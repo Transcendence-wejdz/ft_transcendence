@@ -18,8 +18,8 @@ public class EnemyStats : NetworkBehaviour, IDamageable, IHealthStats
 
     public event Action<float, float> OnHealthChanged;
 
-    // Fired once, server/offline-authoritative side only, right before the enemy despawns.
-    public static event Action<int> OnEnemyKilled;
+    // Fired once, server/offline-authoritative side only, right before the enemy despawns; the ulong is the killer's client id.
+    public static event Action<EnemyKit, ulong> OnEnemyKilled;
 
     void Awake()
     {
@@ -39,26 +39,27 @@ public class EnemyStats : NetworkBehaviour, IDamageable, IHealthStats
     {
         if (!NetworkObject.IsSpawned)
         {
-            ApplyDamage(amount);
+            ApplyDamage(amount, NetworkManager.ServerClientId);
             return;
         }
 
         RequestDamageServerRpc(amount);
     }
 
+    // Player hitboxes only live on the attacker's own copy, so the RPC sender is the attacker.
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-    private void RequestDamageServerRpc(float amount)
+    private void RequestDamageServerRpc(float amount, RpcParams rpcParams = default)
     {
-        ApplyDamage(amount);
+        ApplyDamage(amount, rpcParams.Receive.SenderClientId);
     }
 
-    private void ApplyDamage(float amount)
+    private void ApplyDamage(float amount, ulong attackerClientId)
     {
         currentHealth.Value = Mathf.Max(0f, currentHealth.Value - amount);
         if (currentHealth.Value > 0f)
             return;
 
-        OnEnemyKilled?.Invoke(kit.XpReward);
+        OnEnemyKilled?.Invoke(kit, attackerClientId);
 
         if (NetworkObject.IsSpawned)
             NetworkObject.Despawn(true);

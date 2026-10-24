@@ -85,6 +85,7 @@ GameObject:
   - component: {fileID: 8432815810805812705}
   - component: {fileID: 756691935088348759}
   - component: {fileID: 403920407802534383}
+  - component: {fileID: 7570624033142469235}
   m_Layer: 0
   m_Name: XPManager
   m_TagString: Untagged
@@ -151,6 +152,21 @@ MonoBehaviour:
   xpPerLevelIncrement: 100
   xpGainDelay: 0.25
   grantXP: 1
+--- !u!114 &7570624033142469235
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 446113791828117760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 22d43113902b33b35bc2473ba0e3b1f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScoreManager
+  ShowTopMostFoldoutHeaderGroup: 1
+  pointsPerWave: 100
+  bossOnly: 0
 --- !u!1 &1644447958649403761
 GameObject:
   m_ObjectHideFlags: 0

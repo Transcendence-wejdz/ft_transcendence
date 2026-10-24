@@ -14,6 +14,8 @@ public class WebProfileBridge : MonoBehaviour
         public string playerClass;
         public string color;
         public string settingsJson;
+        public int gold;
+        public string upgradesJson;
     }
 
     [Serializable]
@@ -136,6 +138,8 @@ public class WebProfileBridge : MonoBehaviour
         confirmedClass = classIndex;
         confirmedColor = colorIndex;
         HasProfile = true;
+        GoldWallet.SetFromServer(profile.gold);
+        PermanentUpgrades.SetFromServer(profile.upgradesJson);
 
         PlayerProfileStore.Save(classIndex, colorIndex, playerName);
 

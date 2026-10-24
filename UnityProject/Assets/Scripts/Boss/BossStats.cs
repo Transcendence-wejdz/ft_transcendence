@@ -17,6 +17,9 @@ public class BossStats : NetworkBehaviour, IDamageable, IHealthStats
 
     public event Action<float, float> OnHealthChanged;
 
+    // Fired once, server/offline-authoritative side only, right before the boss despawns.
+    public static event Action<BossKit> OnBossKilled;
+
     // Health is written a frame late, never in Awake (NetworkVariable writes there crash WebGL builds).
     void Awake()
     {
@@ -63,6 +66,8 @@ public class BossStats : NetworkBehaviour, IDamageable, IHealthStats
         currentHealth.Value = Mathf.Max(0f, currentHealth.Value - amount);
         if (currentHealth.Value > 0f)
             return;
+
+        OnBossKilled?.Invoke(boss.Kit);
 
         if (NetworkObject.IsSpawned)
             NetworkObject.Despawn(true);

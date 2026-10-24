@@ -97,7 +97,9 @@
                         displayName: data.user.display_name,
                         playerClass: data.user.class,
                         color: data.user.color,
-                        settingsJson: data.user.game_settings ? JSON.stringify(data.user.game_settings) : ''
+                        settingsJson: data.user.game_settings ? JSON.stringify(data.user.game_settings) : '',
+                        gold: data.user.gold ?? 0,
+                        upgradesJson: JSON.stringify(data.user.upgrades ?? {})
                     });
 
                     unityInstance.SendMessage(

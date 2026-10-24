@@ -1,19 +1,22 @@
 using TMPro;
 using UnityEngine;
 
-// Top-center Coop HUD: survival timer and current wave, shown once the waves start.
+// Top-center Coop HUD: survival timer, current wave and run score, shown once the waves start.
 public class CoopHUD : MonoBehaviour
 {
     [SerializeField] private GameObject content;
     [SerializeField] private TMP_Text timerText;
     [SerializeField] private TMP_Text waveText;
+    [SerializeField] private TMP_Text scoreText;
 
     private WaveSpawner spawner;
     private GameOverCheck gameOver;
+    private ScoreManager score;
     private bool frozen;
     private float frozenElapsed;
     private int shownSeconds = -1;
     private int shownWave = -1;
+    private int shownScore = -1;
 
     void Awake()
     {
@@ -26,6 +29,7 @@ public class CoopHUD : MonoBehaviour
         {
             spawner = FindAnyObjectByType<WaveSpawner>();
             gameOver = FindAnyObjectByType<GameOverCheck>();
+            score = FindAnyObjectByType<ScoreManager>();
             if (spawner == null)
                 return;
         }
@@ -38,7 +42,7 @@ public class CoopHUD : MonoBehaviour
             return;
 
         FreezeOnGameOver();
-        Refresh(frozen ? frozenElapsed : spawner.ElapsedSeconds, spawner.CurrentWave);
+        Refresh(frozen ? frozenElapsed : spawner.ElapsedSeconds, spawner.CurrentWave, score != null ? score.TotalScore : 0);
     }
 
     // Stops the clock at the wipe so the final time stays readable.
@@ -51,8 +55,8 @@ public class CoopHUD : MonoBehaviour
         frozenElapsed = spawner.ElapsedSeconds;
     }
 
-    // Text only changes once per second or per wave, so nothing allocates per frame.
-    private void Refresh(float elapsed, int wave)
+    // Text only changes when a value does, so nothing allocates per frame.
+    private void Refresh(float elapsed, int wave, int points)
     {
         int seconds = Mathf.Max(0, Mathf.FloorToInt(elapsed));
         if (seconds != shownSeconds)
@@ -65,6 +69,12 @@ public class CoopHUD : MonoBehaviour
         {
             shownWave = wave;
             waveText.text = $"Wave {wave}";
+        }
+
+        if (scoreText != null && points != shownScore)
+        {
+            shownScore = points;
+            scoreText.text = $"Score {points}";
         }
     }
 }

@@ -46,6 +46,16 @@ public partial class Player
         ResetToFull();
     }
 
+    // Called on the local player when a fresh run starts: the run's stacks begin at the bought permanent upgrades, at full health and mana.
+    public void ApplyPermanentUpgrades()
+    {
+        if (!this.IsLocallyControlled())
+            return;
+
+        levelUpBonusStacks.Value = PermanentUpgrades.StartingStacks();
+        ResetToFull();
+    }
+
     // Called by this player's own level-up UI.
     public void ChooseLevelUpBonus(LevelUpBonusType type)
     {

@@ -66,12 +66,12 @@ public class XPManager : NetworkBehaviour
         EnemyStats.OnEnemyKilled -= HandleEnemyKilled;
     }
 
-    private void HandleEnemyKilled(int xpAmount)
+    private void HandleEnemyKilled(EnemyKit kit, ulong killerClientId)
     {
         if (xpGainDelay <= 0f)
-            GrantXP(xpAmount);
+            GrantXP(kit.XpReward);
         else
-            StartCoroutine(GrantXPDelayed(xpAmount, xpGainDelay));
+            StartCoroutine(GrantXPDelayed(kit.XpReward, xpGainDelay));
     }
 
     private IEnumerator GrantXPDelayed(int xpAmount, float delay)

@@ -6,6 +6,8 @@ public static class RunCarryOver
     private static string targetScene;
 
     public static int TotalXP { get; private set; }
+    public static ScoreBreakdown Score { get; private set; }
+    public static PlayerKillTable Kills { get; private set; }
     public static int Wave { get; private set; }
     public static int ProcessedLevel { get; private set; }
     public static float ElapsedSeconds { get; private set; }
@@ -16,10 +18,12 @@ public static class RunCarryOver
     public static bool IsForActiveScene => targetScene != null && targetScene == SceneManager.GetActiveScene().name;
 
     // Offline solo players are scene objects too, so their bonus stacks travel here instead of on a persistent NetworkObject.
-    public static void Capture(string scene, int totalXP, int wave, int processedLevel, float elapsedSeconds, Player offlinePlayer)
+    public static void Capture(string scene, int totalXP, ScoreBreakdown score, PlayerKillTable kills, int wave, int processedLevel, float elapsedSeconds, Player offlinePlayer)
     {
         targetScene = scene;
         TotalXP = totalXP;
+        Score = score;
+        Kills = kills;
         Wave = wave;
         ProcessedLevel = processedLevel;
         ElapsedSeconds = elapsedSeconds;

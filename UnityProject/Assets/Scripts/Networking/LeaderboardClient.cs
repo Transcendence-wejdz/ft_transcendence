@@ -88,6 +88,7 @@ public class CoopRunStats
     public int wave;
     public int xp;
     public int seconds;
+    public int score;
     public int players;
 
     // A Coop run played alone ranks on the Solo board.
@@ -110,11 +111,5 @@ public class CoopRunStats
         {
             return null;
         }
-    }
-
-    // Composite Coop score: waves dominate, XP (kills weighted by enemy type) and survival time break ties.
-    public int ComputeScore()
-    {
-        return wave * 1000 + xp + seconds;
     }
 }

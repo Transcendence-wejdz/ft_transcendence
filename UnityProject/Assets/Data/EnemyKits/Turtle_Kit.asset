@@ -15,6 +15,7 @@ MonoBehaviour:
   tier: 2
   maxHealth: 180
   xpReward: 25
+  scoreReward: 250
   moveSpeed: 1.2
   attackShape: 1
   attackRange: 2

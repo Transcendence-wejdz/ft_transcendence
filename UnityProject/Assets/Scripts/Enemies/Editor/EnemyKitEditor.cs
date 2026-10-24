@@ -58,7 +58,7 @@ public class EnemyKitEditor : Editor
 
     private static readonly InspectorSections.Section[] Sections =
     {
-        new("", "General", "tier", "maxHealth", "xpReward", "moveSpeed"),
+        new("", "General", "tier", "maxHealth", "xpReward", "scoreReward", "moveSpeed"),
         new("", "Attack", "attackShape", "attackRange", "attackAngle", "attackWidth", "attackOrigin", "damage", "attackCooldown", "attackHitDelay",
             "attackAnimationDuration", "attackMoveSpeedMultiplier", "hitRangeTolerance", "isRanged", "projectilePrefab", "projectileSpeed", "projectileMaxDistance", "projectileArcHeight"),
         new("", "Targeting", "retargetInterval", "steerInterval", "directChaseRange", "lineOfSightInterval", "maxDistanceFromPlayers", "leashCheckInterval"),

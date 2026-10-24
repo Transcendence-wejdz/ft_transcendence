@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,7 +14,7 @@ public class GameOverUI : MonoBehaviour
     [SerializeField] private RectTransform window;
     [SerializeField] private Button restartButton;
     [SerializeField] private Button lobbyButton;
-    [SerializeField] private TMP_Text waitingText;
+    [SerializeField] private GameObject waitingBanner;
     [SerializeField] private TMP_Text titleText;
     [SerializeField] private string victoryTitle = "Victory";
     [SerializeField] private float showDelay = 0.3f;
@@ -94,7 +95,7 @@ public class GameOverUI : MonoBehaviour
         bool canChoose = check.CanChoose;
         restartButton.gameObject.SetActive(canChoose);
         lobbyButton.gameObject.SetActive(canChoose);
-        waitingText.gameObject.SetActive(!canChoose);
+        waitingBanner.SetActive(!canChoose);
         if (titleText != null)
             titleText.text = check.IsVictory ? victoryTitle : defeatTitle;
 
@@ -102,9 +103,34 @@ public class GameOverUI : MonoBehaviour
         if (board != null && runStats != null)
             board.SetMode(runStats.Mode());
 
+        RunScoreUI scoreCard = panel.GetComponentInChildren<RunScoreUI>(true);
+        ScoreManager score = FindAnyObjectByType<ScoreManager>();
+        if (scoreCard != null)
+            scoreCard.Show(check.Result, score != null ? score.PlayerKills : default, LocalClientId());
+        ClaimGold(scoreCard);
+
         panel.SetActive(true);
         StartCoroutine(FadeIn());
         SubmitScore();
+    }
+
+    // Every player reports the shared run to the server on their own account; the card shows the outcome once it answers.
+    private void ClaimGold(RunScoreUI scoreCard)
+    {
+        if (runStats == null)
+            return;
+
+        GoldWallet.ClaimRunReward(check.Result, gold =>
+        {
+            if (scoreCard != null)
+                scoreCard.SetGoldResult(gold);
+        });
+    }
+
+    private static ulong LocalClientId()
+    {
+        NetworkManager network = NetworkManager.Singleton;
+        return network != null && network.IsListening ? network.LocalClientId : NetworkManager.ServerClientId;
     }
 
     // Built from the server's frozen result plus the synced team names, so every teammate's entry groups under one runId.
@@ -130,6 +156,7 @@ public class GameOverUI : MonoBehaviour
             wave = result.wave,
             xp = result.xp,
             seconds = result.seconds,
+            score = result.score.Total,
             players = team.Count,
             team = team.ToArray()
         };
@@ -141,8 +168,7 @@ public class GameOverUI : MonoBehaviour
         if (runStats == null)
             return;
 
-        int score = runStats.ComputeScore();
-        await LeaderboardClient.SubmitScoreAsync(runStats.Mode(), score, runStats);
+        await LeaderboardClient.SubmitScoreAsync(runStats.Mode(), runStats.score, runStats);
     }
 
     private void Choose(bool restart)

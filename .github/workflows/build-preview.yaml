@@ -1,0 +1,19 @@
+name: build-preview
+
+on:
+  push:
+    branches: [feat/ci-cd]
+
+concurrency:
+  group: preview-${{github.ref_name}}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: [self-hosted]
+    steps:
+      - name: health-check
+        run: |
+          echo "branch: $GITHUB_REF_NAME"
+          docker compose version

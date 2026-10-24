@@ -19,6 +19,8 @@ jobs:
           docker compose version
 
       - uses: actions/checkout@v4
+        with:
+          clean: false
 
       - name: name
         run: |
@@ -26,3 +28,64 @@ jobs:
           echo "SLUG=$slug" >> "$GITHUB_ENV"
           echo "DIR=/srv/previews/$slug" >> "$GITHUB_ENV"
           echo "slug: $SLUG"
+
+      - name: cleanup
+        run: |
+          rm -rf build
+
+      - name: build-unity-webgl
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: UnityProject
+          unityVersion: 6000.5.6f1
+          targetPlatform: WebGL
+          buildProfile: "Assets/Settings/Build Profiles/webgl-dev.asset"
+          buildName: game
+          buildsPath: build
+          versioning: None
+          runAsHostUser: true
+
+      - name: build-unity-check
+        run: |
+          test -f build/WebGL/game/Build/game.loader.js
+
+      - name: stop-previous-preview
+        run: |
+          if [ -f "$DIR/compose.yaml" ]; then
+            docker compose -p "tr-$SLUG" --project-directory "$DIR" -f "$DIR/compose.yaml" down -v --remove-orphans
+          fi
+
+      - name: copy-code
+        run: |
+          rm -rf "$DIR.new"
+          cp -a web "$DIR.new"
+          rm -rf "$DIR.new/backend/sveltekit/static/public/game"
+          cp -a build/WebGL/game "$DIR.new/backend/sveltekit/static/public/game"
+          rm -rf "$DIR"
+          mv "$DIR.new" "$DIR"
+
+      - name: init-env
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.PREVIEW_POSTGRES_PASSWORD }}
+          PREVIEW_HOST: ${{ vars.PREVIEW_HOST }}
+        run: |
+          test -n "$POSTGRES_PASSWORD" || { echo "::error::secret PREVIEW_POSTGRES_PASSWORD is not set"; exit 1; }
+          test -n "$PREVIEW_HOST" || { echo "::error::variable PREVIEW_HOST is not set"; exit 1; }
+          cat > "$DIR/.env" <<EOF
+          POSTGRES_HOST=db
+          POSTGRES_PORT=5432
+          POSTGRES_USER=transcendence
+          POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+          POSTGRES_DB=transcendence
+          ORIGIN=https://$PREVIEW_HOST:4443
+          EOF
+
+      - name: build-web
+        run: docker compose -p "tr-$SLUG" --project-directory "$DIR" -f "$DIR/compose.yaml" build
+
+      - name: run
+        run: docker compose -p "tr-$SLUG" --project-directory "$DIR" -f "$DIR/compose.yaml" up -d

@@ -2,7 +2,7 @@ name: build-preview
 
 on:
   push:
-    branches: [feat/ci-cd]
+    branches: ['**']
 
 concurrency:
   group: preview-${{github.ref_name}}
@@ -28,6 +28,8 @@ jobs:
           slug=$(echo "$GITHUB_REF_NAME" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g' | cut -c1-40) 
           echo "SLUG=$slug" >> "$GITHUB_ENV"
           echo "DIR=/srv/previews/$slug" >> "$GITHUB_ENV"
+          echo "COMPOSE_PROJECT_NAME=tr-$slug" >> "$GITHUB_ENV"
+          echo "COMPOSE_FILE=/srv/previews/$slug/compose.yaml:/srv/previews/$slug/compose.preview.yaml" >> "$GITHUB_ENV"
           echo "slug: $SLUG"
 
       - name: cleanup
@@ -61,7 +63,7 @@ jobs:
       - name: stop-previous-preview
         run: |
           if [ -f "$DIR/compose.yaml" ]; then
-            docker compose -p "tr-$SLUG" --project-directory "$DIR" -f "$DIR/compose.yaml" down -v --remove-orphans
+            COMPOSE_FILE="$DIR/compose.yaml" docker compose down -v --remove-orphans
           fi
 
       - name: copy-code
@@ -76,19 +78,32 @@ jobs:
       - name: init-env
         run: |
           set -a; . "$HOME/.preview/env"; set +a
-          test -n "$PREVIEW_HOST" || { echo "::error::PREVIEW_HOST missing in ~/.preview/env"; exit 1; }
-          echo "PREVIEW_HOST=$PREVIEW_HOST" >> "$GITHUB_ENV"
+          test -n "$PREVIEW_DOMAIN" || { echo "::error::PREVIEW_DOMAIN missing in ~/.preview/env"; exit 1; }
+          echo "PREVIEW_DOMAIN=$PREVIEW_DOMAIN" >> "$GITHUB_ENV"
           cat > "$DIR/.env" <<EOF
           POSTGRES_HOST=db
           POSTGRES_PORT=5432
           POSTGRES_USER=transcendence
           POSTGRES_PASSWORD=$(openssl rand -hex 16)
           POSTGRES_DB=transcendence
-          ORIGIN=https://$PREVIEW_HOST:4443
+          ORIGIN=https://$SLUG.$PREVIEW_DOMAIN
+          PREVIEW_SLUG=$SLUG
+          PREVIEW_DOMAIN=$PREVIEW_DOMAIN
           EOF
 
       - name: build-web
-        run: docker compose -p "tr-$SLUG" --project-directory "$DIR" -f "$DIR/compose.yaml" build
+        run: docker compose build
 
       - name: run
-        run: docker compose -p "tr-$SLUG" --project-directory "$DIR" -f "$DIR/compose.yaml" up -d
+        run: docker compose up -d
+
+      - name: wait-until-up
+        run: |
+          host="$SLUG.$PREVIEW_DOMAIN"
+          curl -kfsS -o /dev/null --retry 30 --retry-delay 5 --retry-all-errors --resolve "$host:443:127.0.0.1" "https://$host/"
+          curl -kfsS -o /dev/null --resolve "$host:443:127.0.0.1" "https://$host/public/game/Build/game.loader.js"
+          echo "> Preview is up: https://$host" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: logs-on-failure
+        if: failure()
+        run: docker compose logs --tail 128

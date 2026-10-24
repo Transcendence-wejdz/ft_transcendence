@@ -87,3 +87,6 @@ MonoBehaviour:
   maxSpawnPointAttempts: 10
   spawnClearance: 1
   spawnWaves: 0
+  startsRun: 0
+  bossSceneName: 
+  bossSceneSeconds: 300

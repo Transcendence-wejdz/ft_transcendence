@@ -11,5 +11,20 @@ mergeInto(LibraryManager.library, {
     })
       .then(function (response) { return response.status; }, function () { return 0; })
       .then(function (status) { {{{ makeDynCall('vii', 'callback') }}}(requestId, status); });
+  },
+
+  // POSTs a JSON body to a same-origin API path with the session cookie, then reports the HTTP status (0 = network error) to C#.
+  WebBackend_Post: function (pathPtr, bodyPtr, requestId, callback) {
+    var path = UTF8ToString(pathPtr);
+    var body = UTF8ToString(bodyPtr);
+    fetch(path, {
+      method: 'POST',
+      credentials: 'same-origin',
+      keepalive: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: body
+    })
+      .then(function (response) { return response.status; }, function () { return 0; })
+      .then(function (status) { {{{ makeDynCall('vii', 'callback') }}}(requestId, status); });
   }
 });

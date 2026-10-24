@@ -10,6 +10,7 @@ public struct RunResult : INetworkSerializeByMemcpy
     public int wave;
     public int xp;
     public int seconds;
+    public ScoreBreakdown score;
     public bool victory;
 }
 
@@ -82,8 +83,7 @@ public class GameOverCheck : NetworkBehaviour
         if (!victory && !AllPlayersDead())
             return;
 
-        RunResult snapshot = CaptureResult();
-        snapshot.victory = victory;
+        RunResult snapshot = CaptureResult(victory);
         if (IsSpawned)
         {
             result.Value = snapshot;
@@ -96,17 +96,23 @@ public class GameOverCheck : NetworkBehaviour
         }
     }
 
-    // Snapshotted at the wipe itself, since the wave timer keeps running behind the Game Over screen.
-    private static RunResult CaptureResult()
+    // Snapshotted at the wipe itself, since the wave timer keeps running behind the Game Over screen; the score stops counting here.
+    private static RunResult CaptureResult(bool victory)
     {
         WaveSpawner spawner = FindAnyObjectByType<WaveSpawner>();
         XPManager xp = FindAnyObjectByType<XPManager>();
+        ScoreManager score = FindAnyObjectByType<ScoreManager>();
+        float elapsed = spawner != null ? spawner.ElapsedSeconds : 0f;
+        score?.Freeze();
+
         return new RunResult
         {
             runId = Random.Range(1, int.MaxValue),
             wave = spawner != null ? spawner.CurrentWave : 0,
             xp = xp != null ? xp.TotalXP : RunCarryOver.IsForActiveScene ? RunCarryOver.TotalXP : 0,
-            seconds = spawner != null ? Mathf.FloorToInt(spawner.ElapsedSeconds) : 0,
+            seconds = Mathf.FloorToInt(elapsed),
+            score = score != null ? score.Breakdown : RunCarryOver.IsForActiveScene ? RunCarryOver.Score : default,
+            victory = victory,
         };
     }
 

@@ -18,6 +18,8 @@ public class WaveSpawner : NetworkBehaviour
     [SerializeField] private float spawnClearance = 1f;
 
     [SerializeField] private bool spawnWaves = true;
+    [Tooltip("Off for scenes that continue a run (the boss scene), so reaching them doesn't open a new gold run.")]
+    [SerializeField] private bool startsRun = true;
 
     [Header("Boss Transition")]
     [SerializeField] private string bossSceneName;
@@ -34,6 +36,9 @@ public class WaveSpawner : NetworkBehaviour
     private readonly List<int> unlockedKitIndices = new List<int>();
 
     public int CurrentWave => IsSpawned ? currentWave.Value : waveNumber;
+
+    // Fired server/offline side each time a new wave spawns, never for a wave carried over from the previous scene.
+    public static event System.Action<int> OnWaveStarted;
 
     // Seconds since the first wave began, on the shared server clock when networked.
     public float ElapsedSeconds
@@ -56,14 +61,45 @@ public class WaveSpawner : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        if (!IsServer)
+            currentWave.OnValueChanged += HandleWaveChanged;
         if (IsServer && NetworkManager != null && NetworkManager.SceneManager != null)
             NetworkManager.SceneManager.OnLoadEventCompleted += HandleSceneLoadEventCompleted;
     }
 
     public override void OnNetworkDespawn()
     {
+        currentWave.OnValueChanged -= HandleWaveChanged;
         if (NetworkManager != null && NetworkManager.SceneManager != null)
             NetworkManager.SceneManager.OnLoadEventCompleted -= HandleSceneLoadEventCompleted;
+    }
+
+    // Clients see the first wave through the replicated counter, since RunWaves only runs on the server.
+    private void HandleWaveChanged(int previous, int current)
+    {
+        if (previous == 0 && current > 0)
+            NotifyRunStarted();
+    }
+
+    // Each peer opens the gold run on its own web account and starts its own player at its bought upgrades.
+    private void NotifyRunStarted()
+    {
+        if (!startsRun)
+            return;
+
+        GoldWallet.BeginRun(Player.AllActiveInstances.Count <= 1 ? "solo" : "coop");
+        StartCoroutine(ApplyPermanentUpgradesWhenReady());
+    }
+
+    // Offline the first wave can start before PlayerSpawner has spawned the player, so this waits for it plus one frame of its own setup.
+    private IEnumerator ApplyPermanentUpgradesWhenReady()
+    {
+        Player player;
+        while ((player = LocalPlayer.GetPlayer()) == null)
+            yield return null;
+
+        yield return null;
+        player.ApplyPermanentUpgrades();
     }
 
     private void HandleSceneLoadEventCompleted(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
@@ -92,8 +128,9 @@ public class WaveSpawner : NetworkBehaviour
             yield break;
 
         XPManager xp = FindAnyObjectByType<XPManager>();
+        ScoreManager score = FindAnyObjectByType<ScoreManager>();
         bool isNetworked = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
-        RunCarryOver.Capture(bossSceneName, xp != null ? xp.TotalXP : 0, CurrentWave, levelUp != null ? levelUp.ProcessedLevel : 1,
+        RunCarryOver.Capture(bossSceneName, xp != null ? xp.TotalXP : 0, score != null ? score.Breakdown : default, score != null ? score.PlayerKills : default, CurrentWave, levelUp != null ? levelUp.ProcessedLevel : 1,
             ElapsedSeconds, isNetworked ? null : LocalPlayer.GetPlayer());
         GameModeLoader.LoadNow(bossSceneName);
     }
@@ -119,6 +156,9 @@ public class WaveSpawner : NetworkBehaviour
             waveNumber++;
             if (IsSpawned)
                 currentWave.Value = waveNumber;
+            OnWaveStarted?.Invoke(waveNumber);
+            if (waveNumber == 1)
+                NotifyRunStarted();
 
             int playerCount = Mathf.Max(1, Player.AllActiveInstances.Count);
             int count = baseEnemiesPerWave + (waveNumber - 1) * extraEnemiesPerWave + (playerCount - 1) * extraEnemiesPerPlayer;

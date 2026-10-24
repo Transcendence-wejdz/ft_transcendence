@@ -11,6 +11,9 @@ public class BossKit : ScriptableObject
     [Range(0f, 2f)]
     [Tooltip("Extra max health per additional player, as a fraction of Max Health.")]
     [SerializeField] private float healthPerExtraPlayer = 0.5f;
+    [Range(0, 50000)]
+    [Tooltip("Score added to the run when it dies.")]
+    [SerializeField] private int scoreReward = 10000;
     [Range(0f, 10f)]
     [Tooltip("Walk speed in units per second (multiplied by the enrage tempo).")]
     [SerializeField] private float moveSpeed = 1.8f;
@@ -107,6 +110,7 @@ public class BossKit : ScriptableObject
     public string DisplayName => displayName;
     public float MaxHealth => maxHealth;
     public float HealthPerExtraPlayer => healthPerExtraPlayer;
+    public int ScoreReward => scoreReward;
     public float MoveSpeed => moveSpeed;
     public float RetargetInterval => retargetInterval;
     public float SteerInterval => steerInterval;

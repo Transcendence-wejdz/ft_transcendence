@@ -15,6 +15,7 @@ MonoBehaviour:
   displayName: Troll
   maxHealth: 1500
   healthPerExtraPlayer: 0.5
+  scoreReward: 10000
   moveSpeed: 1.8
   retargetInterval: 0.5
   steerInterval: 0.1

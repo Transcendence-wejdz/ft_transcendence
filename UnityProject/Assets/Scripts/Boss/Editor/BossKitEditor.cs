@@ -27,7 +27,7 @@ public class BossKitEditor : Editor
 
     private static readonly InspectorSections.Section[] Sections =
     {
-        new("", "General", "displayName", "maxHealth", "healthPerExtraPlayer"),
+        new("", "General", "displayName", "maxHealth", "healthPerExtraPlayer", "scoreReward"),
         new("", "Movement", "moveSpeed", "retargetInterval", "steerInterval"),
         new("", "Patterns", "patternCooldown", "recoveryDuration", "enrageHealthFraction", "enrageTempo"),
         new("", "Charge", "chargeMinRange", "chargeCooldown", "chargeLeadSeconds", "chargeChainCount", "chargeWindup", "chargeSpeed", "chargeDistance", "chargeWidth", "chargeDamage"),

@@ -15,6 +15,9 @@ public class EnemyKit : ScriptableObject
     [Range(0, 500)]
     [Tooltip("XP granted to the players when it dies.")]
     [SerializeField] private int xpReward = 10;
+    [Range(0, 5000)]
+    [Tooltip("Score added to the run when it dies.")]
+    [SerializeField] private int scoreReward = 100;
     [Range(0f, 10f)]
     [Tooltip("Chase speed in units per second.")]
     [SerializeField] private float moveSpeed = 2.5f;
@@ -91,6 +94,7 @@ public class EnemyKit : ScriptableObject
     public int Tier => tier;
     public float MaxHealth => maxHealth;
     public int XpReward => xpReward;
+    public int ScoreReward => scoreReward;
     public float MoveSpeed => moveSpeed;
     public EnemyAttackShape AttackShape => attackShape;
     public float AttackRange => attackRange;

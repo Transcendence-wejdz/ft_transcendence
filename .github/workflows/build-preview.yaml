@@ -17,3 +17,11 @@ jobs:
         run: |
           echo "branch: $GITHUB_REF_NAME"
           docker compose version
+
+      - uses: actions/checkout@v4
+
+      - name: |
+          slug=$(echo "$GITHUB_REF_NAME" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g' | cut -c1-40) 
+          echo "SLUG=$slug" >> "$GITHUB_ENV"
+          echo "DIR=/srv/previews/$slug" >> "$GITHUB_ENV"
+          echo "slug: $SLUG"

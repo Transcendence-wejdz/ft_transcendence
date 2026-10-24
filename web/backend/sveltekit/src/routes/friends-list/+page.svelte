@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { onMount } from 'svelte';
+
     type Friend = {
         id: string;
         displayName: string;
@@ -7,6 +9,7 @@
     };
 
     type FriendRequest = {
+        relationshipId: string;
         id: string;
         displayName: string;
         color: string;
@@ -20,27 +23,48 @@
     let friends = $state<Friend[]>([]);
     let requests = $state<FriendRequest[]>([]);
 
+    async function loadFriends() {
+        const response = await fetch('/api/friends-list');
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error ?? 'Could not load friends.');
+        friends = result.friends.map((friend: Omit<Friend, 'online'>) => ({ ...friend, online: false }));
+        requests = result.requests;
+    }
+
+    onMount(() => {
+        loading = true;
+        loadFriends()
+            .catch((cause: unknown) => { error = cause instanceof Error ? cause.message : 'Could not load friends.'; })
+            .finally(() => { loading = false; });
+    });
+
+    async function updateRelationship(relationshipId: string, method: 'PATCH' | 'DELETE', body?: object) {
+        const response = await fetch(`/api/friends-list/relationships/${relationshipId}`, {
+            method,
+            ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {})
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error ?? 'Could not update relationship.');
+        await loadFriends();
+    }
+
+    async function handleRelationship(action: 'accept' | 'decline' | 'remove', relationshipId: string) {
+        error = '';
+        loading = true;
+        try {
+            await updateRelationship(relationshipId, action === 'accept' ? 'PATCH' : 'DELETE', action === 'accept' ? { action } : undefined);
+        } catch (cause) {
+            error = cause instanceof Error ? cause.message : 'Could not update relationship.';
+        } finally {
+            loading = false;
+        }
+    }
+
     const filteredFriends = $derived(
         friends.filter((friend) =>
             friend.displayName.toLowerCase().includes(search.toLowerCase())
         )
     );
-
-    function acceptRequest(id: string) {
-        const request = requests.find((item) => item.id === id);
-        if (!request) return;
-
-        friends.push({
-            ...request,
-            online: false
-        });
-
-        requests = requests.filter((item) => item.id !== id);
-    }
-
-    function declineRequest(id: string) {
-        requests = requests.filter((item) => item.id !== id);
-    }
 
     async function sendRequest(event: SubmitEvent) {
         event.preventDefault();
@@ -53,8 +77,22 @@
             return;
         }
 
-        // Temporary UI behavior: the API will be added later.
-        error = 'Friend requests are not connected to the server yet.';
+        loading = true;
+        try {
+            const response = await fetch('/api/friends-list', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ displayName: name })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error ?? 'Could not send request.');
+            identifier = '';
+            await loadFriends();
+        } catch (cause) {
+            error = cause instanceof Error ? cause.message : 'Could not send request.';
+        } finally {
+            loading = false;
+        }
     }
 </script>
 
@@ -117,9 +155,7 @@
                             class="button secondary"
                             type="button"
                             onclick={() => {
-                                friends = friends.filter(
-                                    (item) => item.id !== friend.id
-                                );
+                                void handleRelationship('remove', friend.id);
                             }}
                         >
                             Remove
@@ -146,7 +182,7 @@
 
         {#if requests.length > 0}
             <ul class="friend-list">
-                {#each requests as request (request.id)}
+                {#each requests as request (request.relationshipId)}
                     <li class="friend-item">
                         <div
                             class="avatar"
@@ -165,14 +201,14 @@
                             <button
                                 class="button"
                                 type="button"
-                                onclick={() => acceptRequest(request.id)}
+                                onclick={() => void handleRelationship('accept', request.relationshipId)}
                             >
                                 Accept
                             </button>
                             <button
                                 class="button secondary"
                                 type="button"
-                                onclick={() => declineRequest(request.id)}
+                                onclick={() => void handleRelationship('decline', request.relationshipId)}
                             >
                                 Decline
                             </button>

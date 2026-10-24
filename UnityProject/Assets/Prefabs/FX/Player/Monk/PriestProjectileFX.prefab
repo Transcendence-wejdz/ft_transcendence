@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 8303501383390155136}
   - component: {fileID: 3115876178475154013}
   - component: {fileID: 162022879541247077}
+  - component: {fileID: 6820915567780723640}
   m_Layer: 0
   m_Name: PriestProjectileFX
   m_TagString: Untagged
@@ -170,6 +171,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28dc26d41c9a5f318a29b475903aabb2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ArrowProjectile
+  fxSpriteRenderer: {fileID: 0}
   frames:
   - {fileID: 7501387830980884940, guid: 38a423723d37b6bb09cc8e93773d8fb2, type: 3}
   - {fileID: -1292133977623532453, guid: 38a423723d37b6bb09cc8e93773d8fb2, type: 3}
@@ -180,3 +182,15 @@ MonoBehaviour:
   - {fileID: 1871951282191127577, guid: 38a423723d37b6bb09cc8e93773d8fb2, type: 3}
   - {fileID: 5311199380433355387, guid: 38a423723d37b6bb09cc8e93773d8fb2, type: 3}
   frameRate: 24
+--- !u!114 &6820915567780723640
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4015171861668935641}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 535bcc650c079a48eb45cb60b30a7966, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FXSortingAuto

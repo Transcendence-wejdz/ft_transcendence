@@ -273,6 +273,7 @@ MonoBehaviour:
   spriteRenderer: {fileID: 1061681135512031232}
   sortingOffset: 0
   sortPivotOffset: {x: 0, y: 0.7, z: 0}
+  fxDrawsOver: 0
 --- !u!114 &8795917144580053198
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -443,6 +444,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Visual
       objectReference: {fileID: 0}
+    - target: {fileID: 3626916397498700004, guid: 901c9676808633c25bbf90646e4da299, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: -1196921192288028433, guid: 901c9676808633c25bbf90646e4da299, type: 3}
     - target: {fileID: 3626916397498700004, guid: 901c9676808633c25bbf90646e4da299, type: 3}
       propertyPath: m_SortingLayer
       value: 4

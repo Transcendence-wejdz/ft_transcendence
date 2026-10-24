@@ -40,7 +40,7 @@ public class MenuPanel : MonoBehaviour
         activeAnimation = StartCoroutine(Animate(opening: false));
     }
 
-    // Safety net: Unity kills the fade coroutine if this object is deactivated externally mid-animation, which would otherwise strand CurrentOpen/IsPaused.
+    // Only unpauses if still the open panel, so closing one panel to open another keeps the pause; also covers external deactivation.
     private void OnDisable()
     {
         activeAnimation = null;
@@ -78,12 +78,7 @@ public class MenuPanel : MonoBehaviour
         canvasGroup.alpha = toAlpha;
 
         if (!opening)
-        {
             gameObject.SetActive(false);
-            PauseManager.SetExternalPause(false);
-            if (CurrentOpen == this)
-                CurrentOpen = null;
-        }
 
         activeAnimation = null;
     }

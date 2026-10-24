@@ -1,5 +1,6 @@
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.UI;
 
 public partial class Player
 {
@@ -8,11 +9,13 @@ public partial class Player
     [SerializeField] private GameObject mountInteractRoot;
     [SerializeField] private Vector3 mountedOffset = new Vector3(0f, 0.25f, 0f);
     [SerializeField] private int mountedSortingOrderBump = 5;
+    [SerializeField] private Image reviveProgress;
 
     private bool isMounted;
     private Player mountedPig;
     private float mountElapsed;
     private Player collisionIgnoredWith;
+    private float riderSince = -1f;
 
     public bool IsMounted => isMounted;
     public float MountProgress01 => isMounted ? Mathf.Clamp01(mountElapsed / mountDurationSeconds) : 0f;
@@ -147,6 +150,24 @@ public partial class Player
         bool shouldShow = !HasRider();
         if (mountInteractRoot.activeSelf != shouldShow)
             mountInteractRoot.SetActive(shouldShow);
+    }
+
+    // Revive ring under a downed player, filled over mountDurationSeconds while someone rides; timed locally from the replicated parenting, so every peer (the downed player included) sees it without extra network state.
+    private void UpdateReviveProgress()
+    {
+        if (reviveProgress == null)
+            return;
+
+        bool riding = IsDead && HasRider();
+        if (!riding)
+            riderSince = -1f;
+        else if (riderSince < 0f)
+            riderSince = Time.time;
+
+        if (reviveProgress.gameObject.activeSelf != riding)
+            reviveProgress.gameObject.SetActive(riding);
+        if (riding)
+            reviveProgress.fillAmount = Mathf.Clamp01((Time.time - riderSince) / mountDurationSeconds);
     }
 
     private bool HasRider()

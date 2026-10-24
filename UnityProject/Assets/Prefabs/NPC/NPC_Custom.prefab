@@ -318,6 +318,7 @@ MonoBehaviour:
   keyCapBlinkSpeed: 5
   keyCapBlinkMinAlpha: 0.5
   keyCapBlinkScaleAmplitude: 0.1
+  labelAlwaysVisible: 1
 --- !u!1 &5886702531527645150
 GameObject:
   m_ObjectHideFlags: 0

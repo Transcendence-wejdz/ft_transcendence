@@ -96,8 +96,8 @@ public class CursorManager : MonoBehaviour
             && mouseScreenPosition.x >= 0f && mouseScreenPosition.x <= Screen.width
             && mouseScreenPosition.y >= 0f && mouseScreenPosition.y <= Screen.height;
         Cursor.visible = !insideWindow;
-        cursorImage.enabled = insideWindow;
-        if (!insideWindow)
+        cursorImage.enabled = insideWindow && !InputModeTracker.UsingGamepad;
+        if (!cursorImage.enabled)
             return;
 
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, mouseScreenPosition, null, out Vector2 localPoint))

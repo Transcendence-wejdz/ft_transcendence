@@ -7,7 +7,7 @@ public class EnemyStats : NetworkBehaviour, IDamageable, IHealthStats
 {
     private EnemyKit kit;
 
-    private readonly NetworkVariable<float> currentHealth = new NetworkVariable<float>(
+    private readonly NetworkVariable<float> currentHealth = new OfflineSafeNetworkVariable<float>(
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     // Assigned at spawn time by whoever instantiates this enemy (see Enemy.Initialize); never baked into the prefab.

@@ -126,6 +126,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3539898340669495779}
   - component: {fileID: 4738442808156454028}
+  - component: {fileID: 2684285972154253746}
   m_Layer: 7
   m_Name: Bush1
   m_TagString: Untagged
@@ -163,3 +164,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SortingLayer_Auto
   spriteRenderer: {fileID: 8815043240116630781}
   sortingOffset: 0
+  sortPivotOffset: {x: 0, y: 0, z: 0}
+  fxDrawsOver: 1
+--- !u!114 &2684285972154253746
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6802664848772536556}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62b3f53c378aa9c24b95a797c56cd225, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RevealOccluder

@@ -1,0 +1,172 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &4066305174026199006
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -2253911629886400664, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+      propertyPath: m_Name
+      value: Goblin Hut
+      objectReference: {fileID: 0}
+    - target: {fileID: 3626916397498700004, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+      propertyPath: m_SortingOrder
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7878350319992209165, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.24
+      objectReference: {fileID: 0}
+    - target: {fileID: 7878350319992209165, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.24
+      objectReference: {fileID: 0}
+    - target: {fileID: 7878350319992209165, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.24
+      objectReference: {fileID: 0}
+    - target: {fileID: 7878350319992209165, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -5.45
+      objectReference: {fileID: 0}
+    - target: {fileID: 7878350319992209165, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -9.53
+      objectReference: {fileID: 0}
+    - target: {fileID: 7878350319992209165, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7878350319992209165, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7878350319992209165, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7878350319992209165, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7878350319992209165, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7878350319992209165, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7878350319992209165, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7878350319992209165, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7878350319992209165, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: -2253911629886400664, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2386417174756702504}
+    - targetCorrespondingSourceObject: {fileID: -2253911629886400664, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 358360044928833472}
+    - targetCorrespondingSourceObject: {fileID: -2253911629886400664, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1876554282180126123}
+  m_SourcePrefab: {fileID: -8435245712485981826, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+--- !u!212 &737198622262234938 stripped
+SpriteRenderer:
+  m_CorrespondingSourceObject: {fileID: 3626916397498700004, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+  m_PrefabInstance: {fileID: 4066305174026199006}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &6401326265178376374 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -2253911629886400664, guid: 9734e2b210195b506a57e21c9759c74f, type: 3}
+  m_PrefabInstance: {fileID: 4066305174026199006}
+  m_PrefabAsset: {fileID: 0}
+--- !u!61 &2386417174756702504
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6401326265178376374}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0.008959562, y: 0.4753101}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: -0.07075472}
+    oldSize: {x: 1.4, y: 2.12}
+    newSize: {x: 1.4, y: 2.12}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 1.202888, y: 0.6506195}
+  m_EdgeRadius: 0
+--- !u!114 &358360044928833472
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6401326265178376374}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5bf556f7c88efab7b24c0f954d48132, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SortingLayer_Auto
+  spriteRenderer: {fileID: 737198622262234938}
+  sortingOffset: 0
+  sortPivotOffset: {x: 0, y: 0.54, z: 0}
+  fxDrawsOver: 0
+--- !u!114 &1876554282180126123
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6401326265178376374}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62b3f53c378aa9c24b95a797c56cd225, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RevealOccluder

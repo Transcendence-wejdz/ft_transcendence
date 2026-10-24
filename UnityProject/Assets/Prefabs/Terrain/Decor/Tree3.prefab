@@ -127,6 +127,7 @@ GameObject:
   - component: {fileID: 2073784165024683942}
   - component: {fileID: 3243825454171768939}
   - component: {fileID: 6415509214941531770}
+  - component: {fileID: 3006533644774030408}
   m_Layer: 6
   m_Name: Tree3
   m_TagString: Untagged
@@ -150,8 +151,8 @@ Transform:
   - {fileID: 7661992467347656885}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!61 &3243825454171768939
-BoxCollider2D:
+--- !u!58 &3243825454171768939
+CircleCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -185,17 +186,7 @@ BoxCollider2D:
   m_CompositeOperation: 0
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0.2}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0, y: 0}
-    oldSize: {x: 0, y: 0}
-    newSize: {x: 0, y: 0}
-    adaptiveTilingThreshold: 0
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Size: {x: 0.4, y: 0.3}
-  m_EdgeRadius: 0
+  m_Radius: 0.125
 --- !u!114 &6415509214941531770
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -210,4 +201,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SortingLayer_Auto
   spriteRenderer: {fileID: 919262953470681747}
   sortingOffset: 0
-  sortPivotOffset: {x: 0, y: 0.09, z: 0}
+  sortPivotOffset: {x: 0, y: 0.1943897, z: 0}
+  fxDrawsOver: 0
+--- !u!114 &3006533644774030408
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6944997123655819113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62b3f53c378aa9c24b95a797c56cd225, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RevealOccluder

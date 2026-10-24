@@ -12,6 +12,12 @@ public class InteractableZone : MonoBehaviour
     public string PromptText => promptText;
     public Vector3 Position => transform.position;
 
+    private void Start()
+    {
+        if (promptUI != null)
+            promptUI.SetLabel(promptText);
+    }
+
     private void Reset()
     {
         GetComponent<Collider2D>().isTrigger = true;

@@ -6,8 +6,10 @@ using UnityEngine.UI;
 public class AllyIndicatorManager : MonoBehaviour
 {
     private const float EdgeMargin = 40f;
-    private const int ArrowTextureSize = 32;
     private const float DirectionSmoothing = 8f;
+
+    [SerializeField] private Sprite arrowSprite;
+    [SerializeField] private float arrowSize = 32f;
 
     // Indexed by ColorIndex: Black, Blue, Purple, Red, Yellow.
     private static readonly Color[] ColorsByColorIndex =
@@ -27,13 +29,11 @@ public class AllyIndicatorManager : MonoBehaviour
     }
 
     private RectTransform canvasRect;
-    private Sprite arrowSprite;
     private readonly Dictionary<Player, IndicatorState> indicators = new Dictionary<Player, IndicatorState>();
 
     private void Awake()
     {
         canvasRect = GetComponent<RectTransform>();
-        arrowSprite = BuildArrowSprite();
     }
 
     private void OnEnable()
@@ -64,12 +64,13 @@ public class AllyIndicatorManager : MonoBehaviour
         GameObject go = new GameObject("AllyIndicator", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         RectTransform rect = go.GetComponent<RectTransform>();
         rect.SetParent(canvasRect, false);
-        rect.sizeDelta = new Vector2(28f, 28f);
+        rect.sizeDelta = new Vector2(arrowSize, arrowSize);
         rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
 
         Image image = go.GetComponent<Image>();
         image.sprite = arrowSprite;
         image.raycastTarget = false;
+        image.preserveAspect = true;
         image.color = ColorsByColorIndex[Mathf.Clamp(player.ColorIndex, 0, ColorsByColorIndex.Length - 1)];
 
         go.SetActive(false);
@@ -146,27 +147,5 @@ public class AllyIndicatorManager : MonoBehaviour
 
         float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f;
         rect.localRotation = Quaternion.Euler(0f, 0f, angle);
-    }
-
-    // A simple upward-pointing triangle, alpha-masked; no matching art asset exists to reuse.
-    private static Sprite BuildArrowSprite()
-    {
-        Texture2D tex = new Texture2D(ArrowTextureSize, ArrowTextureSize, TextureFormat.RGBA32, false);
-        tex.filterMode = FilterMode.Bilinear;
-        Color clear = new Color(1f, 1f, 1f, 0f);
-
-        for (int y = 0; y < ArrowTextureSize; y++)
-        {
-            float ny = y / (float)(ArrowTextureSize - 1);
-            for (int x = 0; x < ArrowTextureSize; x++)
-            {
-                float nx = (x - ArrowTextureSize * 0.5f) / (ArrowTextureSize * 0.5f);
-                bool inside = Mathf.Abs(nx) <= 1f - ny;
-                tex.SetPixel(x, y, inside ? Color.white : clear);
-            }
-        }
-        tex.Apply();
-
-        return Sprite.Create(tex, new Rect(0f, 0f, ArrowTextureSize, ArrowTextureSize), new Vector2(0.5f, 0.5f));
     }
 }

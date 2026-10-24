@@ -53,6 +53,7 @@ public partial class Player : NetworkBehaviour, IDamageable
     void Start()
     {
         StartMovement();
+        StartLevelUp();
         StartStats();
         StartCustomization();
         StartPigForm();
@@ -82,14 +83,17 @@ public partial class Player : NetworkBehaviour, IDamageable
     {
         base.OnDestroy();
         OnDestroyFeedback();
+        UnbindDodgeInput();
     }
 
     void Update()
     {
         UpdateMovement();
+        UpdateDodge();
         UpdateMountCollisionIgnore();
         UpdateMount();
         UpdateMountInteractVisibility();
+        UpdateReviveProgress();
         UpdateStats();
         UpdatePigForm();
         UpdateActions();
@@ -100,5 +104,6 @@ public partial class Player : NetworkBehaviour, IDamageable
     {
         LateUpdateMount();
         LateUpdateMountSorting();
+        LateUpdateReveal();
     }
 }

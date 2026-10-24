@@ -8,8 +8,9 @@ public class XPManager : NetworkBehaviour
     [SerializeField] private int baseXpPerLevel = 50;
     [SerializeField] private int xpPerLevelIncrement = 25;
     [SerializeField] private float xpGainDelay = 0f;
+    [SerializeField] private bool grantXP = true;
 
-    private readonly NetworkVariable<int> totalXP = new NetworkVariable<int>(
+    private readonly NetworkVariable<int> totalXP = new OfflineSafeNetworkVariable<int>(
         0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     private int offlineXP;
@@ -21,13 +22,20 @@ public class XPManager : NetworkBehaviour
     {
         bool isNetworked = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
         if (!isNetworked)
+        {
+            offlineXP = RunCarryOver.IsForActiveScene ? RunCarryOver.TotalXP : 0;
             Subscribe();
+        }
     }
 
     public override void OnNetworkSpawn()
     {
-        if (IsServer)
-            Subscribe();
+        if (!IsServer)
+            return;
+
+        if (RunCarryOver.IsForActiveScene)
+            totalXP.Value = RunCarryOver.TotalXP;
+        Subscribe();
     }
 
     public override void OnNetworkDespawn()
@@ -35,15 +43,16 @@ public class XPManager : NetworkBehaviour
         Unsubscribe();
     }
 
-    void OnDestroy()
+    public override void OnDestroy()
     {
         Unsubscribe();
+        base.OnDestroy();
     }
 
     // Guarded so an early defensive OnNetworkDespawn (fires even offline, before Start() subscribes) can't wipe out the offline subscription.
     private void Subscribe()
     {
-        if (subscribed)
+        if (subscribed || !grantXP)
             return;
         subscribed = true;
         EnemyStats.OnEnemyKilled += HandleEnemyKilled;

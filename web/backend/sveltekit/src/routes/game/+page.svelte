@@ -49,6 +49,7 @@
             companyName: 'DefaultCompany',
             productName: 'ft_transcendence',
             productVersion: '1.0',
+            devicePixelRatio: 1,
             showBanner: unityShowBanner
         };
 

@@ -20,17 +20,17 @@ public partial class Player
 
     public string CurrentDisplayName { get; private set; }
 
-    private readonly NetworkVariable<int> classIndex = new NetworkVariable<int>(
+    private readonly NetworkVariable<int> classIndex = new OfflineSafeNetworkVariable<int>(
         0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    private readonly NetworkVariable<int> colorIndex = new NetworkVariable<int>(
+    private readonly NetworkVariable<int> colorIndex = new OfflineSafeNetworkVariable<int>(
         0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    private readonly NetworkVariable<FixedString32Bytes> playerName = new NetworkVariable<FixedString32Bytes>(
+    private readonly NetworkVariable<FixedString32Bytes> playerName = new OfflineSafeNetworkVariable<FixedString32Bytes>(
         default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    private readonly NetworkVariable<int> teamIndex = new NetworkVariable<int>(
+    private readonly NetworkVariable<int> teamIndex = new OfflineSafeNetworkVariable<int>(
         0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     // Server-writable so readiness can be reset; SetReady goes through a ServerRpc.
-    private readonly NetworkVariable<bool> isReady = new NetworkVariable<bool>(
+    private readonly NetworkVariable<bool> isReady = new OfflineSafeNetworkVariable<bool>(
         false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     public int ClassIndex => classIndex.Value;

@@ -19,7 +19,7 @@ public class ModeReadyCheck : NetworkBehaviour
     private static ModeReadyCheck instance;
 
     // Empty means no check in progress; set only via the ServerRpc.
-    private readonly NetworkVariable<FixedString64Bytes> pendingSceneName = new NetworkVariable<FixedString64Bytes>(
+    private readonly NetworkVariable<FixedString64Bytes> pendingSceneName = new OfflineSafeNetworkVariable<FixedString64Bytes>(
         default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     public event System.Action<string> OnPendingSceneChanged;

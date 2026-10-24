@@ -92,7 +92,7 @@ public class InviteToastUI : MonoBehaviour
             NetworkBootstrap.PendingJoinCode = code;
 
             LoadingScreenManager.Show("Joining session...");
-            SceneManager.LoadSceneAsync("Lobby");
+            _ = SceneManager.LoadSceneAsync("Lobby");
             return;
         }
 

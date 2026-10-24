@@ -12,12 +12,12 @@ public partial class Player
     // Only meaningful on a class whose Animator Controller actually has a "ShieldHeld" bool param (see ClassKit.ShieldHoldAnimation); Animator.SetBool on a missing param is a harmless no-op elsewhere.
     private static readonly int ShieldHeldHash = Animator.StringToHash("ShieldHeld");
 
-    private readonly NetworkVariable<bool> isShieldActive = new NetworkVariable<bool>(
+    private readonly NetworkVariable<bool> isShieldActive = new OfflineSafeNetworkVariable<bool>(
         false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    private readonly NetworkVariable<float> shieldHealth = new NetworkVariable<float>(
+    private readonly NetworkVariable<float> shieldHealth = new OfflineSafeNetworkVariable<float>(
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     // Trails the live mouse aim at a capped turn rate instead of snapping to it, so re-aiming the raised shield feels heavy.
-    private readonly NetworkVariable<float> shieldFacingAngle = new NetworkVariable<float>(
+    private readonly NetworkVariable<float> shieldFacingAngle = new OfflineSafeNetworkVariable<float>(
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     private float shieldEndTime;
@@ -28,20 +28,19 @@ public partial class Player
     public float ShieldMaxHealth => activeKit != null ? activeKit.ShieldHealth : 0f;
     public float ShieldFacingAngle => shieldFacingAngle.Value;
 
-    // Routed here from Ultimate() when activeKit.HasShield; press to raise, release to lower.
+    // Routed here from Ultimate() when activeKit.HasShield; a press raises it, a second press lowers it early (it also drops on its own when the hold timer or its HP runs out).
     private void UltimateShield(InputAction.CallbackContext ctx)
     {
-        if (!this.IsLocallyControlled())
+        if (!this.IsLocallyControlled() || !ctx.performed)
             return;
 
-        if (ctx.canceled)
+        if (isShieldActive.Value)
         {
-            if (isShieldActive.Value)
-                EndShield();
+            EndShield();
             return;
         }
 
-        if (!ctx.performed || !CanFight || isShieldActive.Value || Time.time < ultimateReadyTime)
+        if (!CanFight || Time.time < ultimateReadyTime)
             return;
         if (!TrySpendMana(activeKit.UltimateManaCost))
             return;
@@ -111,7 +110,7 @@ public partial class Player
     // Padding added on top of the shield's actual collider size for the push query only - the solid collider already stops enemies at its surface (touching, not overlapping), so an unpadded query of the same shape would never actually detect them.
     private const float PushQueryPadding = 0.8f;
 
-    // Knocks back any enemy near the shield's actual collider shape (read from its FX prefab) on the facing side - matches the physical wall instead of an abstract radius.
+    // Knocks back any enemy near the shield's actual collider shape (read from its FX prefab, scaled like the spawned FX) on the facing side - matches the physical wall instead of an abstract radius.
     private void ApplyPush(Vector2 center, float facingDegrees)
     {
         CapsuleCollider2D template = ShieldHitboxTemplate();
@@ -120,7 +119,7 @@ public partial class Player
 
         Vector2 facing = DirFromAngle(facingDegrees);
         Vector2 shieldCenter = center + facing * activeKit.UltimateFxDistance;
-        Vector2 querySize = template.size + new Vector2(PushQueryPadding, PushQueryPadding);
+        Vector2 querySize = ShieldWallSize(template) + new Vector2(PushQueryPadding, PushQueryPadding);
 
         ContactFilter2D filter = new ContactFilter2D { useTriggers = false };
         filter.SetLayerMask(EnemyLayerMask);
@@ -141,6 +140,14 @@ public partial class Player
         }
     }
 
+    // Same scale SpawnLocalFx applies to the FX: prefab scale x Ultimate Size x level-up size bonus.
+    private Vector2 ShieldWallSize(CapsuleCollider2D template)
+    {
+        Vector2 prefabScale = template.transform.lossyScale;
+        float size = activeKit.UltimateSize * SizeBonusMultiplier;
+        return new Vector2(template.size.x * Mathf.Abs(prefabScale.x), template.size.y * Mathf.Abs(prefabScale.y)) * size;
+    }
+
     private CapsuleCollider2D ShieldHitboxTemplate()
     {
         GameObject prefab = activeKit != null ? activeKit.UltimateFxPrefab : null;
@@ -156,7 +163,8 @@ public partial class Player
     // Called server-side (EnemyActions.ResolveHit already runs with server authority); a line between attacker and target that crosses an active shield's real collider gets absorbed by it instead of reaching the target.
     public static bool TryAbsorbWithShield(Vector2 attackerPos, Vector2 targetPos, float damage)
     {
-        int count = Physics2D.LinecastNonAlloc(attackerPos, targetPos, ShieldLineBuffer);
+        ContactFilter2D filter = new ContactFilter2D { useLayerMask = true, layerMask = Physics2D.DefaultRaycastLayers, useTriggers = Physics2D.queriesHitTriggers };
+        int count = Physics2D.Linecast(attackerPos, targetPos, filter, ShieldLineBuffer);
         for (int i = 0; i < count; i++)
         {
             ShieldHoldFX shield = ShieldLineBuffer[i].collider.GetComponent<ShieldHoldFX>();

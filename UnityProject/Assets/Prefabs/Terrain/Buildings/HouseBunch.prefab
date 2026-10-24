@@ -108,6 +108,7 @@ MonoBehaviour:
   spriteRenderer: {fileID: 8051263943167443742}
   sortingOffset: 0
   sortPivotOffset: {x: 0, y: -1, z: 0}
+  fxDrawsOver: 0
 --- !u!1 &5599254276443544186
 GameObject:
   m_ObjectHideFlags: 0
@@ -216,6 +217,7 @@ MonoBehaviour:
   spriteRenderer: {fileID: 1278164828661126165}
   sortingOffset: 0
   sortPivotOffset: {x: 0, y: -1, z: 0}
+  fxDrawsOver: 0
 --- !u!1 &6929550958471394189
 GameObject:
   m_ObjectHideFlags: 0
@@ -226,6 +228,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6912842490076011020}
   - component: {fileID: 4708569500661549227}
+  - component: {fileID: 3724811884566540257}
   m_Layer: 0
   m_Name: HouseBunch
   m_TagString: Untagged
@@ -297,6 +300,18 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 4.5, y: 1}
   m_EdgeRadius: 0
+--- !u!114 &3724811884566540257
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6929550958471394189}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62b3f53c378aa9c24b95a797c56cd225, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RevealOccluder
 --- !u!1 &8022160470960481944
 GameObject:
   m_ObjectHideFlags: 0
@@ -405,3 +420,4 @@ MonoBehaviour:
   spriteRenderer: {fileID: 3700842112426191095}
   sortingOffset: 0
   sortPivotOffset: {x: 0, y: -1, z: 0}
+  fxDrawsOver: 0

@@ -11,7 +11,7 @@ PrefabInstance:
     - target: {fileID: 1061681135512031232, guid: 80684958157020e5b9d23c35045e0a68, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: -6764671963970310341, guid: e3d38b114d94c8d21be27ee302bce194, type: 3}
+      objectReference: {fileID: -1858558622800760282, guid: e3d38b114d94c8d21be27ee302bce194, type: 3}
     - target: {fileID: 1403939639179829679, guid: 80684958157020e5b9d23c35045e0a68, type: 3}
       propertyPath: SlerpPosition
       value: 1
@@ -79,6 +79,10 @@ PrefabInstance:
     - target: {fileID: 8795917144580053198, guid: 80684958157020e5b9d23c35045e0a68, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 2510554411
+      objectReference: {fileID: 0}
+    - target: {fileID: 9091742250040184774, guid: 80684958157020e5b9d23c35045e0a68, type: 3}
+      propertyPath: sortPivotOffset.y
+      value: 0.45
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

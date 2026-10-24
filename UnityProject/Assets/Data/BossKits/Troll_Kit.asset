@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d09c957d3a2f1904b16b6c4dc5f2c56, type: 3}
+  m_Name: Troll_Kit
+  m_EditorClassIdentifier: Assembly-CSharp::BossKit
+  displayName: Troll
+  maxHealth: 1500
+  healthPerExtraPlayer: 0.5
+  moveSpeed: 1.8
+  retargetInterval: 0.5
+  steerInterval: 0.1
+  patternCooldown: 0.3
+  recoveryDuration: 0.8
+  enrageHealthFraction: 0.5
+  enrageTempo: 1.35
+  chargeMinRange: 6
+  chargeCooldown: 5
+  chargeLeadSeconds: 0.35
+  chargeChainCount: 3
+  chargeWindup: 1
+  chargeSpeed: 14
+  chargeDistance: 15
+  chargeWidth: 3
+  chargeDamage: 30
+  slamMaxRange: 4
+  slamCooldown: 2.5
+  slamWindup: 0.9
+  slamRadius: 5
+  slamDamage: 40
+  slamActiveDuration: 0.6
+  summonKits:
+  - {fileID: 11400000, guid: bbd9cf17077cc906186e5fbc9d196fd8, type: 2}
+  - {fileID: 11400000, guid: 90aed8d23b834eb35b59e6e8f5f1035c, type: 2}
+  - {fileID: 11400000, guid: e706735619f8e55b7b1d010bb3c17d11, type: 2}
+  summonCount: 10
+  summonInterval: 15
+  summonWindup: 1
+  summonRadius: 4.5
+  summonActiveDuration: 0.6
+  summonFxPrefabs:
+  - {fileID: 1090168048379562397, guid: 658e816fc8754642297e1cfe639c450f, type: 3}
+  - {fileID: 2793570646298711179, guid: 72c1cec3748380fa8b8758cf5b2a4076, type: 3}
+  summonFxOffset: {x: 0, y: 0.4}
+  idleState: Idle
+  walkState: Walk
+  windupState: Wind-up
+  attackState: Attack
+  recoveryState: Recovery
+  chargeAnimationSpeed: 2.5

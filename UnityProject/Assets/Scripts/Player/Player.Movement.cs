@@ -7,11 +7,10 @@ public partial class Player
 {
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] private float runSpeed = 10f;
 
     private Camera cam;
 
-    private readonly NetworkVariable<float> aimAngle = new NetworkVariable<float>(
+    private readonly NetworkVariable<float> aimAngle = new OfflineSafeNetworkVariable<float>(
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     public float AimAngleDegrees => aimAngle.Value;
@@ -19,9 +18,10 @@ public partial class Player
 
     private Vector2 moveInput;
     private Vector2 facing = Vector2.down;
+    private Vector2 stickAim = Vector2.down;
+    private InputAction aimAction;
     private bool facingApplied;
     private float moveSpeedMult = 1f;
-    private bool isRunning;
 
     private PauseManager pauseManager;
 
@@ -39,11 +39,18 @@ public partial class Player
     private static readonly int LastInputXHash = Animator.StringToHash("LastInputX");
     private static readonly int LastInputYHash = Animator.StringToHash("LastInputY");
 
-    // Also applies keybinds here, covering the offline player which never goes through OnNetworkSpawn.
+    // PlayerInput ships disabled so a remote player's copy never grabs devices; the local (or offline) player turns it on here.
     private void StartMovement()
     {
-        if (playerInput != null)
-            KeybindOverrides.Apply(playerInput.actions);
+        if (playerInput == null)
+            return;
+
+        KeybindOverrides.Apply(playerInput.actions);
+        if (this.IsLocallyControlled())
+        {
+            playerInput.enabled = true;
+            BindDodgeInput();
+        }
     }
 
     // Only the owner reads input and renders a camera.
@@ -59,7 +66,11 @@ public partial class Player
         }
 
         if (playerInput != null)
+        {
             KeybindOverrides.Apply(playerInput.actions);
+            playerInput.enabled = true;
+            BindDodgeInput();
+        }
 
         if (NetworkManager.SceneManager != null)
             NetworkManager.SceneManager.OnLoadComplete += HandleSceneLoadComplete;
@@ -71,26 +82,14 @@ public partial class Player
             NetworkManager.SceneManager.OnLoadComplete -= HandleSceneLoadComplete;
     }
 
-    // 1st/2nd/3rd/4th client slot: x-1, y-1, x+1, y+1 - spreads the 4 co-op players off the single shared spawn point so they don't land stacked on each other.
-    private static readonly Vector2[] RespawnOffsetsByClientSlot =
-    {
-        new Vector2(-1f, 0f),
-        new Vector2(0f, -1f),
-        new Vector2(1f, 0f),
-        new Vector2(0f, 1f),
-    };
-
+    // Moves the local player onto its spawner glyph (one per client slot) after a scene load.
     private void HandleSceneLoadComplete(ulong clientId, string sceneName, LoadSceneMode loadSceneMode)
     {
         if (NetworkManager == null || clientId != NetworkManager.LocalClientId)
             return;
 
-        PlayerSpawnPoint spawnPoint = FindAnyObjectByType<PlayerSpawnPoint>();
-        if (spawnPoint == null)
+        if (!PlayerSpawner.TryGetSpawnPosition(OwnerClientId, out Vector3 position))
             return;
-
-        Vector2 offset = RespawnOffsetsByClientSlot[(int)(OwnerClientId % (ulong)RespawnOffsetsByClientSlot.Length)];
-        Vector3 position = spawnPoint.transform.position + (Vector3)offset;
 
         rb.position = position;
         rb.linearVelocity = Vector2.zero;
@@ -123,7 +122,10 @@ public partial class Player
                 moveInput = moveAction.ReadValue<Vector2>();
         }
 
-        Vector2 aimDir = IsDead ? GetMovementFacingDirection() : GetMouseAimDirection();
+        if (ApplyDodgeMovement())
+            return;
+
+        Vector2 aimDir = IsDead ? GetMovementFacingDirection() : InputModeTracker.UsingGamepad ? GetStickAimDirection() : GetMouseAimDirection();
         aimAngle.Value = Mathf.Atan2(aimDir.y, aimDir.x) * Mathf.Rad2Deg;
 
         if (Time.time >= moveLockEndTime)
@@ -145,7 +147,7 @@ public partial class Player
             return;
         }
 
-        rb.linearVelocity = moveInput * (isRunning ? runSpeed : moveSpeed) * speedMult * MoveSpeedBonusMultiplier;
+        rb.linearVelocity = moveInput * moveSpeed * speedMult * MoveSpeedBonusMultiplier;
     }
 
     public void Move(InputAction.CallbackContext ctx)
@@ -160,21 +162,6 @@ public partial class Player
             return;
 
         animator.SetBool(IsWalkingHash, hasDirection);
-    }
-
-    public void Run(InputAction.CallbackContext ctx)
-    {
-        if (!this.IsLocallyControlled())
-            return;
-        if (ctx.canceled)
-        {
-            isRunning = false;
-            return;
-        }
-        if (IsBlocked)
-            return;
-
-        isRunning = true;
     }
 
     public void OnPause(InputAction.CallbackContext ctx)
@@ -207,6 +194,20 @@ public partial class Player
 
         Vector2 dir = (Vector2)mouseWorld - (Vector2)transform.position;
         return dir.sqrMagnitude > 0.0001f ? dir.normalized : facing;
+    }
+
+    // Aim action (right stick, deadzone from GameSettings); falls back to the move direction, then keeps the last aim, once released.
+    private Vector2 GetStickAimDirection()
+    {
+        if (aimAction == null && playerInput != null)
+            aimAction = playerInput.actions.FindAction("Aim");
+
+        Vector2 stick = aimAction != null ? aimAction.ReadValue<Vector2>() : Vector2.zero;
+        if (stick.sqrMagnitude > 0.0001f)
+            stickAim = stick.normalized;
+        else if (moveInput.sqrMagnitude > 0.0001f)
+            stickAim = moveInput.normalized;
+        return stickAim;
     }
 
     // Snaps the aim to one of 8 directions, with an angular deadzone so adjacent directions don't flicker.

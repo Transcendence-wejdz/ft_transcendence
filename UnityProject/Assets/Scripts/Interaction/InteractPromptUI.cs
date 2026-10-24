@@ -14,6 +14,7 @@ public class InteractPromptUI : MonoBehaviour
     [SerializeField] private float keyCapBlinkSpeed = 3f;
     [SerializeField] private float keyCapBlinkMinAlpha = 0.35f;
     [SerializeField] private float keyCapBlinkScaleAmplitude = 0.1f;
+    [SerializeField] private bool labelAlwaysVisible;
 
     private CanvasGroup canvasGroup;
     private RectTransform keyCap;
@@ -31,10 +32,6 @@ public class InteractPromptUI : MonoBehaviour
             if (canvasGroup == null)
                 canvasGroup = promptRoot.gameObject.AddComponent<CanvasGroup>();
 
-            promptRoot.localScale = Vector3.one * closedScale;
-            canvasGroup.alpha = 0f;
-            promptRoot.gameObject.SetActive(false);
-
             keyCap = promptRoot.Find("KeyCap") as RectTransform;
             if (keyCap != null)
             {
@@ -42,15 +39,33 @@ public class InteractPromptUI : MonoBehaviour
                 if (keyCapGroup == null)
                     keyCapGroup = keyCap.gameObject.AddComponent<CanvasGroup>();
             }
+
+            if (labelAlwaysVisible && keyCap != null)
+            {
+                keyCap.localScale = Vector3.one * closedScale;
+                keyCapGroup.alpha = 0f;
+            }
+            else
+            {
+                labelAlwaysVisible = false;
+                promptRoot.localScale = Vector3.one * closedScale;
+                canvasGroup.alpha = 0f;
+                promptRoot.gameObject.SetActive(false);
+            }
         }
+    }
+
+    // Sets the action text without showing the prompt, for labels that stay visible out of range.
+    public void SetLabel(string text)
+    {
+        if (actionLabel != null)
+            actionLabel.text = text;
     }
 
     public void Show(string text)
     {
         RefreshKeyLabel();
-
-        if (actionLabel != null)
-            actionLabel.text = text;
+        SetLabel(text);
 
         if (promptRoot == null)
             return;
@@ -61,8 +76,14 @@ public class InteractPromptUI : MonoBehaviour
 
         if (activeAnimation != null)
             StopCoroutine(activeAnimation);
-        activeAnimation = StartCoroutine(Animate(opening: true));
 
+        if (labelAlwaysVisible)
+        {
+            activeAnimation = StartCoroutine(Animate(keyCap, keyCapGroup, opening: true));
+            return;
+        }
+
+        activeAnimation = StartCoroutine(Animate(promptRoot, canvasGroup, opening: true));
         if (keyCap != null && blinkAnimation == null)
             blinkAnimation = StartCoroutine(BlinkKeyCap());
     }
@@ -90,15 +111,17 @@ public class InteractPromptUI : MonoBehaviour
 
         if (activeAnimation != null)
             StopCoroutine(activeAnimation);
-        activeAnimation = StartCoroutine(Animate(opening: false));
+        activeAnimation = labelAlwaysVisible
+            ? StartCoroutine(Animate(keyCap, keyCapGroup, opening: false))
+            : StartCoroutine(Animate(promptRoot, canvasGroup, opening: false));
     }
 
-    // Unscaled-time scale and alpha tween, so it works while paused.
-    private IEnumerator Animate(bool opening)
+    // Unscaled-time scale and alpha tween from the current state, so it works while paused and when interrupted.
+    private IEnumerator Animate(RectTransform target, CanvasGroup group, bool opening)
     {
-        float fromScale = opening ? closedScale : 1f;
+        float fromScale = target.localScale.x;
         float toScale = opening ? 1f : closedScale;
-        float fromAlpha = opening ? 0f : 1f;
+        float fromAlpha = group.alpha;
         float toAlpha = opening ? 1f : 0f;
 
         float t = 0f;
@@ -106,18 +129,20 @@ public class InteractPromptUI : MonoBehaviour
         {
             t += Time.unscaledDeltaTime;
             float eased = 1f - Mathf.Pow(1f - Mathf.Clamp01(t / animationDuration), 3f);
-            promptRoot.localScale = Vector3.one * Mathf.Lerp(fromScale, toScale, eased);
-            canvasGroup.alpha = Mathf.Lerp(fromAlpha, toAlpha, eased);
+            target.localScale = Vector3.one * Mathf.Lerp(fromScale, toScale, eased);
+            group.alpha = Mathf.Lerp(fromAlpha, toAlpha, eased);
             yield return null;
         }
 
-        promptRoot.localScale = Vector3.one * toScale;
-        canvasGroup.alpha = toAlpha;
-
-        if (!opening)
-            promptRoot.gameObject.SetActive(false);
-
+        target.localScale = Vector3.one * toScale;
+        group.alpha = toAlpha;
         activeAnimation = null;
+
+        if (opening && labelAlwaysVisible && blinkAnimation == null)
+            blinkAnimation = StartCoroutine(BlinkKeyCap());
+
+        if (!opening && target == promptRoot)
+            promptRoot.gameObject.SetActive(false);
     }
 
     // Pulses the keycap's alpha and scale.

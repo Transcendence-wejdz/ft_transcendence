@@ -62,7 +62,9 @@ public partial class ProceduralMapGenerator : MonoBehaviour, ISerializationCallb
     [SerializeField] private bool previewInEditor;
     [Range(1, 16)]
     [Tooltip("Chunk radius previewed around the generator when there is no island.")]
+#pragma warning disable CS0414
     [SerializeField] private int previewRadiusInChunks = 4;
+#pragma warning restore CS0414
 
     [System.Serializable]
     private class Biome : ISerializationCallbackReceiver

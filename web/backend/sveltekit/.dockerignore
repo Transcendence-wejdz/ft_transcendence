@@ -1,0 +1,7 @@
+node_modules
+.svelte-kit
+build
+src/lib/server/generated
+static/public/game
+.env
+.env.*

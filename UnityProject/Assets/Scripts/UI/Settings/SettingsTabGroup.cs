@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-// Drives a settings tab bar: one page visible at a time, active tab button non-interactable to read as "selected".
+// Drives a settings tab bar: one page visible at a time, active tab button non-interactable and pinned so its highlight sweeps in.
 public class SettingsTabGroup : MonoBehaviour
 {
     [System.Serializable]
@@ -31,8 +31,12 @@ public class SettingsTabGroup : MonoBehaviour
     {
         foreach (Tab tab in tabs)
         {
-            tab.page.SetActive(tab == selected);
-            tab.tabButton.interactable = tab != selected;
+            bool isSelected = tab == selected;
+            tab.page.SetActive(isSelected);
+            tab.tabButton.interactable = !isSelected;
+            HoverColorWipe hover = tab.tabButton.GetComponent<HoverColorWipe>();
+            if (hover != null)
+                hover.SetPinned(isSelected);
         }
     }
 }

@@ -9,9 +9,11 @@ public class ReadyCheckEntryUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI nameText;
     [SerializeField] private TextMeshProUGUI readyStatusText;
     [SerializeField] private TextMeshProUGUI teamText;
-
-    private static readonly Color ReadyColor = new Color(0.3f, 0.85f, 0.3f);
-    private static readonly Color NotReadyColor = new Color(0.85f, 0.3f, 0.3f);
+    [SerializeField] private Image readyStatusBackground;
+    [SerializeField] private Color readyColor = new Color(0.4f, 0.78f, 0.42f, 1f);
+    [SerializeField] private Color notReadyColor = new Color(0.4f, 0.4f, 0.43f, 1f);
+    [SerializeField] private Color readyTextColor = new Color(0.08f, 0.07f, 0.06f, 1f);
+    [SerializeField] private Color notReadyTextColor = new Color(0.93f, 0.90f, 0.84f, 1f);
 
     private Player boundPlayer;
     private string[] teamNames;
@@ -69,7 +71,9 @@ public class ReadyCheckEntryUI : MonoBehaviour
             return;
 
         readyStatusText.text = ready ? "Ready" : "Not Ready";
-        readyStatusText.color = ready ? ReadyColor : NotReadyColor;
+        readyStatusText.color = ready ? readyTextColor : notReadyTextColor;
+        if (readyStatusBackground != null)
+            readyStatusBackground.color = ready ? readyColor : notReadyColor;
     }
 
     private void SetTeam(int index)

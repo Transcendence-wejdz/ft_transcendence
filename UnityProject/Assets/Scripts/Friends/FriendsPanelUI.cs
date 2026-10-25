@@ -20,7 +20,6 @@ public class FriendsPanelUI : MonoBehaviour
     private static readonly Color ErrorColor = new Color(0.75f, 0.15f, 0.15f);
     private static readonly Color InfoColor = new Color(0.2f, 0.12f, 0.08f);
     private readonly List<GameObject> rows = new List<GameObject>();
-    private bool isInviteBusy;
 
     private void Awake()
     {
@@ -35,6 +34,7 @@ public class FriendsPanelUI : MonoBehaviour
     private void OnEnable()
     {
         FriendsManager.OnChanged += Rebuild;
+        FriendInviteFlow.OnBusyChanged += SetRowsInteractable;
         Connect();
     }
 
@@ -42,6 +42,7 @@ public class FriendsPanelUI : MonoBehaviour
     private void OnDisable()
     {
         FriendsManager.OnChanged -= Rebuild;
+        FriendInviteFlow.OnBusyChanged -= SetRowsInteractable;
         gameObject.SetActive(false);
     }
 
@@ -89,6 +90,8 @@ public class FriendsPanelUI : MonoBehaviour
 
         foreach (Relationship request in FriendsManager.Outgoing)
             AddRow(request, "Request", "Cancel", () => _ = Run(FriendsManager.CancelRequestAsync(request.Member.Id)));
+
+        SetRowsInteractable(FriendInviteFlow.IsBusy);
     }
 
     // Online for any reachable availability, otherwise Offline.
@@ -131,46 +134,21 @@ public class FriendsPanelUI : MonoBehaviour
         addButton.interactable = FriendsManager.IsReady;
     }
 
-    // Hosts first if not in a session, then sends the invite. Guarded against repeat clicks while that's in flight.
+    // Rows stay locked while any invite (from this or another friends list) is in flight.
     private async void Invite(string memberId)
     {
-        if (isInviteBusy)
+        if (FriendInviteFlow.IsBusy)
             return;
 
-        isInviteBusy = true;
-        SetRowsInteractable(false);
-        try
-        {
-            if (string.IsNullOrEmpty(FriendsManager.CurrentSessionCode))
-            {
-                NetworkBootstrap bootstrap = FindAnyObjectByType<NetworkBootstrap>(FindObjectsInactive.Include);
-                if (bootstrap == null)
-                {
-                    SetStatus("Can't host from here.", isError: true);
-                    return;
-                }
-
-                SetStatus("Creating your game...", isError: false);
-                if (!await bootstrap.HostGameAsync())
-                {
-                    SetStatus("Couldn't start hosting, try again.", isError: true);
-                    return;
-                }
-            }
-
-            await Run(FriendsManager.InviteAsync(memberId), "Invite sent.");
-        }
-        finally
-        {
-            isInviteBusy = false;
-            SetRowsInteractable(true);
-        }
+        var result = await FriendInviteFlow.InviteAsync(memberId, message => SetStatus(message, isError: false));
+        if (this != null)
+            SetStatus(result.message, isError: !result.ok);
     }
 
-    private void SetRowsInteractable(bool interactable)
+    private void SetRowsInteractable(bool busy)
     {
         foreach (GameObject row in rows)
-            row.GetComponent<FriendRowUI>().SetInteractable(interactable);
+            row.GetComponent<FriendRowUI>().SetInteractable(!busy);
     }
 
     // Runs a row action and shows failures in the status line.

@@ -7,11 +7,14 @@ using Unity.Services.Friends.Models;
 using Unity.Services.Friends.Notifications;
 using Unity.Services.Multiplayer;
 
+// SessionCode is empty for the instant first message sent while the inviter's session is still being created; a second message brings the code.
 [Serializable]
 public class FriendInvite
 {
     public string SessionCode;
     public string SenderName;
+    public bool FollowUp;
+    [NonSerialized] public string SenderId;
 }
 
 [Serializable]
@@ -35,6 +38,20 @@ public static class FriendsManager
     public static IReadOnlyList<Relationship> Friends => IsReady ? FriendsService.Instance.Friends : Empty;
     public static IReadOnlyList<Relationship> Incoming => IsReady ? FriendsService.Instance.IncomingFriendRequests : Empty;
     public static IReadOnlyList<Relationship> Outgoing => IsReady ? FriendsService.Instance.OutgoingFriendRequests : Empty;
+
+    // Connects at boot in any scene so friends lists open already filled; failures are retried by the lists themselves.
+    [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static async void Preload()
+    {
+        try
+        {
+            await InitializeAsync();
+        }
+        catch (Exception e)
+        {
+            UnityEngine.Debug.LogWarning($"FriendsManager: preload failed, friends lists will retry - {e.Message}");
+        }
+    }
 
     // Safe to call repeatedly; concurrent callers share one init.
     public static Task InitializeAsync()
@@ -66,7 +83,7 @@ public static class FriendsManager
         OnChanged?.Invoke();
     }
 
-    // Ignores anything that isn't a valid friend session invite.
+    // Ignores anything that isn't a friend invite; a code-less invite is valid (its code follows in a second message).
     private static void HandleMessage(IMessageReceivedEvent message)
     {
         FriendInvite invite;
@@ -79,38 +96,47 @@ public static class FriendsManager
             return;
         }
 
-        if (invite != null && !string.IsNullOrEmpty(invite.SessionCode))
-            OnInviteReceived?.Invoke(invite);
+        if (invite == null || string.IsNullOrEmpty(invite.SenderName))
+            return;
+
+        invite.SenderId = message.UserId;
+        OnInviteReceived?.Invoke(invite);
     }
 
-    // Code of the live session, or null when solo; stale entries left by a deleted session are ignored.
+    // Code of the session we are really in (see ActiveSession), or null when solo.
     public static string CurrentSessionCode
     {
         get
         {
-            if (Unity.Netcode.NetworkManager.Singleton == null || !Unity.Netcode.NetworkManager.Singleton.IsListening)
-                return null;
-
-            foreach (var pair in MultiplayerService.Instance.Sessions)
-                if (pair.Value.State == SessionState.Connected && !string.IsNullOrEmpty(pair.Value.Code))
-                    return pair.Value.Code;
-            return null;
+            ISession session = ActiveSession.Current;
+            return session != null && !string.IsNullOrEmpty(session.Code) ? session.Code : null;
         }
     }
 
-    // True if that friend is already a member of the current session (so they shouldn't be re-invited).
+    // True if that friend is already a member of the session we are really in.
     public static bool IsMemberOfCurrentSession(string memberId)
     {
-        foreach (var pair in MultiplayerService.Instance.Sessions)
-        {
-            if (pair.Value.State != SessionState.Connected)
-                continue;
+        ISession session = ActiveSession.Current;
+        if (session == null)
+            return false;
 
-            foreach (var player in pair.Value.Players)
-                if (player.Id == memberId)
-                    return true;
-        }
+        foreach (var player in session.Players)
+            if (player.Id == memberId)
+                return true;
         return false;
+    }
+
+    // Changes when the live session starts, ends, or gains or loses a player; open UIs poll it to refresh.
+    public static int SessionSignature()
+    {
+        ISession session = ActiveSession.Current;
+        if (session == null)
+            return 0;
+
+        int hash = 17;
+        foreach (var player in session.Players)
+            hash = hash * 31 + player.Id.GetHashCode();
+        return hash;
     }
 
     // Name without the "#1234" suffix.
@@ -123,14 +149,20 @@ public static class FriendsManager
         return hash > 0 ? fullName.Substring(0, hash) : fullName;
     }
 
-    // Sends the session code to an online friend.
-    public static Task InviteAsync(string memberId)
+    // Sends the session code to an online friend; followUp completes an earlier instant invite without reopening a dismissed popup.
+    public static Task InviteAsync(string memberId, bool followUp = false)
     {
         string code = CurrentSessionCode;
         if (string.IsNullOrEmpty(code))
             throw new InvalidOperationException("No active session to invite to.");
 
-        return FriendsService.Instance.MessageAsync(memberId, new FriendInvite { SessionCode = code, SenderName = OwnName });
+        return FriendsService.Instance.MessageAsync(memberId, new FriendInvite { SessionCode = code, SenderName = OwnName, FollowUp = followUp });
+    }
+
+    // Instant heads-up before our session exists, so the friend sees the invite without waiting; InviteAsync sends the code once hosting is done.
+    public static Task SendPendingInviteAsync(string memberId)
+    {
+        return FriendsService.Instance.MessageAsync(memberId, new FriendInvite { SessionCode = string.Empty, SenderName = OwnName });
     }
 
     // Sends a friend request, or accepts one already received.

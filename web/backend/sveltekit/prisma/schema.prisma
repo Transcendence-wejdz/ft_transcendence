@@ -25,6 +25,9 @@ model User {
   lowFriendships     Friendship[] @relation("FriendshipLowRequest")
   highFriendships    Friendship[] @relation("FriendshipHighRequest")
 
+  blocksMade       Block[] @relation("Blocker")
+  blocksReceived   Block[] @relation("Blocked")
+
   @@map("users")
 }
 
@@ -78,4 +81,18 @@ model Friendship {
 
   @@map("friendship")
   @@unique([userLowId, userHighId])
+}
+
+model Block {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  blockerId String @map("blocker_id") @db.Uuid
+  blockedId String @map("blocked_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  blocker User @relation("Blocker", fields: [blockerId], references: [id], onDelete:Cascade)
+  blocked User @relation("Blocked", fields: [blockedId], references: [id], onDelete:Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+  @@map("blocks")
 }

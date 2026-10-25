@@ -8,8 +8,6 @@ using UnityEngine.UI;
 
 public class PauseManager : MonoBehaviour
 {
-    private const float ButtonSpacing = 45f;
-
     [SerializeField] private GameObject pausePanel;
     [SerializeField] private GameObject settingsPanel;
     [SerializeField] private string lobbySceneName = "Lobby";
@@ -49,34 +47,26 @@ public class PauseManager : MonoBehaviour
 
     public void Resume()
     {
-        if (settingsPanel != null)
-            settingsPanel.SetActive(false);
-
+        SetPanelVisible(settingsPanel, false);
         SetPaused(false);
     }
 
     public void OpenSettings()
     {
-        if (pausePanel != null)
-            pausePanel.SetActive(false);
-
-        if (settingsPanel != null)
-            settingsPanel.SetActive(true);
+        SetPanelVisible(pausePanel, false);
+        SetPanelVisible(settingsPanel, true);
     }
 
     public void CloseSettings()
     {
-        if (settingsPanel != null)
-            settingsPanel.SetActive(false);
-
-        if (pausePanel != null)
-            pausePanel.SetActive(true);
+        SetPanelVisible(settingsPanel, false);
+        SetPanelVisible(pausePanel, true);
     }
 
     // Gamepad B: Settings goes back to Pause, Pause resumes.
     public void Back()
     {
-        if (settingsPanel != null && settingsPanel.activeSelf)
+        if (IsPanelOpen(settingsPanel))
             CloseSettings();
         else if (IsPaused)
             Resume();
@@ -134,12 +124,7 @@ public class PauseManager : MonoBehaviour
         }
 
         if (quitButton != null)
-        {
             quitButton.gameObject.SetActive(showQuit);
-            RectTransform rect = (RectTransform)quitButton.transform;
-            float y = showLeave ? -2f * ButtonSpacing : -ButtonSpacing;
-            rect.anchoredPosition = new Vector2(rect.anchoredPosition.x, y);
-        }
     }
 
     // Multiplayer pause only blocks input; freezing timeScale would desync.
@@ -154,7 +139,31 @@ public class PauseManager : MonoBehaviour
         if (paused)
             RefreshButtons();
 
-        if (pausePanel != null)
-            pausePanel.SetActive(paused);
+        SetPanelVisible(pausePanel, paused);
+    }
+
+    // Animated when the panel has a PanelSlideIn, instant otherwise.
+    private static void SetPanelVisible(GameObject panel, bool show)
+    {
+        if (panel == null)
+            return;
+
+        PanelSlideIn slide = panel.GetComponent<PanelSlideIn>();
+        if (slide == null)
+            panel.SetActive(show);
+        else if (show)
+            slide.Show();
+        else
+            slide.Hide();
+    }
+
+    // A panel still playing its close animation counts as closed.
+    private static bool IsPanelOpen(GameObject panel)
+    {
+        if (panel == null || !panel.activeSelf)
+            return false;
+
+        PanelSlideIn slide = panel.GetComponent<PanelSlideIn>();
+        return slide == null || slide.IsOpen;
     }
 }

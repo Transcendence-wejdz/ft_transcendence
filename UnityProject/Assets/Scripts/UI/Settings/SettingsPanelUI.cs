@@ -10,12 +10,9 @@ public class SettingsPanelUI : MonoBehaviour
     [SerializeField] private Toggle damageNumbersToggle;
     [SerializeField] private Toggle showFpsToggle;
     [SerializeField] private Toggle showPingToggle;
-    [SerializeField] private Button qualityPreviousButton;
-    [SerializeField] private Button qualityNextButton;
-    [SerializeField] private TMP_Text qualityLabel;
+    [SerializeField] private Toggle[] qualityOptions;
     [SerializeField] private Toggle hdrToggle;
-    [SerializeField] private Button deadzonePreviousButton;
-    [SerializeField] private Button deadzoneNextButton;
+    [SerializeField] private Slider deadzoneSlider;
     [SerializeField] private TMP_Text deadzoneLabel;
 
     private void Awake()
@@ -25,11 +22,18 @@ public class SettingsPanelUI : MonoBehaviour
         damageNumbersToggle.onValueChanged.AddListener(value => GameSettings.ShowDamageNumbers = value);
         showFpsToggle.onValueChanged.AddListener(value => GameSettings.ShowFps = value);
         showPingToggle.onValueChanged.AddListener(value => GameSettings.ShowPing = value);
-        qualityPreviousButton.onClick.AddListener(() => StepQuality(-1));
-        qualityNextButton.onClick.AddListener(() => StepQuality(1));
         hdrToggle.onValueChanged.AddListener(value => GameSettings.HdrEnabled = value);
-        deadzonePreviousButton.onClick.AddListener(() => StepDeadzone(-1));
-        deadzoneNextButton.onClick.AddListener(() => StepDeadzone(1));
+
+        for (int i = 0; i < qualityOptions.Length; i++)
+        {
+            int level = i;
+            qualityOptions[i].onValueChanged.AddListener(isOn => { if (isOn) GameSettings.GraphicsQuality = level; });
+        }
+
+        deadzoneSlider.minValue = Mathf.Round(GameSettings.StickDeadzoneMin / GameSettings.StickDeadzoneStep);
+        deadzoneSlider.maxValue = Mathf.Round(GameSettings.StickDeadzoneMax / GameSettings.StickDeadzoneStep);
+        deadzoneSlider.wholeNumbers = true;
+        deadzoneSlider.onValueChanged.AddListener(OnDeadzoneChanged);
     }
 
     private void OnEnable()
@@ -40,28 +44,18 @@ public class SettingsPanelUI : MonoBehaviour
         showFpsToggle.SetIsOnWithoutNotify(GameSettings.ShowFps);
         showPingToggle.SetIsOnWithoutNotify(GameSettings.ShowPing);
         hdrToggle.SetIsOnWithoutNotify(GameSettings.HdrEnabled);
-        RefreshQuality();
+
+        for (int i = 0; i < qualityOptions.Length; i++)
+            qualityOptions[i].SetIsOnWithoutNotify(i == GameSettings.GraphicsQuality);
+
+        deadzoneSlider.SetValueWithoutNotify(Mathf.Round(GameSettings.StickDeadzone / GameSettings.StickDeadzoneStep));
         RefreshDeadzone();
     }
 
-    // Wraps around, so the arrows cycle Low, Medium, High, Ultra.
-    private void StepQuality(int direction)
+    // Slider works in whole steps so mouse drag and gamepad left/right land on the same values.
+    private void OnDeadzoneChanged(float steps)
     {
-        int count = GameSettings.GraphicsQualityNames.Length;
-        GameSettings.GraphicsQuality = (GameSettings.GraphicsQuality + direction + count) % count;
-        RefreshQuality();
-    }
-
-    private void RefreshQuality()
-    {
-        qualityLabel.text = GameSettings.GraphicsQualityNames[GameSettings.GraphicsQuality];
-    }
-
-    // Clamped, not wrapped, so holding an arrow stops at the minimum or maximum.
-    private void StepDeadzone(int direction)
-    {
-        float next = Mathf.Round((GameSettings.StickDeadzone + direction * GameSettings.StickDeadzoneStep) / GameSettings.StickDeadzoneStep) * GameSettings.StickDeadzoneStep;
-        GameSettings.StickDeadzone = next;
+        GameSettings.StickDeadzone = steps * GameSettings.StickDeadzoneStep;
         RefreshDeadzone();
     }
 

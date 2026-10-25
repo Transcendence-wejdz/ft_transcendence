@@ -53,7 +53,7 @@ jobs:
             Review this pull request using `gh pr diff` and `gh pr view`:
             - Flag any security issues, unless it is minor or probably not applicable.
             - Flag potential bugs/logic errors that look major.
-            - Any change that could break the build and preview CI/CD workflows.
+            - Any change that will break the build and preview CI/CD workflows.
 
             Be concise. Use inline comments for specific issues, then post one summary comment with `gh pr comment`.
             If nothing is wrong, post a comment with a green-check.

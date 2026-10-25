@@ -1,7 +1,7 @@
 WEB_DIR := web
 COMPOSE := docker compose -f $(WEB_DIR)/compose.yaml --project-directory $(WEB_DIR)
 
-.PHONY: all setup up down build logs ps re clean fclean webgl webgl-dev
+.PHONY: all setup up down build logs ps re clean fclean webgl webgl-dev db-migrate-dev
 
 all: up
 
@@ -29,6 +29,12 @@ logs:
 
 ps:
 	$(COMPOSE) ps
+
+# Run Prisma against the Compose database, while keeping generated migration files on the host.
+migrate:
+	@if [ -z "$(name)" ]; then echo "Usage: make db-migrate-dev name=migration_name"; exit 2; fi
+	$(COMPOSE) run --build --rm -v "$(CURDIR)/web/backend/sveltekit/prisma:/app/prisma" migrate npm run db:migrate:dev -- --name "$(name)"
+	cd web/backend/sveltekit && npm run db:generate
 
 re: down up
 

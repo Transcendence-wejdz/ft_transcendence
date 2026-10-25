@@ -13,7 +13,20 @@ public static class ServicesAuth
 
     public static event Action<string> OnPlayerNameChanged;
 
-    public static async Task EnsureSignedInAsync()
+    private static Task signInTask;
+
+    // Concurrent callers share one in-flight sign-in (two SignInAnonymouslyAsync calls throw); a failed or finished attempt is redone if still signed out.
+    public static Task EnsureSignedInAsync()
+    {
+        if (UnityServices.State == ServicesInitializationState.Initialized && AuthenticationService.Instance.IsSignedIn)
+            return Task.CompletedTask;
+
+        if (signInTask == null || signInTask.IsCompleted)
+            signInTask = SignInInternalAsync();
+        return signInTask;
+    }
+
+    private static async Task SignInInternalAsync()
     {
 #if UNITY_WEBGL && !UNITY_EDITOR
         await WebProfileBridge.WaitForProfileAsync(WebProfileTimeout);

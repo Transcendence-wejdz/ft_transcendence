@@ -61,11 +61,12 @@ jobs:
             ```
             ## Review summary
 
-            ✅ Issue solved
-            ⚠️ Issue still unsolved
-            ❗ Issue must be solved
-            🚨 Critical issue
+            - ✅ Issue solved
+            - ⚠️ Issue still unsolved
+            - ❗ Issue must be solved
+            - 🚨 Critical issue
 
+            Bla bla bla.
             ```
 
             # Re-review

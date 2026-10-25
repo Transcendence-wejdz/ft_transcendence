@@ -56,12 +56,23 @@ jobs:
             - Any change that will break the build and preview CI/CD workflows.
 
             Be concise. Use inline comments for specific issues, then post one summary comment with `gh pr comment`.
-            If nothing is wrong, post a comment with a green-check.
+            The summary must be a bullet list starting with an appropriate emoji for each issue, with a short paragraph at the end.
+            If nothing is wrong, post a comment with a green-check. To illustrate:
+            ```
+            ## Review summary
+
+            - ✅ Issue solved
+            - ⚠️ Issue still unsolved
+            - ❗ Issue must be solved
+            - 🚨 Critical issue
+
+            Bla bla bla.
+            ```
 
             # Re-review
             This might be a re-review after new commits, if so, existing comments
             and their eventual replies are located in .review-comments.json,
-            and in the PR conversation (`gh pr view --comments`).
+            and in the PR conversation (`gh pr view --json comments`).
             - Do not repeat issues that were fixed or explained,
             unless the explanation is wrong and the issue really is critical.
             - If you already posted a summary, update it with `gh pr comment --edit-last`

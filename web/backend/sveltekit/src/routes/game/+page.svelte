@@ -61,8 +61,6 @@
             if (!unityQuit) unityQuit = Promise.resolve(instance.Quit());
             return unityQuit;
         };
-        const createUnityInstance = (window as unknown as Window & { createUnityInstance: UnityCreator })
-            .createUnityInstance;
         const buildUrl = '/public/game/Build';
 
         const config = {
@@ -86,6 +84,8 @@
         script.onload = () => {
             if (disposed) return;
 
+            const createUnityInstance = (window as unknown as Window & { createUnityInstance: UnityCreator })
+                .createUnityInstance;
             const startup = createUnityInstance(
                 unityCanvas,
                 config,
@@ -117,7 +117,6 @@
 
                     const data = await res.json();
                     if (disposed) return;
-                    // const displayName = data.user.display_name;
 
                     const profile = JSON.stringify({
                         userId: data.user.id,

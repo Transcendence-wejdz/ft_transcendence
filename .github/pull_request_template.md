@@ -19,5 +19,6 @@
 - [ ] Targets `develop` (only `develop` → `main` for a release)
 - [ ] CI is green
 - [ ] Tested in Google Chrome, no errors in the browser console
-- [ ] Reviewed by at least two other teammates. LLM review does NOT count as a teammate.
 - [ ] No secrets/credentials committed
+- [ ] Reviewed by at least two other human teammates
+- [ ] LLM checks passed

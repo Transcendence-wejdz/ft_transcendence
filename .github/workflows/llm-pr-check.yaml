@@ -11,7 +11,7 @@ concurrency:
 jobs:
   review:
     if: ${{ !github.event.pull_request.draft }}
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, review]
     timeout-minutes: 15
     permissions:
       contents: read

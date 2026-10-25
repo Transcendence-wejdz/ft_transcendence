@@ -11,7 +11,7 @@ concurrency:
 jobs:
   build-web:
     name: build-web
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, build]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +36,7 @@ jobs:
   build-unity:
     name: build-unity
     needs: build-web
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, build]
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
@@ -81,7 +81,7 @@ jobs:
   deploy:
     name: deploy
     needs: [build-web, build-unity]
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, build]
     environment:
       name: preview-${{ github.ref_name }}
       url: ${{ steps.up.outputs.url }}

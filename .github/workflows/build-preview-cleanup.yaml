@@ -6,7 +6,7 @@ on:
 jobs:
   cleanup:
     if: github.event.ref_type == 'branch'
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, build]
     steps:
       - name: remove-preview
         env:
@@ -17,5 +17,5 @@ jobs:
           if [ -f "$dir/compose.yaml" ]; then
             docker compose -p "tr-$slug" -f "$dir/compose.yaml" down -v --remove-orphans
           fi
-          rm -rf "$dir"
+          rm -rf "$dir" "$dir.game"
           echo "Remove preview for $REF ($slug)"

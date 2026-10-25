@@ -1,0 +1,72 @@
+name: llm-pr-check
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize]
+
+concurrency:
+  group: llm-pr-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: [self-hosted, review]
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    env:
+      PR: ${{ github.event.pull_request.number }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: load-claude-token
+        id: token
+        run: |
+          t=$(cat "$HOME/.claude-ci/token")
+          echo "::add-mask::$t"
+          echo "value=$t" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ env.PR }}/head
+          fetch-depth: 0
+
+      - name: previous-review
+        run: |
+          gh api "repos/${{ github.repository }}/pulls/$PR/comments" --paginate \
+            --jq '.[] | {id, in_reply_to_id, user: .user.login, path, line, body}' \
+            > "$GITHUB_WORKSPACE/.review-comments.json"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ steps.token.outputs.value }}
+          github_token: ${{ github.token }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ env.PR }}
+
+            # Pull-Request review
+            You are a read-only reviewer. You cannot modify files or commit.
+
+            Review this pull request using `gh pr diff` and `gh pr view`:
+            - Flag any security issues, unless it is minor or probably not applicable.
+            - Flag potential bugs/logic errors that look major.
+            - Any change that will break the build and preview CI/CD workflows.
+
+            Be concise. Use inline comments for specific issues, then post one summary comment with `gh pr comment`.
+            If nothing is wrong, post a comment with a green-check.
+
+            # Re-review
+            This might be a re-review after new commits, if so, existing comments
+            and their eventual replies are located in .review-comments.json,
+            and in the PR conversation (`gh pr view --comments`).
+            - Do not repeat issues that were fixed or explained,
+            unless the explanation is wrong and the issue really is critical.
+            - If you already posted a summary, update it with `gh pr comment --edit-last`
+            instead of posting a new one.
+          claude_args: >-
+            --model opus
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
+            --disallowedTools "Edit,Write,MultiEdit,NotebookEdit,Bash(git push:*),Bash(git commit:*)"

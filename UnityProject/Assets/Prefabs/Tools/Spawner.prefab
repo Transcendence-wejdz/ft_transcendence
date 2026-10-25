@@ -177,7 +177,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5365556119873405606}
-  - component: {fileID: 4038834265432874123}
+  - component: {fileID: 4038834264443874123}
   - component: {fileID: 8845616621674067104}
   m_Layer: 0
   m_Name: Glyph_Left
@@ -202,7 +202,7 @@ Transform:
   - {fileID: 8099532150587011516}
   m_Father: {fileID: 5033276273489773972}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!212 &4038834265432874123
+--- !u!212 &4038834264443874123
 SpriteRenderer:
   serializedVersion: 3
   m_ObjectHideFlags: 0

@@ -10,7 +10,7 @@ AssetOrigin:
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -1558449054324165317
+      213: -1558449044434165317
     second: Avatars_07_0
   externalObjects: {}
   serializedVersion: 13
@@ -136,7 +136,7 @@ TextureImporter:
       tessellationDetail: -1
       bones: []
       spriteID: b35f67497d64f5ae0800000000000000
-      internalID: -1558449054324165317
+      internalID: -1558449044434165317
       vertices: []
       indices: 
       edges: []
@@ -155,7 +155,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Avatars_07_0: -1558449054324165317
+      Avatars_07_0: -1558449044434165317
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

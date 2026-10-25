@@ -592,7 +592,7 @@ TextureImporter:
       213: 2370123579045266851
     second: Unity Tile Guide_04_193
   - first:
-      213: -9148924589054329860
+      213: -9148924589044439860
     second: Unity Tile Guide_04_194
   - first:
       213: 8977478659603849797
@@ -5040,7 +5040,7 @@ TextureImporter:
       tessellationDetail: -1
       bones: []
       spriteID: cfb74903f8d780180800000000000000
-      internalID: -9148924589054329860
+      internalID: -9148924589044439860
       vertices: []
       indices: 
       edges: []
@@ -5561,7 +5561,7 @@ TextureImporter:
       Unity Tile Guide_04_191: 7939346313896733360
       Unity Tile Guide_04_192: -6979742759137327200
       Unity Tile Guide_04_193: 2370123579045266851
-      Unity Tile Guide_04_194: -9148924589054329860
+      Unity Tile Guide_04_194: -9148924589044439860
       Unity Tile Guide_04_195: 8977478659603849797
       Unity Tile Guide_04_196: -5630601742937879530
       Unity Tile Guide_04_197: -4726870753600449681

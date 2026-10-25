@@ -17,5 +17,5 @@ jobs:
           if [ -f "$dir/compose.yaml" ]; then
             docker compose -p "tr-$slug" -f "$dir/compose.yaml" down -v --remove-orphans
           fi
-          rm -rf "$dir"
+          rm -rf "$dir" "$dir.game"
           echo "Remove preview for $REF ($slug)"

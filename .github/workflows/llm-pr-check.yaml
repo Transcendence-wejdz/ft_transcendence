@@ -72,7 +72,7 @@ jobs:
             # Re-review
             This might be a re-review after new commits, if so, existing comments
             and their eventual replies are located in .review-comments.json,
-            and in the PR conversation (`gh pr view --comments`).
+            and in the PR conversation (`gh pr view --json comments`).
             - Do not repeat issues that were fixed or explained,
             unless the explanation is wrong and the issue really is critical.
             - If you already posted a summary, update it with `gh pr comment --edit-last`

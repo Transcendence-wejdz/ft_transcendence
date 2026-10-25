@@ -12,6 +12,15 @@ services:
 
   adminer:
     ports: !reset []
+    networks: [default, previews]
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${PREVIEW_SLUG}-adminer.rule=Host(`${PREVIEW_SLUG}-adminer.${PREVIEW_DOMAIN}`)
+      - traefik.http.routers.${PREVIEW_SLUG}-adminer.entrypoints=websecure
+      - traefik.http.routers.${PREVIEW_SLUG}-adminer.tls=true
+      - traefik.http.services.${PREVIEW_SLUG}-adminer.loadbalancer.server.port=8080
 
 networks:
   previews:

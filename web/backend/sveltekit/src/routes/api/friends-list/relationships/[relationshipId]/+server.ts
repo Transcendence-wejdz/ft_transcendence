@@ -52,3 +52,36 @@ export const PATCH: RequestHandler = async ({ locals, params, request }) => {
 	if (outcome === 'missing') return json({ success: false, error: 'Request not found or cannot be accepted' }, { status: 404 });
 	return json({ success: true });
 };
+
+const isUuid = (value: string) => /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(value);
+
+async function getTarget(playerId: string) {
+	if (!isUuid(playerId)) return null;
+	return prisma.user.findUnique({ where: { id: playerId }, select: { id: true } });
+}
+
+export const DELETE: RequestHandler = async ({ locals, params }) => {
+    if (!locals.user) {
+        return json({ success: false, error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const result = await prisma.friendship.deleteMany({
+        where: {
+            id: params.relationshipId,
+            AND: [
+                { OR: [{ userLowId: locals.user.id }, { userHighId: locals.user.id }] },
+                {
+                    OR: [
+                        { relationStatus: 'ACCEPTED' },
+                        { relationStatus: 'PENDING', requesterId: { not: locals.user.id } }
+                    ]
+                }
+            ]
+        }
+    });
+
+    if (!result.count) {
+        return json({ success: false, error: 'Relationship not found or cannot be removed' }, { status: 404 });
+    }
+    return json({ success: true });
+};

@@ -7,7 +7,7 @@ const isUuid = (value: string) => /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$
 async function getTarget(playerId: string) {
 	if (!isUuid(playerId)) return null;
 	return prisma.user.findUnique({ where: { id: playerId }, select: { id: true } });
-}
+};
 
 export const GET: RequestHandler = async ({ locals, params }) => {
 	if (!locals.user) return json({ success: false, error: 'Not authenticated' }, { status: 401 });

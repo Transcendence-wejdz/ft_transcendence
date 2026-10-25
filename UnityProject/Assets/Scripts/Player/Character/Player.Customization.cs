@@ -38,8 +38,9 @@ public partial class Player
         default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     // Unity services player id, so a friend entry or the host can find this player (e.g. to kick them from the session).
+    // Server-writable and claimed once through ClaimServicesIdServerRpc, so a tampered client can't take over another member's id.
     private readonly NetworkVariable<FixedString64Bytes> servicesId = new OfflineSafeNetworkVariable<FixedString64Bytes>(
-        default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     public int ClassIndex => classIndex.Value;
     public int ColorIndex => colorIndex.Value;
@@ -110,8 +111,24 @@ public partial class Player
             return;
         if (FriendsManager.OwnName != FriendsTag)
             friendsTag.Value = FriendsManager.OwnName;
-        if (FriendsManager.OwnId != ServicesId)
-            servicesId.Value = FriendsManager.OwnId;
+        if (string.IsNullOrEmpty(ServicesId) && !string.IsNullOrEmpty(FriendsManager.OwnId))
+            ClaimServicesIdServerRpc(FriendsManager.OwnId);
+    }
+
+    // Write-once, and refused if another spawned player already holds that id.
+    [ServerRpc]
+    private void ClaimServicesIdServerRpc(FixedString64Bytes id)
+    {
+        string claimed = id.ToString();
+        if (!string.IsNullOrEmpty(ServicesId) || string.IsNullOrEmpty(claimed))
+            return;
+        foreach (Player other in ActiveInstances)
+            if (other != this && other.ServicesId == claimed)
+            {
+                Debug.LogWarning($"Player: client {OwnerClientId} tried to claim services id {claimed}, already held by client {other.OwnerClientId}");
+                return;
+            }
+        servicesId.Value = id;
     }
 
     private static void RefreshAllDisplayNames()

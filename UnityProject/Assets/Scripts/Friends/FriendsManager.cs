@@ -149,8 +149,7 @@ public static class FriendsManager
         return hash > 0 ? fullName.Substring(0, hash) : fullName;
     }
 
-    // Sends the session code to an online friend.
-    // followUp marks the code-carrying message that completes an earlier instant invite, so a dismissed popup isn't reopened by it.
+    // Sends the session code to an online friend; followUp completes an earlier instant invite without reopening a dismissed popup.
     public static Task InviteAsync(string memberId, bool followUp = false)
     {
         string code = CurrentSessionCode;

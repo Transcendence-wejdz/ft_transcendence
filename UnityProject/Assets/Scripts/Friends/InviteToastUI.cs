@@ -168,7 +168,7 @@ public class InviteToastUI : MonoBehaviour
         joinButton.interactable = false;
         joinLabel.text = "...";
 
-        var check = await SessionJoin.CheckAsync(code);
+        var check = await SessionJoin.CheckAsync(code, bootstrap);
         if (this == null)
             return;
         if (!check.ok)

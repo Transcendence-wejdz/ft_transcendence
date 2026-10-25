@@ -20,6 +20,7 @@ public class NetworkBootstrap : MonoBehaviour
     private Vector3? hostSpawnPosition;
     private Quaternion hostSpawnRotation;
     private GameObject detachedCameraHolder;
+    private const int PublishAttempts = 3;
     private GameObject standIn;
     private GameObject capturedOfflinePlayer;
 
@@ -124,8 +125,8 @@ public class NetworkBootstrap : MonoBehaviour
 
             SessionOptions options = new SessionOptions { MaxPlayers = maxPlayers }.WithRelayNetwork();
             IHostSession session = await MultiplayerService.Instance.CreateSessionAsync(options);
-            ActiveSession.Set(session);
             await PublishCodeAsync(session);
+            ActiveSession.Set(session);
 
             if (gameModeManagerPrefab != null)
             {
@@ -164,8 +165,7 @@ public class NetworkBootstrap : MonoBehaviour
         await JoinWithCodeAsync(code);
     }
 
-    // Shared by the Join button and invites, which supply their own code.
-    // Checks the code exists before the loading screen and the offline-player swap, unless the caller already did.
+    // Shared by the Join button and invites (own code); pre-checks the code before the loading screen and player swap unless already checked.
     public async System.Threading.Tasks.Task<bool> JoinWithCodeAsync(string code, bool alreadyChecked = false)
     {
         if (string.IsNullOrEmpty(code))
@@ -182,7 +182,7 @@ public class NetworkBootstrap : MonoBehaviour
 
         if (!alreadyChecked)
         {
-            var check = await SessionJoin.CheckAsync(code);
+            var check = await SessionJoin.CheckAsync(code, this);
             if (!check.ok)
             {
                 SetJoinStatus(check.message, isError: true);
@@ -332,17 +332,23 @@ public class NetworkBootstrap : MonoBehaviour
         standIn = null;
     }
 
-    // Lets SessionJoin.CheckAsync find this session by code; a failure only means joiners can't pre-check it.
+    // Retried and run before ActiveSession.Set so the shown/invited code is findable by SessionJoin.CheckAsync; a final failure keeps hosting.
     private static async System.Threading.Tasks.Task PublishCodeAsync(IHostSession session)
     {
-        try
+        session.SetProperty(SessionJoin.CodeProperty, new SessionProperty(session.Code, VisibilityPropertyOptions.Public, PropertyIndex.String1));
+        for (int attempt = 1; attempt <= PublishAttempts; attempt++)
         {
-            session.SetProperty(SessionJoin.CodeProperty, new SessionProperty(session.Code, VisibilityPropertyOptions.Public, PropertyIndex.String1));
-            await session.SavePropertiesAsync();
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogWarning($"NetworkBootstrap: couldn't publish the session code - {e.Message}");
+            try
+            {
+                await session.SavePropertiesAsync();
+                return;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"NetworkBootstrap: couldn't publish the session code (attempt {attempt}/{PublishAttempts}) - {e.Message}");
+                if (attempt < PublishAttempts)
+                    await System.Threading.Tasks.Task.Delay(attempt * 1000);
+            }
         }
     }
 

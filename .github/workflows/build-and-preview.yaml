@@ -1,4 +1,4 @@
-name: build-preview
+name: build-and-preview
 
 on:
   push:
@@ -9,38 +9,45 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    name: deploy
+  build-web:
+    name: build-web
     runs-on: [self-hosted]
-    timeout-minutes: 60
-    environment:
-      name: preview-${{ github.ref_name }}
-      url: ${{ steps.up.outputs.url }}
-    permissions:
-      contents: read
-      deployments: write
+    timeout-minutes: 30
     steps:
-      - name: health-check
-        run: |
-          echo "branch: $GITHUB_REF_NAME"
-          docker compose version
-
       - uses: actions/checkout@v4
         with:
           clean: false
 
-      - name: name
+      - &generate-slug
+        name: generate-slug
         run: |
-          slug=$(echo "$GITHUB_REF_NAME" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g' | cut -c1-40) 
+          slug=$(echo "$GITHUB_REF_NAME" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g' | cut -c1-40)
           echo "SLUG=$slug" >> "$GITHUB_ENV"
           echo "DIR=/srv/previews/$slug" >> "$GITHUB_ENV"
           echo "COMPOSE_PROJECT_NAME=tr-$slug" >> "$GITHUB_ENV"
           echo "COMPOSE_FILE=/srv/previews/$slug/compose.yaml:/srv/previews/$slug/compose.preview.yaml" >> "$GITHUB_ENV"
-          echo "slug: $SLUG"
+          echo "slug: $slug"
+
+      - name: build-web
+        run: |
+          touch web/.env
+          COMPOSE_FILE=web/compose.yaml docker compose build
+
+  build-unity:
+    name: build-unity
+    needs: build-web
+    runs-on: [self-hosted]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: false
 
       - name: cleanup
         run: |
           rm -rf build
+
+      - *generate-slug
 
       - name: load-unity-license
         run: |
@@ -65,6 +72,39 @@ jobs:
       - name: build-unity-check
         run: |
           test -f build/WebGL/game/Build/game.loader.js
+
+      - name: stage-game
+        run: |
+          rm -rf "$DIR.game"
+          mv build/WebGL/game "$DIR.game"
+
+  deploy:
+    name: deploy
+    needs: [build-web, build-unity]
+    runs-on: [self-hosted]
+    environment:
+      name: preview-${{ github.ref_name }}
+      url: ${{ steps.up.outputs.url }}
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - name: health-check
+        run: |
+          echo "branch: $GITHUB_REF_NAME"
+          docker compose version
+
+      - uses: actions/checkout@v4
+        with:
+          clean: false
+
+      - *generate-slug
+
+      - name: fetch-game
+        run: |
+          rm -rf build/WebGL/game
+          mkdir -p build/WebGL
+          mv "$DIR.game" build/WebGL/game
 
       - name: stop-previous-preview
         run: |
@@ -97,11 +137,8 @@ jobs:
           PREVIEW_DOMAIN=$PREVIEW_DOMAIN
           EOF
 
-      - name: build-web
-        run: docker compose build
-
       - name: run
-        run: docker compose up -d
+        run: docker compose up -d --no-build
 
       - name: wait-until-up
         id: up

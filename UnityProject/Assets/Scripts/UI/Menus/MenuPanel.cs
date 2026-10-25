@@ -14,12 +14,14 @@ public class MenuPanel : MonoBehaviour
 
     private CanvasGroup canvasGroup;
     private RectTransform rectTransform;
+    private PanelSlideIn slideIn;
     private Coroutine activeAnimation;
 
     private void Awake()
     {
         canvasGroup = GetComponent<CanvasGroup>();
         rectTransform = GetComponent<RectTransform>();
+        slideIn = GetComponent<PanelSlideIn>();
     }
 
     public void Open()
@@ -28,13 +30,32 @@ public class MenuPanel : MonoBehaviour
         PauseManager.SetExternalPause(true);
         CurrentOpen = this;
 
+        if (slideIn != null)
+        {
+            slideIn.Show();
+            return;
+        }
+
         if (activeAnimation != null)
             StopCoroutine(activeAnimation);
         activeAnimation = StartCoroutine(Animate(opening: true));
     }
 
+    // Full-screen menus with a PanelSlideIn play its exit instead of the scale pop.
     public void Close()
     {
+        if (!gameObject.activeInHierarchy)
+        {
+            gameObject.SetActive(false);
+            return;
+        }
+
+        if (slideIn != null)
+        {
+            slideIn.Hide();
+            return;
+        }
+
         if (activeAnimation != null)
             StopCoroutine(activeAnimation);
         activeAnimation = StartCoroutine(Animate(opening: false));

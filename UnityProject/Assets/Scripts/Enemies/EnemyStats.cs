@@ -46,6 +46,7 @@ public class EnemyStats : NetworkBehaviour, IDamageable, IHealthStats
     // Callable from any client; applied on the server.
     public void RequestDamage(float amount)
     {
+        DamageNumberSpawner.MarkLocalHit(this, amount);
         if (!NetworkObject.IsSpawned)
         {
             ApplyDamage(amount, NetworkManager.ServerClientId);

@@ -66,13 +66,23 @@ public class CursorManager : MonoBehaviour
         cursorRect.anchorMin = cursorRect.anchorMax = new Vector2(0.5f, 0.5f);
 
         ApplySprite(defaultSprite, DefaultHotspot);
+        GameSettings.OnChanged += ApplyCurrentSprite;
+    }
+
+    // Re-applies the shown sprite so a Cursor Size change takes effect at once.
+    private void ApplyCurrentSprite()
+    {
+        if (isHoveringClickable && hoverSprite != null)
+            ApplySprite(hoverSprite, HoverHotspot);
+        else
+            ApplySprite(defaultSprite, DefaultHotspot);
     }
 
     private void ApplySprite(Sprite sprite, Vector2 hotspot)
     {
         cursorImage.sprite = sprite;
         cursorImage.SetNativeSize();
-        cursorRect.sizeDelta *= displayScale;
+        cursorRect.sizeDelta *= displayScale * GameSettings.CursorSize;
 
         Rect spriteRect = sprite.rect;
         float spriteTopFromTextureTop = sprite.texture.height - (spriteRect.y + spriteRect.height);
@@ -83,6 +93,7 @@ public class CursorManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        GameSettings.OnChanged -= ApplyCurrentSprite;
         Cursor.visible = true;
     }
 

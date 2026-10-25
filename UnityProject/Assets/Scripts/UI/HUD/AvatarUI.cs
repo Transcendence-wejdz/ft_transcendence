@@ -13,13 +13,13 @@ public class AvatarUI : MonoBehaviour
 
     void OnEnable()
     {
-        CharacterCustomizationMenu.OnPortraitChanged += SetAvatar;
-        SetAvatar(CharacterCustomizationMenu.Instance?.GetCurrentPortrait());
+        LocalCharacterLook.OnPortraitChanged += SetAvatar;
+        SetAvatar(LocalCharacterLook.CurrentPortrait());
     }
 
     void OnDisable()
     {
-        CharacterCustomizationMenu.OnPortraitChanged -= SetAvatar;
+        LocalCharacterLook.OnPortraitChanged -= SetAvatar;
     }
 
     private void SetAvatar(Sprite portrait)

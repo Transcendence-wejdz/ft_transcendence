@@ -92,6 +92,12 @@ MonoBehaviour:
   riseDistance: 0.8
   duration: 0.8
   randomXSpread: 0.3
+  popScale: 1.5
+  popDuration: 0.12
+  fadeStart: 0.55
+  bigHitAmount: 50
+  bigHitScale: 1.35
+  bigHitColor: {r: 1, g: 0.85, b: 0.45, a: 1}
 --- !u!1 &3065465988490985063
 GameObject:
   m_ObjectHideFlags: 0
@@ -159,15 +165,15 @@ MonoBehaviour:
       m_Calls: []
   m_text: 0
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 55c85ce9f4856394290d911cdc8d82d1, type: 2}
+  m_sharedMaterial: {fileID: 2100000, guid: e43f57403240ac9d8b16502641b09e74, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 1, g: 0.9, b: 0.2, a: 1}
+  m_fontColor: {r: 0.95686275, g: 0.9372549, b: 0.89411765, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -184,13 +190,13 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 48
-  m_fontSizeBase: 48
+  m_fontSize: 40
+  m_fontSizeBase: 40
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 1
+  m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -201,7 +207,7 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 1
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}

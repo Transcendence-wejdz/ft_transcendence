@@ -17,6 +17,22 @@ public static class PlayerCameraRig
             cinemachineCamera.gameObject.SetActive(active);
     }
 
+    // Makes this player's camera the only enabled AudioListener (prefab listeners start disabled, joining rigs and remote copies would add more).
+    public static void ClaimAudioListener(Transform player)
+    {
+        Transform mainCamera = player.Find(MainCameraName);
+        AudioListener own = mainCamera != null ? mainCamera.GetComponent<AudioListener>() : null;
+        if (own == null)
+            return;
+
+        foreach (AudioListener listener in Object.FindObjectsByType<AudioListener>(FindObjectsInactive.Exclude))
+        {
+            if (listener != own)
+                listener.enabled = false;
+        }
+        own.enabled = true;
+    }
+
     // Reparents the player's cameras so they survive its deactivation.
     public static GameObject Detach(Transform player)
     {

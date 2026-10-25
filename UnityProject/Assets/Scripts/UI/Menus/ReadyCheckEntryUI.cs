@@ -57,10 +57,10 @@ public class ReadyCheckEntryUI : MonoBehaviour
 
     private void SetAvatar(int classIndex, int colorIndex)
     {
-        if (avatarImage == null || CharacterCustomizationMenu.Instance == null)
+        if (avatarImage == null || CharacterCatalog.Instance == null)
             return;
 
-        Sprite portrait = CharacterCustomizationMenu.Instance.GetPortrait(classIndex, colorIndex);
+        Sprite portrait = CharacterCatalog.Instance.GetPortrait(classIndex, colorIndex);
         if (portrait != null)
             avatarImage.sprite = portrait;
     }

@@ -4,8 +4,8 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-// One pause-menu friend row: initial avatar, name, presence line, a hover highlight, and a round Invite button that brightens on hover or gamepad focus.
-public class PauseFriendRowUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+// One pause-menu friend row: initial avatar, name, presence line, a hover highlight, a round Invite button, and a click that opens the row's menu.
+public class PauseFriendRowUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     [SerializeField] private Image avatar;
     [SerializeField] private TMP_Text initialText;
@@ -23,11 +23,13 @@ public class PauseFriendRowUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
     [SerializeField] private float revealSpeed = 8f;
 
     private bool hovered;
+    private Action<RectTransform> onClicked;
     private bool online;
     private float highlight;
 
-    public void Setup(string displayName, string status, Color statusColor, bool isOnline, Action onInvite)
+    public void Setup(string displayName, string status, Color statusColor, bool isOnline, Action onInvite, Action<RectTransform> onMenu = null)
     {
+        onClicked = onMenu;
         online = isOnline;
         nameText.text = displayName;
         initialText.text = FriendAvatar.InitialFor(displayName);
@@ -51,6 +53,9 @@ public class PauseFriendRowUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void OnPointerEnter(PointerEventData eventData) => hovered = true;
     public void OnPointerExit(PointerEventData eventData) => hovered = false;
+
+    // The invite button handles its own clicks, so only clicks on the row itself open the menu.
+    public void OnPointerClick(PointerEventData eventData) => onClicked?.Invoke((RectTransform)transform);
 
     private void OnDisable()
     {

@@ -14,6 +14,10 @@ public class LeaderboardUI : MonoBehaviour
     [SerializeField] private int maxTeamSize = 4;
     [SerializeField] private LeaderboardMode mode = LeaderboardMode.Coop;
     [SerializeField] private Button[] modeTabs;
+    [SerializeField] private TMP_Text modeTitle;
+    [SerializeField] private bool columns;
+
+    private static readonly string[] ModeNames = { "Solo", "Coop", "Two vs Two", "Three vs One" };
 
     private bool refreshing;
     private bool refreshQueued;
@@ -28,12 +32,19 @@ public class LeaderboardUI : MonoBehaviour
         }
     }
 
-    // Active tab is non-interactable to read as selected, same as SettingsTabGroup.
+    // Active tab is non-interactable and pinned to read as selected, same as SettingsTabGroup.
     public void SetMode(LeaderboardMode newMode)
     {
         mode = newMode;
         for (int i = 0; i < modeTabs.Length; i++)
+        {
             modeTabs[i].interactable = i != (int)mode;
+            HoverColorWipe hover = modeTabs[i].GetComponent<HoverColorWipe>();
+            if (hover != null)
+                hover.SetPinned(i == (int)mode);
+        }
+        if (modeTitle != null)
+            modeTitle.text = ModeNames[(int)mode];
 
         if (isActiveAndEnabled)
             Refresh();
@@ -72,7 +83,7 @@ public class LeaderboardUI : MonoBehaviour
             return;
 
         List<TeamRow> rows = GroupByRun(top, mine);
-        entriesText.text = FormatRows(rows);
+        entriesText.text = FormatRows(rows, columns);
         if (ownRankText != null)
             ownRankText.text = FormatOwnRank(rows, mine);
 
@@ -127,7 +138,8 @@ public class LeaderboardUI : MonoBehaviour
         return rows;
     }
 
-    private static string FormatRows(List<TeamRow> rows)
+    // Columns mode lays rank, names and score out with TMP pos tags for the Lobby table.
+    private static string FormatRows(List<TeamRow> rows, bool columns)
     {
         if (rows.Count == 0)
             return "No scores yet";
@@ -135,8 +147,10 @@ public class LeaderboardUI : MonoBehaviour
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < rows.Count; i++)
         {
-            string line = $"{i + 1}. {rows[i].names}  {rows[i].score:0}";
-            builder.AppendLine(rows[i].isMine ? $"<color=#FFD54A>{line}</color>" : line);
+            string line = columns
+                ? $"{i + 1}<pos=10%>{rows[i].names}<pos=82%>{rows[i].score:0}"
+                : $"{i + 1}. {rows[i].names}  {rows[i].score:0}";
+            builder.AppendLine(rows[i].isMine ? $"<color=#FFD973>{line}</color>" : line);
         }
         return builder.ToString();
     }

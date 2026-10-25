@@ -37,12 +37,18 @@ public partial class Player
     private readonly NetworkVariable<FixedString64Bytes> friendsTag = new OfflineSafeNetworkVariable<FixedString64Bytes>(
         default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
+    // Unity services player id, so a friend entry or the host can find this player (e.g. to kick them from the session).
+    // Server-writable and claimed once through ClaimServicesIdServerRpc, so a tampered client can't take over another member's id.
+    private readonly NetworkVariable<FixedString64Bytes> servicesId = new OfflineSafeNetworkVariable<FixedString64Bytes>(
+        default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
     public int ClassIndex => classIndex.Value;
     public int ColorIndex => colorIndex.Value;
     public string PlayerName => playerName.Value.ToString();
     public int TeamIndex => teamIndex.Value;
     public bool IsReady => isReady.Value;
     public string FriendsTag => friendsTag.Value.ToString();
+    public string ServicesId => servicesId.Value.ToString();
 
     [Header("Customization")]
     [SerializeField] private PlayerNameTag nameTag;
@@ -98,12 +104,31 @@ public partial class Player
         RefreshAllDisplayNames();
     }
 
-    // Only once spawned (never from Awake), and again when the friends name arrives or changes.
+    // Only once spawned (never from Awake), and again when the friends name arrives or changes; also shares our services id.
     private void PublishFriendsTag()
     {
-        if (this == null || !IsOwner || !IsSpawned || !FriendsManager.IsReady || FriendsManager.OwnName == FriendsTag)
+        if (this == null || !IsOwner || !IsSpawned || !FriendsManager.IsReady)
             return;
-        friendsTag.Value = FriendsManager.OwnName;
+        if (FriendsManager.OwnName != FriendsTag)
+            friendsTag.Value = FriendsManager.OwnName;
+        if (string.IsNullOrEmpty(ServicesId) && !string.IsNullOrEmpty(FriendsManager.OwnId))
+            ClaimServicesIdServerRpc(FriendsManager.OwnId);
+    }
+
+    // Write-once, and refused if another spawned player already holds that id.
+    [ServerRpc]
+    private void ClaimServicesIdServerRpc(FixedString64Bytes id)
+    {
+        string claimed = id.ToString();
+        if (!string.IsNullOrEmpty(ServicesId) || string.IsNullOrEmpty(claimed))
+            return;
+        foreach (Player other in ActiveInstances)
+            if (other != this && other.ServicesId == claimed)
+            {
+                Debug.LogWarning($"Player: client {OwnerClientId} tried to claim services id {claimed}, already held by client {other.OwnerClientId}");
+                return;
+            }
+        servicesId.Value = id;
     }
 
     private static void RefreshAllDisplayNames()
@@ -131,21 +156,25 @@ public partial class Player
         }
     }
 
+    // Always re-applies visuals: a saved value equal to the default fires no OnValueChanged, leaving the prefab's Warrior sprites.
     private void StartCustomization()
     {
         if (!this.IsLocallyControlled())
             return;
 
         if (!PlayerProfileStore.TryLoad(out int savedClassIndex, out int savedColorIndex, out string savedName))
+        {
+            ApplyVisuals();
             return;
+        }
 
         classIndex.Value = savedClassIndex;
         colorIndex.Value = savedColorIndex;
         if (!string.IsNullOrEmpty(savedName))
             playerName.Value = savedName;
+        ApplyVisuals();
 
-        if (CharacterCustomizationMenu.Instance != null)
-            CharacterCustomizationMenu.Instance.NotifyProfileLoaded(gameObject);
+        LocalCharacterLook.NotifyProfileLoaded(gameObject);
     }
 
     public void SetSelection(int newClassIndex, int newColorIndex)
@@ -204,8 +233,8 @@ public partial class Player
 
     private void ApplyVisuals()
     {
-        if (CharacterCustomizationMenu.Instance != null)
-            CharacterCustomizationMenu.Instance.ApplyVisuals(gameObject, classIndex.Value, colorIndex.Value);
+        if (CharacterCatalog.Instance != null)
+            CharacterCatalog.Instance.ApplyVisuals(gameObject, classIndex.Value, colorIndex.Value);
     }
 
     private void ApplyName(string value)

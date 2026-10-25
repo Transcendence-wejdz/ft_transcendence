@@ -45,14 +45,14 @@ public class MouseDirectionIndicator : MonoBehaviour
         spriteRenderer.color = colorsByColorIndex[colorIndex];
     }
 
-    // Hidden while the player is a pig (dead), since a downed player can't aim or fight.
+    // Hidden while the player is a pig (dead), since a downed player can't aim or fight; the aim angle itself doesn't change while paused.
     void Update()
     {
         if (player == null)
             return;
 
         spriteRenderer.enabled = !player.IsDead;
-        if (!spriteRenderer.enabled || PauseManager.IsPaused)
+        if (!spriteRenderer.enabled)
             return;
 
         transform.rotation = Quaternion.Euler(0f, 0f, player.AimAngleDegrees - 90f);

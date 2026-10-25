@@ -1,11 +1,12 @@
 using System.Collections;
 using UnityEngine;
 
-// Briefly tints the sprite on a hit or health drop.
+// Briefly tints the sprite on a hit or health drop: held at full tint, then eased back.
 public class SpriteHitFlash : MonoBehaviour
 {
     [SerializeField] private Color flashColor = new Color(1f, 0.25f, 0.25f, 1f);
-    [SerializeField] private float duration = 0.15f;
+    [SerializeField] private float duration = 0.18f;
+    [SerializeField] private float holdFraction = 0.35f;
 
     private SpriteRenderer spriteRenderer;
     private IHealthStats stats;
@@ -63,7 +64,8 @@ public class SpriteHitFlash : MonoBehaviour
     {
         for (float t = 0f; t < duration; t += Time.unscaledDeltaTime)
         {
-            spriteRenderer.color = Color.Lerp(flashColor, Color.white, t / duration);
+            float fade = Mathf.Clamp01((t / duration - holdFraction) / (1f - holdFraction));
+            spriteRenderer.color = Color.Lerp(flashColor, Color.white, fade * fade);
             yield return null;
         }
         spriteRenderer.color = Color.white;

@@ -3,8 +3,8 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-// One party slot: round class/color portrait (initial as fallback) and name, or a dim empty ring; hovering shows the player's Friends "Name#1234".
-public class PartySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+// One party slot: round class/color portrait (initial as fallback) and name, or a dim empty ring; hovering shows the player's Friends "Name#1234", clicking another player opens their menu.
+public class PartySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     [SerializeField] private GameObject filledRoot;
     [SerializeField] private GameObject emptyRoot;
@@ -19,6 +19,9 @@ public class PartySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     private Player bound;
     private bool isLocal;
+
+    // Raised with this slot and its player when another player's slot is clicked.
+    public event System.Action<PartySlotUI, Player> Clicked;
 
     public void Bind(Player player, bool local)
     {
@@ -47,6 +50,12 @@ public class PartySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     }
 
     public void OnPointerExit(PointerEventData eventData) => tooltip.SetActive(false);
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (bound != null && !isLocal)
+            Clicked?.Invoke(this, bound);
+    }
 
     private void OnDisable()
     {
@@ -91,8 +100,8 @@ public class PartySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     private void SetPortrait(int classIndex, int colorIndex)
     {
-        CharacterCustomizationMenu menu = CharacterCustomizationMenu.Instance;
-        Sprite sprite = menu != null ? menu.GetPortrait(classIndex, colorIndex) : null;
+        CharacterCatalog catalog = CharacterCatalog.Instance;
+        Sprite sprite = catalog != null ? catalog.GetPortrait(classIndex, colorIndex) : null;
         portrait.sprite = sprite;
         portrait.enabled = sprite != null;
         initialText.enabled = sprite == null;

@@ -75,12 +75,8 @@ public class TestClientProbe : MonoBehaviour
             if (bootstrap != null)
             {
                 hasJoined = true;
-                var field = typeof(NetworkBootstrap).GetField("ipInputField", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                var inputField = field.GetValue(bootstrap) as TMPro.TMP_InputField;
-                if (inputField != null)
-                    inputField.text = joinCode;
-                bootstrap.JoinGame();
-                Debug.Log($"[TestClientProbe] JoinGame() called with code {joinCode}");
+                _ = bootstrap.JoinWithCodeAsync(joinCode);
+                Debug.Log($"[TestClientProbe] JoinWithCodeAsync() called with code {joinCode}");
             }
         }
 

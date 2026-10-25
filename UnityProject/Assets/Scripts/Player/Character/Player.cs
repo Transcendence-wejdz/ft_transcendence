@@ -16,6 +16,7 @@ public partial class Player : NetworkBehaviour, IDamageable
 
     // False for stripped instances (e.g. the preview doll) - also checked in OnNetworkSpawn/Despawn, which ignore enabled.
     private bool isValidInstance;
+    private bool hasStarted;
 
     void Awake()
     {
@@ -40,9 +41,12 @@ public partial class Player : NetworkBehaviour, IDamageable
         AwakeActions();
     }
 
+    // Re-enabling after Start only happens to the offline player coming back from a failed join, so it reclaims the listener.
     void OnEnable()
     {
         OnEnableFeedback();
+        if (hasStarted && !IsSpawned)
+            PlayerCameraRig.ClaimAudioListener(transform);
     }
 
     void OnDisable()
@@ -57,6 +61,9 @@ public partial class Player : NetworkBehaviour, IDamageable
         StartStats();
         StartCustomization();
         StartPigForm();
+        if (!IsSpawned && this.IsLocallyControlled())
+            PlayerCameraRig.ClaimAudioListener(transform);
+        hasStarted = true;
     }
 
     public override void OnNetworkSpawn()

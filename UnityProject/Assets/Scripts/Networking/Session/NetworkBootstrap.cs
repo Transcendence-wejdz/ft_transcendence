@@ -4,18 +4,12 @@ using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using Unity.Services.Multiplayer;
 using UnityEngine;
-using UnityEngine.UI;
 
-// Wires the Lobby's Host/Join buttons to Netcode over Unity Relay.
+// Hosts and joins Netcode sessions over Unity Relay (driven by the social panel and invites).
 public class NetworkBootstrap : MonoBehaviour
 {
-    [SerializeField] private MenuPanel multiplayerPanel;
     [SerializeField] private GameObject gameModeManagerPrefab;
-    [SerializeField] private TMP_InputField ipInputField;
     [SerializeField] private int maxPlayers = 4;
-    [SerializeField] private Button hostButton;
-    [SerializeField] private Button joinButton;
-    [SerializeField] private TMP_Text joinStatusText;
     [SerializeField] private TMP_Text sessionCodeText;
     private Vector3? hostSpawnPosition;
     private Quaternion hostSpawnRotation;
@@ -23,6 +17,9 @@ public class NetworkBootstrap : MonoBehaviour
     private const int PublishAttempts = 3;
     private GameObject standIn;
     private GameObject capturedOfflinePlayer;
+    private (int classIndex, int colorIndex, string playerName) capturedLook;
+    private Vector2 capturedFacing;
+    private float capturedAim;
 
     // Set by InviteToastUI before reloading Lobby, so the fresh scene picks up the join automatically.
     public static string PendingJoinCode;
@@ -32,9 +29,6 @@ public class NetworkBootstrap : MonoBehaviour
     {
         NetworkManager.Singleton.NetworkConfig.ConnectionApproval = true;
         NetworkManager.Singleton.ConnectionApprovalCallback = ApprovalCheck;
-
-        if (ipInputField != null)
-            ipInputField.onSubmit.AddListener(SubmitJoinCode);
 
         if (!string.IsNullOrEmpty(PendingJoinCode))
         {
@@ -53,20 +47,9 @@ public class NetworkBootstrap : MonoBehaviour
 
     private void OnDestroy()
     {
-        Player.OnPlayerRegistered -= HideStandInOnLocalSpawn;
+        Player.OnPlayerRegistered -= ApplyCapturedStateOnLocalSpawn;
         if (NetworkManager.Singleton != null)
             NetworkManager.Singleton.ConnectionApprovalCallback -= ApprovalCheck;
-        if (ipInputField != null)
-            ipInputField.onSubmit.RemoveListener(SubmitJoinCode);
-    }
-
-    // Enter in the join-code field acts like the Join button, unless a join is already running (button disabled).
-    private void SubmitJoinCode(string _)
-    {
-        if (joinButton != null && !joinButton.interactable)
-            return;
-
-        JoinGame();
     }
 
     private void ApprovalCheck(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
@@ -86,30 +69,15 @@ public class NetworkBootstrap : MonoBehaviour
         }
     }
 
-    public void HostGame()
-    {
-        _ = HostGameAsync();
-    }
-
-    // Shared by the Host button and invites; false on failure or if already hosting. Invites skip the loading screen and leave a frozen stand-in where the player was.
+    // Shared by the social panel and invites; false on failure or if already hosting. Invites skip the loading screen and leave a frozen stand-in where the player was.
     public async System.Threading.Tasks.Task<bool> HostGameAsync(bool showLoadingScreen = true)
     {
         if (NetworkManager.Singleton.IsListening)
             return false;
 
-        string originalPlaceholder = null;
-        TMP_Text placeholderText = ipInputField != null ? ipInputField.placeholder as TMP_Text : null;
-        if (placeholderText != null)
-        {
-            originalPlaceholder = placeholderText.text;
-            placeholderText.text = "Generating code...";
-        }
         if (sessionCodeText != null)
             sessionCodeText.text = string.Empty;
 
-        if (hostButton != null)
-            hostButton.interactable = false;
-        SetJoinControlsInteractable(false);
         if (showLoadingScreen)
             LoadingScreenManager.Show("Creating session...");
 
@@ -134,13 +102,8 @@ public class NetworkBootstrap : MonoBehaviour
                 gameModeManager.GetComponent<NetworkObject>().Spawn();
             }
 
-            if (ipInputField != null)
-            {
-                ipInputField.text = session.Code;
-                ipInputField.interactable = false;
-            }
             if (sessionCodeText != null)
-                sessionCodeText.text = $"Code: <font=\"LiberationSans SDF\">{session.Code}</font>";
+                sessionCodeText.text = $"Code {session.Code}";
 
             StartCoroutine(RestoreLocalCustomizationWhenSpawned(customization.classIndex, customization.colorIndex, customization.playerName));
             return true;
@@ -149,52 +112,31 @@ public class NetworkBootstrap : MonoBehaviour
         {
             Debug.LogError($"NetworkBootstrap: failed to host - {e.Message}");
             RestoreOfflinePlayer();
-            if (placeholderText != null)
-                placeholderText.text = originalPlaceholder;
-            if (hostButton != null)
-                hostButton.interactable = true;
-            SetJoinControlsInteractable(true);
             LoadingScreenManager.Hide();
             return false;
         }
     }
 
-    public async void JoinGame()
-    {
-        string code = ipInputField != null ? ipInputField.text.Trim() : string.Empty;
-        await JoinWithCodeAsync(code);
-    }
-
-    // Shared by the Join button and invites (own code); pre-checks the code before the loading screen and player swap unless already checked.
+    // Shared by typed codes and invites; pre-checks the code before the loading screen and player swap unless already checked.
     public async System.Threading.Tasks.Task<bool> JoinWithCodeAsync(string code, bool alreadyChecked = false)
     {
         if (string.IsNullOrEmpty(code))
-        {
-            SetJoinStatus("Enter a join code before joining.", isError: true);
             return false;
-        }
 
         if (NetworkManager.Singleton.IsListening)
             return false;
-
-        SetJoinControlsInteractable(false);
-        SetJoinStatus("Searching for the lobby...", isError: false);
 
         if (!alreadyChecked)
         {
             var check = await SessionJoin.CheckAsync(code, this);
             if (!check.ok)
             {
-                SetJoinStatus(check.message, isError: true);
-                SetJoinControlsInteractable(true);
+                Debug.LogWarning($"NetworkBootstrap: can't join {code} - {check.message}");
                 return false;
             }
         }
 
         LoadingScreenManager.Show("Joining session...");
-
-        if (hostButton != null)
-            hostButton.interactable = false;
 
         try
         {
@@ -206,10 +148,6 @@ public class NetworkBootstrap : MonoBehaviour
             ISession joined = await MultiplayerService.Instance.JoinSessionByCodeAsync(code);
             ActiveSession.Set(joined);
 
-            SetJoinStatus(string.Empty, isError: false);
-            if (multiplayerPanel.gameObject.activeInHierarchy)
-                multiplayerPanel.Close();
-
             StartCoroutine(RestoreLocalCustomizationWhenSpawned(customization.classIndex, customization.colorIndex, customization.playerName));
             return true;
         }
@@ -217,15 +155,8 @@ public class NetworkBootstrap : MonoBehaviour
         {
             Debug.LogError($"NetworkBootstrap: failed to join - {e.Message}");
             RestoreOfflinePlayer();
-            SetJoinStatus("Couldn't join that lobby, try again.", isError: true);
-            if (hostButton != null)
-                hostButton.interactable = true;
             LoadingScreenManager.Hide();
             return false;
-        }
-        finally
-        {
-            SetJoinControlsInteractable(true);
         }
     }
 
@@ -238,24 +169,6 @@ public class NetworkBootstrap : MonoBehaviour
         transport.UseWebSockets = RelayProtocol.Default == RelayProtocol.WSS;
     }
 
-    private void SetJoinControlsInteractable(bool interactable)
-    {
-        if (joinButton != null)
-            joinButton.interactable = interactable;
-        if (ipInputField != null)
-            ipInputField.interactable = interactable;
-    }
-
-    private static readonly Color JoinErrorColor = new Color(0.85f, 0.2f, 0.2f);
-
-    private void SetJoinStatus(string message, bool isError)
-    {
-        if (joinStatusText == null)
-            return;
-
-        joinStatusText.text = message;
-        joinStatusText.color = isError ? JoinErrorColor : Color.white;
-    }
 
     // Deactivates the offline player before Host/Join, keeping its camera and customization.
     private (int classIndex, int colorIndex, string playerName, Vector3 position, Quaternion rotation) CaptureOfflinePlayerState(bool leaveStandIn = false)
@@ -274,12 +187,15 @@ public class NetworkBootstrap : MonoBehaviour
         Vector3 position = offlinePlayer.transform.position;
         Quaternion rotation = offlinePlayer.transform.rotation;
 
+        capturedLook = current;
+        capturedFacing = customization != null ? customization.Facing : Vector2.down;
+        capturedAim = customization != null ? customization.AimAngleDegrees : -90f;
+        Player.OnPlayerRegistered -= ApplyCapturedStateOnLocalSpawn;
+        Player.OnPlayerRegistered += ApplyCapturedStateOnLocalSpawn;
+
         detachedCameraHolder = PlayerCameraRig.Detach(offlinePlayer.transform);
         if (leaveStandIn)
-        {
             standIn = OfflinePlayerStandIn.Create(offlinePlayer);
-            Player.OnPlayerRegistered += HideStandInOnLocalSpawn;
-        }
 
         capturedOfflinePlayer = offlinePlayer;
         offlinePlayer.SetActive(false);
@@ -314,16 +230,22 @@ public class NetworkBootstrap : MonoBehaviour
         LoadingScreenManager.Hide();
     }
 
-    // The networked player appears mid-CreateSessionAsync, well before hosting returns, so the frozen stand-in goes the moment it registers.
-    private void HideStandInOnLocalSpawn(Player player)
+    // Runs in the networked player's OnNetworkSpawn (mid-CreateSessionAsync, before its first frame): it takes over the offline look and pose, then the stand-in goes.
+    private void ApplyCapturedStateOnLocalSpawn(Player player)
     {
-        if (player.IsOwner)
-            DestroyStandIn();
+        if (!player.IsOwner)
+            return;
+
+        Player.OnPlayerRegistered -= ApplyCapturedStateOnLocalSpawn;
+        player.SetSelection(capturedLook.classIndex, capturedLook.colorIndex);
+        if (!string.IsNullOrEmpty(capturedLook.playerName))
+            player.SetName(capturedLook.playerName);
+        player.AdoptPose(capturedFacing, capturedAim);
+        DestroyStandIn();
     }
 
     private void DestroyStandIn()
     {
-        Player.OnPlayerRegistered -= HideStandInOnLocalSpawn;
         if (standIn != null)
         {
             standIn.SetActive(false);
@@ -355,6 +277,7 @@ public class NetworkBootstrap : MonoBehaviour
     // A failed Host/Join hands the scene back to the offline player: cameras re-attached, player re-enabled.
     private void RestoreOfflinePlayer()
     {
+        Player.OnPlayerRegistered -= ApplyCapturedStateOnLocalSpawn;
         DestroyStandIn();
         if (capturedOfflinePlayer == null || NetworkManager.Singleton.IsListening)
             return;

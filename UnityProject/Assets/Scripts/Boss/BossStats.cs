@@ -49,6 +49,7 @@ public class BossStats : NetworkBehaviour, IDamageable, IHealthStats
     // Callable from any client; applied on the server, predicted on the attacker's screen until the server value arrives.
     public void RequestDamage(float amount)
     {
+        DamageNumberSpawner.MarkLocalHit(this, amount);
         if (!NetworkObject.IsSpawned)
         {
             ApplyDamage(amount);

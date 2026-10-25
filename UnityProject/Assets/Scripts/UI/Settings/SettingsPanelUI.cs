@@ -14,6 +14,10 @@ public class SettingsPanelUI : MonoBehaviour
     [SerializeField] private Toggle hdrToggle;
     [SerializeField] private Slider deadzoneSlider;
     [SerializeField] private TMP_Text deadzoneLabel;
+    [SerializeField] private Slider cameraDistanceSlider;
+    [SerializeField] private TMP_Text cameraDistanceLabel;
+    [SerializeField] private Slider cursorSizeSlider;
+    [SerializeField] private TMP_Text cursorSizeLabel;
 
     private void Awake()
     {
@@ -34,6 +38,9 @@ public class SettingsPanelUI : MonoBehaviour
         deadzoneSlider.maxValue = Mathf.Round(GameSettings.StickDeadzoneMax / GameSettings.StickDeadzoneStep);
         deadzoneSlider.wholeNumbers = true;
         deadzoneSlider.onValueChanged.AddListener(OnDeadzoneChanged);
+
+        BindPercentSlider(cameraDistanceSlider, cameraDistanceLabel, GameSettings.CameraDistanceMin, GameSettings.CameraDistanceMax, GameSettings.CameraDistanceStep, value => GameSettings.CameraDistance = value);
+        BindPercentSlider(cursorSizeSlider, cursorSizeLabel, GameSettings.CursorSizeMin, GameSettings.CursorSizeMax, GameSettings.CursorSizeStep, value => GameSettings.CursorSize = value);
     }
 
     private void OnEnable()
@@ -50,6 +57,28 @@ public class SettingsPanelUI : MonoBehaviour
 
         deadzoneSlider.SetValueWithoutNotify(Mathf.Round(GameSettings.StickDeadzone / GameSettings.StickDeadzoneStep));
         RefreshDeadzone();
+
+        SyncPercentSlider(cameraDistanceSlider, cameraDistanceLabel, GameSettings.CameraDistance, GameSettings.CameraDistanceStep);
+        SyncPercentSlider(cursorSizeSlider, cursorSizeLabel, GameSettings.CursorSize, GameSettings.CursorSizeStep);
+    }
+
+    // Whole-step slider showing its value as a percentage, like the deadzone one.
+    private static void BindPercentSlider(Slider slider, TMP_Text label, float min, float max, float step, System.Action<float> apply)
+    {
+        slider.wholeNumbers = true;
+        slider.minValue = Mathf.Round(min / step);
+        slider.maxValue = Mathf.Round(max / step);
+        slider.onValueChanged.AddListener(steps =>
+        {
+            apply(steps * step);
+            label.text = Mathf.RoundToInt(steps * step * 100f) + "%";
+        });
+    }
+
+    private static void SyncPercentSlider(Slider slider, TMP_Text label, float value, float step)
+    {
+        slider.SetValueWithoutNotify(Mathf.Round(value / step));
+        label.text = Mathf.RoundToInt(value * 100f) + "%";
     }
 
     // Slider works in whole steps so mouse drag and gamepad left/right land on the same values.

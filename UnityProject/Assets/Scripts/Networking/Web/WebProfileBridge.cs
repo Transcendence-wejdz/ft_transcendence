@@ -48,7 +48,7 @@ public class WebProfileBridge : MonoBehaviour
         public WebSettings settings;
     }
 
-    // Same order as CharacterCustomizationMenu.kitsByClass and colorVariants.
+    // Same order as CharacterCatalog.kitsByClass and colorVariants.
     private static readonly string[] ClassNames = { "Archer", "Monk", "Lancer", "Pawn", "Warrior" };
     private static readonly string[] ColorNames = { "Black", "Blue", "Purple", "Red", "Yellow" };
 
@@ -148,13 +148,12 @@ public class WebProfileBridge : MonoBehaviour
         {
             ApplySettings(profile.settingsJson);
 
-            CharacterCustomizationMenu menu = CharacterCustomizationMenu.Instance;
-            if (menu == null || LocalPlayer.Get() == null)
+            if (LocalPlayer.Get() == null)
                 return;
 
-            menu.ApplyProfile(classIndex, colorIndex);
+            LocalCharacterLook.ApplyProfile(classIndex, colorIndex);
             if (!string.IsNullOrEmpty(playerName))
-                menu.SetPlayerName(playerName);
+                LocalCharacterLook.SetPlayerName(playerName);
         }
         finally
         {
@@ -240,9 +239,7 @@ public class WebProfileBridge : MonoBehaviour
             else if (status == 400 || status == 409)
             {
                 Debug.LogWarning($"WebProfileBridge: name \"{playerName}\" rejected by the server (HTTP {status}), reverting.");
-                CharacterCustomizationMenu menu = CharacterCustomizationMenu.Instance;
-                if (menu != null)
-                    menu.SetPlayerName(ConfirmedName);
+                LocalCharacterLook.SetPlayerName(ConfirmedName);
             }
         });
     }

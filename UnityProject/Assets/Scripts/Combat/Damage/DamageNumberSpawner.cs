@@ -7,8 +7,12 @@ public class DamageNumberSpawner : MonoBehaviour
     [SerializeField] private GameObject damageNumberPrefab;
     [SerializeField] private Vector3 spawnOffset = new Vector3(0f, 0.5f, 0f);
 
+    private const float LocalHitWindow = 1f;
+
     private IHealthStats stats;
     private float lastHealth;
+    private float pendingLocalDamage;
+    private float pendingLocalTime;
 
     void Awake()
     {
@@ -31,6 +35,19 @@ public class DamageNumberSpawner : MonoBehaviour
         lastHealth = stats.CurrentHealth;
     }
 
+    // Called from the target's RequestDamage, which only runs on the attacker's machine, so the next drop reads as the local player's hit.
+    public static void MarkLocalHit(Component target, float amount)
+    {
+        DamageNumberSpawner spawner = target.GetComponent<DamageNumberSpawner>();
+        if (spawner == null)
+            return;
+
+        if (Time.time - spawner.pendingLocalTime > LocalHitWindow)
+            spawner.pendingLocalDamage = 0f;
+        spawner.pendingLocalDamage += amount;
+        spawner.pendingLocalTime = Time.time;
+    }
+
     void OnDisable()
     {
         if (stats != null)
@@ -39,17 +56,24 @@ public class DamageNumberSpawner : MonoBehaviour
 
     private void HandleHealthChanged(float current, float max)
     {
-        if (current < lastHealth && GameSettings.ShowDamageNumbers)
-            Spawn(lastHealth - current);
+        if (current < lastHealth)
+        {
+            float amount = lastHealth - current;
+            bool own = pendingLocalDamage > 0f && Time.time - pendingLocalTime <= LocalHitWindow;
+            if (own)
+                pendingLocalDamage = Mathf.Max(0f, pendingLocalDamage - amount);
+            if (GameSettings.ShowDamageNumbers)
+                Spawn(amount, own);
+        }
         lastHealth = current;
     }
 
-    private void Spawn(float amount)
+    private void Spawn(float amount, bool own)
     {
         if (damageNumberPrefab == null)
             return;
 
         GameObject fx = Instantiate(damageNumberPrefab, transform.position + spawnOffset, Quaternion.identity);
-        fx.GetComponent<DamageNumberPopup>()?.Show(amount);
+        fx.GetComponent<DamageNumberPopup>()?.Show(amount, own);
     }
 }

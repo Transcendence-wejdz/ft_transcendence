@@ -12,6 +12,7 @@ public class XPBarUI : MonoBehaviour
 
     private XPManager xpManager;
     private WaveSpawner spawner;
+    private float nextSearchTime;
 
     void Awake()
     {
@@ -19,10 +20,14 @@ public class XPBarUI : MonoBehaviour
         levelText.gameObject.SetActive(false);
     }
 
+    // Run managers are absent outside a run (Lobby), so the lookup is throttled instead of searching every frame.
     void Update()
     {
         if (xpManager == null || spawner == null)
         {
+            if (Time.unscaledTime < nextSearchTime)
+                return;
+            nextSearchTime = Time.unscaledTime + 0.5f;
             xpManager = FindAnyObjectByType<XPManager>();
             spawner = FindAnyObjectByType<WaveSpawner>();
             if (xpManager == null || spawner == null)
@@ -41,6 +46,6 @@ public class XPBarUI : MonoBehaviour
 
         xpManager.GetProgress(out int level, out int xpIntoLevel, out int xpForLevel);
         levelText.text = $"Lv. {level}";
-        fillImage.fillAmount = xpForLevel > 0 ? (float)xpIntoLevel / xpForLevel : 0f;
+        BrushFill.Set(fillImage, xpForLevel > 0 ? (float)xpIntoLevel / xpForLevel : 0f);
     }
 }

@@ -1,26 +1,15 @@
 using TMPro;
 using UnityEngine;
 
+// Lobby customization panel: buttons and name field forwarding to LocalCharacterLook.
 public class CharacterCustomizationMenu : MonoBehaviour
 {
-    public static CharacterCustomizationMenu Instance
-    {
-        get
-        {
-            if (instance == null)
-                instance = FindAnyObjectByType<CharacterCustomizationMenu>(FindObjectsInactive.Include);
-            return instance;
-        }
-    }
-    private static CharacterCustomizationMenu instance;
-
     [SerializeField] private TMP_InputField nameInputField;
-    [SerializeField] private int maxNameLength = 24;
+    [SerializeField] private HoverColorWipe[] classButtons;
+    [SerializeField] private GameObject[] colorMarkers;
 
     private void Awake()
     {
-        instance = this;
-
         if (nameInputField != null)
             nameInputField.onEndEdit.AddListener(SetPlayerName);
     }
@@ -28,6 +17,9 @@ public class CharacterCustomizationMenu : MonoBehaviour
     // Renders the real local player (not a separate doll) into CharacterPreviewRT while the panel is open.
     private void OnEnable()
     {
+        LocalCharacterLook.OnNameChanged += ShowName;
+        LocalCharacterLook.OnPortraitChanged += ShowSelection;
+
         GameObject player = LocalPlayer.Get();
         if (player == null)
             return;
@@ -38,10 +30,14 @@ public class CharacterCustomizationMenu : MonoBehaviour
             nameInputField.text = customization.PlayerName;
 
         customization?.SetPreviewCameraActive(true);
+        ShowSelection(null);
     }
 
     private void OnDisable()
     {
+        LocalCharacterLook.OnNameChanged -= ShowName;
+        LocalCharacterLook.OnPortraitChanged -= ShowSelection;
+
         GameObject player = LocalPlayer.Get();
         if (player == null)
             return;
@@ -51,210 +47,44 @@ public class CharacterCustomizationMenu : MonoBehaviour
 
     public void SetPlayerName(string value)
     {
-        value = value.Trim();
-        if (string.IsNullOrEmpty(value))
-            return;
-        if (value.Length > maxNameLength)
-            value = value.Substring(0, maxNameLength);
-
-        GameObject player = LocalPlayer.Get();
-        if (player == null)
-            return;
-
-        Player customization = player.GetComponent<Player>();
-        if (customization != null)
-            customization.SetName(value);
-
-        if (nameInputField != null && nameInputField.text != value)
-            nameInputField.text = value;
-
-        OnNameChanged?.Invoke(value);
-    }
-
-    public static event System.Action<Sprite> OnPortraitChanged;
-    public static event System.Action<Sprite> OnBackgroundChanged;
-    public static event System.Action<string> OnNameChanged;
-
-    [SerializeField] private ClassKit[] kitsByClass;
-    [SerializeField] private ColorVariant[] colorVariants;
-    [SerializeField] private Sprite[] backgroundSpritesByColor;
-
-    [System.Serializable]
-    private class ColorVariant
-    {
-        public RuntimeAnimatorController[] controllersByClass;
-        public Sprite[] worldSpritesByClass;
-        public Sprite[] portraitSpritesByClass;
-    }
-
-    public Sprite GetCurrentPortrait()
-    {
-        GameObject player = LocalPlayer.Get();
-        if (player == null)
-            return null;
-
-        return GetPortrait(CurrentClassIndex(player), CurrentColorIndex(player));
-    }
-
-    public Sprite GetPortrait(int classIndex, int colorIndex)
-    {
-        if (classIndex < 0 || classIndex >= kitsByClass.Length)
-            return null;
-        if (colorIndex < 0 || colorIndex >= colorVariants.Length)
-            return null;
-
-        return colorVariants[colorIndex].portraitSpritesByClass[classIndex];
-    }
-
-    public ClassKit GetKit(int classIndex)
-    {
-        if (classIndex < 0 || classIndex >= kitsByClass.Length)
-            return null;
-
-        return kitsByClass[classIndex];
-    }
-
-    public Sprite GetCurrentBackground()
-    {
-        GameObject player = LocalPlayer.Get();
-        if (player == null)
-            return null;
-
-        int colorIndex = CurrentColorIndex(player);
-        if (colorIndex < 0 || colorIndex >= backgroundSpritesByColor.Length)
-            return null;
-
-        return backgroundSpritesByColor[colorIndex];
-    }
-
-    public string GetCurrentName()
-    {
-        GameObject player = LocalPlayer.Get();
-        if (player == null)
-            return string.Empty;
-
-        Player customization = player.GetComponent<Player>();
-        return customization != null ? customization.PlayerName : string.Empty;
+        LocalCharacterLook.SetPlayerName(value);
     }
 
     public void SelectClass(int index)
     {
-        if (index < 0 || index >= kitsByClass.Length)
-            return;
-
-        GameObject player = LocalPlayer.Get();
-        if (player == null)
-            return;
-
-        Apply(player, index, CurrentColorIndex(player));
+        LocalCharacterLook.SelectClass(index);
     }
 
     public void SelectColor(int index)
     {
-        if (index < 0 || index >= colorVariants.Length)
-            return;
+        LocalCharacterLook.SelectColor(index);
+    }
 
+    // Pins the current class button and shows the marker on the current color (both indexed like CharacterCatalog).
+    private void ShowSelection(Sprite _)
+    {
         GameObject player = LocalPlayer.Get();
-        if (player == null)
+        CharacterCatalog catalog = CharacterCatalog.Instance;
+        if (player == null || catalog == null)
             return;
 
-        Apply(player, CurrentClassIndex(player), index);
-    }
-
-    // Sets class and color together, e.g. from the web profile.
-    public void ApplyProfile(int classIndex, int colorIndex)
-    {
-        if (classIndex < 0 || classIndex >= kitsByClass.Length)
-            return;
-        if (colorIndex < 0 || colorIndex >= colorVariants.Length)
-            return;
-
-        GameObject player = LocalPlayer.Get();
-        if (player == null)
-            return;
-
-        Apply(player, classIndex, colorIndex);
-    }
-
-    private void Apply(GameObject player, int classIndex, int colorIndex)
-    {
-        if (!ApplyVisuals(player, classIndex, colorIndex))
-            return;
-
-        OnPortraitChanged?.Invoke(colorVariants[colorIndex].portraitSpritesByClass[classIndex]);
-        if (colorIndex < backgroundSpritesByColor.Length)
-            OnBackgroundChanged?.Invoke(backgroundSpritesByColor[colorIndex]);
-
-        Player customization = player.GetComponent<Player>();
-        if (customization != null)
-            customization.SetSelection(classIndex, colorIndex);
-    }
-
-    public void NotifyProfileLoaded(GameObject player)
-    {
-        int classIndex = CurrentClassIndex(player);
-        int colorIndex = CurrentColorIndex(player);
-        if (classIndex < 0 || classIndex >= kitsByClass.Length)
-            return;
-        if (colorIndex < 0 || colorIndex >= colorVariants.Length)
-            return;
-
-        OnPortraitChanged?.Invoke(colorVariants[colorIndex].portraitSpritesByClass[classIndex]);
-        if (colorIndex < backgroundSpritesByColor.Length)
-            OnBackgroundChanged?.Invoke(backgroundSpritesByColor[colorIndex]);
-
-        Player customization = player.GetComponent<Player>();
-        if (customization != null && !string.IsNullOrEmpty(customization.PlayerName))
-            OnNameChanged?.Invoke(customization.PlayerName);
-    }
-
-    public bool ApplyVisuals(GameObject player, int classIndex, int colorIndex)
-    {
-        if (classIndex < 0 || classIndex >= kitsByClass.Length)
-            return false;
-        if (colorIndex < 0 || colorIndex >= colorVariants.Length)
-            return false;
-
-        ColorVariant variant = colorVariants[colorIndex];
-        RuntimeAnimatorController controller = variant.controllersByClass[classIndex];
-        Sprite worldSprite = variant.worldSpritesByClass[classIndex];
-        if (controller == null)
-            return false;
-
-        player.GetComponent<Animator>().runtimeAnimatorController = controller;
-        player.GetComponent<SpriteRenderer>().sprite = worldSprite;
-        return true;
-    }
-
-    private int CurrentClassIndex(GameObject player)
-    {
-        RuntimeAnimatorController current = player.GetComponent<Animator>().runtimeAnimatorController;
-        AnimatorOverrideController overrideController = current as AnimatorOverrideController;
-        RuntimeAnimatorController baseController = overrideController != null ? overrideController.runtimeAnimatorController : current;
-
-        RuntimeAnimatorController[] baseControllersByClass = colorVariants[0].controllersByClass;
-        for (int i = 0; i < baseControllersByClass.Length; i++)
+        int classIndex = catalog.ClassIndexOf(player);
+        int colorIndex = catalog.ColorIndexOf(player);
+        for (int i = 0; i < classButtons.Length; i++)
         {
-            if (baseControllersByClass[i] == baseController)
-                return i;
+            if (classButtons[i] != null)
+                classButtons[i].SetPinned(i == classIndex);
         }
-
-        return 0;
+        for (int i = 0; i < colorMarkers.Length; i++)
+        {
+            if (colorMarkers[i] != null)
+                colorMarkers[i].SetActive(i == colorIndex);
+        }
     }
 
-    private int CurrentColorIndex(GameObject player)
+    private void ShowName(string value)
     {
-        RuntimeAnimatorController current = player.GetComponent<Animator>().runtimeAnimatorController;
-
-        for (int c = 0; c < colorVariants.Length; c++)
-        {
-            foreach (RuntimeAnimatorController candidate in colorVariants[c].controllersByClass)
-            {
-                if (candidate == current)
-                    return c;
-            }
-        }
-
-        return 0;
+        if (nameInputField != null && nameInputField.text != value)
+            nameInputField.text = value;
     }
 }

@@ -11,10 +11,18 @@ public static class GameSettings
     private const string GraphicsQualityKey = "Settings.GraphicsQuality";
     private const string HdrEnabledKey = "Settings.HdrEnabled";
     private const string StickDeadzoneKey = "Settings.StickDeadzone";
+    private const string CameraDistanceKey = "Settings.CameraDistance";
+    private const string CursorSizeKey = "Settings.CursorSize";
 
     public const float StickDeadzoneMin = 0.05f;
     public const float StickDeadzoneMax = 0.5f;
     public const float StickDeadzoneStep = 0.05f;
+    public const float CameraDistanceMin = 0.75f;
+    public const float CameraDistanceMax = 1.25f;
+    public const float CameraDistanceStep = 0.05f;
+    public const float CursorSizeMin = 0.5f;
+    public const float CursorSizeMax = 2f;
+    public const float CursorSizeStep = 0.1f;
 
     public static readonly string[] GraphicsQualityNames = { "Low", "Medium", "High", "Ultra" };
 
@@ -106,6 +114,29 @@ public static class GameSettings
         set
         {
             PlayerPrefs.SetFloat(StickDeadzoneKey, Mathf.Clamp(value, StickDeadzoneMin, StickDeadzoneMax));
+            PlayerPrefs.Save();
+            OnChanged?.Invoke();
+        }
+    }
+
+    // Multiplier on the player camera's base orthographic size.
+    public static float CameraDistance
+    {
+        get => Mathf.Clamp(PlayerPrefs.GetFloat(CameraDistanceKey, 1f), CameraDistanceMin, CameraDistanceMax);
+        set
+        {
+            PlayerPrefs.SetFloat(CameraDistanceKey, Mathf.Clamp(value, CameraDistanceMin, CameraDistanceMax));
+            PlayerPrefs.Save();
+            OnChanged?.Invoke();
+        }
+    }
+
+    public static float CursorSize
+    {
+        get => Mathf.Clamp(PlayerPrefs.GetFloat(CursorSizeKey, 1f), CursorSizeMin, CursorSizeMax);
+        set
+        {
+            PlayerPrefs.SetFloat(CursorSizeKey, Mathf.Clamp(value, CursorSizeMin, CursorSizeMax));
             PlayerPrefs.Save();
             OnChanged?.Invoke();
         }

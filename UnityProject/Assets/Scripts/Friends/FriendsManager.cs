@@ -29,11 +29,17 @@ public static class FriendsManager
     public static event Action OnChanged;
     public static event Action<FriendInvite> OnInviteReceived;
 
+    // Live incoming friend request (member id, display name); pending ones from before login are only in Incoming.
+    public static event Action<string, string> OnFriendRequestReceived;
+
     private static readonly IReadOnlyList<Relationship> Empty = new List<Relationship>();
     private static Task initTask;
 
     public static bool IsReady { get; private set; }
     public static string OwnName { get; private set; } = string.Empty;
+
+    // Unity services player id (the id Friends and sessions use for us), empty until signed in.
+    public static string OwnId => IsReady && AuthenticationService.Instance.IsSignedIn ? AuthenticationService.Instance.PlayerId : string.Empty;
 
     public static IReadOnlyList<Relationship> Friends => IsReady ? FriendsService.Instance.Friends : Empty;
     public static IReadOnlyList<Relationship> Incoming => IsReady ? FriendsService.Instance.IncomingFriendRequests : Empty;
@@ -72,7 +78,7 @@ public static class FriendsManager
         OwnName = await AuthenticationService.Instance.GetPlayerNameAsync();
 
         ServicesAuth.OnPlayerNameChanged += name => { OwnName = name; OnChanged?.Invoke(); };
-        FriendsService.Instance.RelationshipAdded += _ => OnChanged?.Invoke();
+        FriendsService.Instance.RelationshipAdded += HandleRelationshipAdded;
         FriendsService.Instance.RelationshipDeleted += _ => OnChanged?.Invoke();
         FriendsService.Instance.PresenceUpdated += _ => OnChanged?.Invoke();
         FriendsService.Instance.MessageReceived += HandleMessage;
@@ -81,6 +87,17 @@ public static class FriendsManager
 
         IsReady = true;
         OnChanged?.Invoke();
+    }
+
+    // The other member is the Source of an incoming request; our own sent requests also raise RelationshipAdded.
+    private static void HandleRelationshipAdded(IRelationshipAddedEvent added)
+    {
+        OnChanged?.Invoke();
+        Relationship relationship = added.Relationship;
+        if (relationship == null || relationship.Type != RelationshipType.FriendRequest || relationship.Member.Role != MemberRole.Source)
+            return;
+
+        OnFriendRequestReceived?.Invoke(relationship.Member.Id, ShortName(relationship.Member.Profile?.Name));
     }
 
     // Ignores anything that isn't a friend invite; a code-less invite is valid (its code follows in a second message).

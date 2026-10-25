@@ -40,6 +40,6 @@ public class BossUI : MonoBehaviour
 
     private void SetFill(float current, float max)
     {
-        fillImage.fillAmount = max > 0f ? current / max : 0f;
+        BrushFill.Set(fillImage, max > 0f ? current / max : 0f);
     }
 }

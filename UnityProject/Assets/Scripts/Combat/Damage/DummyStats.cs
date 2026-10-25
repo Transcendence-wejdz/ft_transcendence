@@ -44,6 +44,7 @@ public class DummyStats : MonoBehaviour, IDamageable, IHealthStats
 
     public void RequestDamage(float amount)
     {
+        DamageNumberSpawner.MarkLocalHit(this, amount);
         ApplyDamage(amount);
         LocalPlayer.GetPlayer()?.BroadcastDummyHit(transform.position, amount);
     }

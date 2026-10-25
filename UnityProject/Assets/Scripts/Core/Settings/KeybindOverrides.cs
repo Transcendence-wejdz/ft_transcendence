@@ -39,6 +39,24 @@ public static class KeybindOverrides
         Apply(input.actions);
     }
 
+    // Effective (override-aware) path of an action's first gamepad binding, e.g. "<Gamepad>/buttonSouth".
+    public static string GetGamepadPath(string actionName)
+    {
+        GameObject player = LocalPlayer.Get();
+        PlayerInput input = player != null ? player.GetComponent<PlayerInput>() : null;
+        InputAction action = input != null ? input.actions?.FindAction(actionName) : null;
+        if (action == null)
+            return null;
+
+        foreach (InputBinding binding in action.bindings)
+        {
+            string path = binding.effectivePath;
+            if (!binding.isComposite && !binding.isPartOfComposite && path != null && path.StartsWith("<Gamepad>"))
+                return path;
+        }
+        return null;
+    }
+
     // Display string for an action's keyboard binding, falling back to the raw path for keys Unity can't render as text.
     public static string GetKeyboardDisplay(string actionName)
     {

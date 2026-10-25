@@ -1,16 +1,21 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using TMPro;
 using Unity.Services.Friends.Models;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Pause-menu friends list: collapsible Online and Offline sections, each scrolling on its own, with presence and an Invite button on reachable friends.
+// Pause-menu friends list: collapsible Requests, Online and Offline sections, each scrolling on its own, with presence, invites and request actions.
 public class PauseFriendsListUI : MonoBehaviour
 {
     [SerializeField] private PauseFriendRowUI rowTemplate;
     [SerializeField] private TMP_Text onlineHeader;
     [SerializeField] private TMP_Text offlineHeader;
+    [SerializeField] private TMP_Text onlineCountText;
+    [SerializeField] private TMP_Text offlineCountText;
+    [SerializeField] private TMP_Text requestCountText;
     [SerializeField] private Button onlineToggle;
     [SerializeField] private Button offlineToggle;
     [SerializeField] private RectTransform onlineArrow;
@@ -20,6 +25,14 @@ public class PauseFriendsListUI : MonoBehaviour
     [SerializeField] private LayoutElement onlineScroll;
     [SerializeField] private LayoutElement offlineScroll;
     [SerializeField] private float minScrollHeight = 72f;
+    [SerializeField] private PauseRequestRowUI requestRowTemplate;
+    [SerializeField] private TMP_Text requestHeader;
+    [SerializeField] private Button requestToggle;
+    [SerializeField] private RectTransform requestArrow;
+    [SerializeField] private RectTransform requestContent;
+    [SerializeField] private LayoutElement requestScroll;
+    [SerializeField] private Color requestColor = new Color(1f, 0.85f, 0.45f, 1f);
+    [SerializeField] private SocialContextMenuUI contextMenu;
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private Color onlineColor = new Color(0.45f, 0.8f, 0.45f, 1f);
     [SerializeField] private Color awayColor = new Color(0.95f, 0.75f, 0.3f, 1f);
@@ -30,17 +43,22 @@ public class PauseFriendsListUI : MonoBehaviour
     [SerializeField] private Color infoColor = new Color(0.7f, 0.69f, 0.66f, 1f);
 
     private readonly List<PauseFriendRowUI> rows = new List<PauseFriendRowUI>();
+    private readonly List<PauseRequestRowUI> requestRows = new List<PauseRequestRowUI>();
     private int sessionSignature;
 
     // Static so a collapsed section stays collapsed across pause openings for the rest of the run.
     private static bool onlineCollapsed;
     private static bool offlineCollapsed;
+    private static bool requestsCollapsed;
     private int onlineCount;
     private int offlineCount;
+    private int requestCount;
 
     private void Awake()
     {
         rowTemplate.gameObject.SetActive(false);
+        requestRowTemplate.gameObject.SetActive(false);
+        requestToggle.onClick.AddListener(() => { requestsCollapsed = !requestsCollapsed; Rebuild(); });
         onlineToggle.onClick.AddListener(() => { onlineCollapsed = !onlineCollapsed; Rebuild(); });
         offlineToggle.onClick.AddListener(() => { offlineCollapsed = !offlineCollapsed; Rebuild(); });
     }
@@ -101,11 +119,36 @@ public class PauseFriendsListUI : MonoBehaviour
         }
         finally
         {
-            FitSection(onlineScroll, onlineContent, onlineCollapsed, onlineCount);
-            FitSection(offlineScroll, offlineContent, offlineCollapsed, offlineCount);
+            FitSections();
             RefreshArrows();
         }
         SetRowsBusy(FriendInviteFlow.IsBusy);
+        if (isActiveAndEnabled)
+            StartCoroutine(RefitNextFrame());
+    }
+
+    private void FitSections()
+    {
+        FitSection(requestScroll, requestContent, requestsCollapsed, requestCount);
+        FitSection(onlineScroll, onlineContent, onlineCollapsed, onlineCount);
+        FitSection(offlineScroll, offlineContent, offlineCollapsed, offlineCount);
+    }
+
+    // Rows built in the frame the pause opens can be laid out against a 0-tall viewport; refit and snap each list back to its top once settled.
+    private IEnumerator RefitNextFrame()
+    {
+        yield return null;
+        Canvas.ForceUpdateCanvases();
+        FitSections();
+        foreach (LayoutElement scroll in new[] { requestScroll, onlineScroll, offlineScroll })
+        {
+            ScrollRect rect = scroll.GetComponent<ScrollRect>();
+            if (rect != null && rect.isActiveAndEnabled)
+            {
+                rect.StopMovement();
+                rect.verticalNormalizedPosition = 1f;
+            }
+        }
     }
 
     private void BuildRows()
@@ -117,6 +160,13 @@ public class PauseFriendsListUI : MonoBehaviour
             Destroy(row.gameObject);
         }
         rows.Clear();
+        foreach (PauseRequestRowUI row in requestRows)
+        {
+            row.gameObject.SetActive(false);
+            Destroy(row.gameObject);
+        }
+        requestRows.Clear();
+        BuildRequestRows();
 
         var online = new List<Relationship>();
         var offline = new List<Relationship>();
@@ -127,8 +177,8 @@ public class PauseFriendsListUI : MonoBehaviour
         onlineCount = online.Count;
         offlineCount = offline.Count;
 
-        onlineHeader.text = $"Online · {online.Count}";
-        offlineHeader.text = $"Offline · {offline.Count}";
+        onlineCountText.text = online.Count.ToString();
+        offlineCountText.text = offline.Count.ToString();
         offlineToggle.gameObject.SetActive(offline.Count > 0);
 
         if (!onlineCollapsed)
@@ -142,11 +192,86 @@ public class PauseFriendsListUI : MonoBehaviour
             SetStatus("No friends yet. Add some by name above.", isError: false);
     }
 
+    // Invite when they can join us; Kick when that friend is in our game and we host; Remove friend always (Kick/Remove confirmed by a second click).
+    private void OpenFriendMenu(RectTransform row, string memberId, bool inGame, Action invite)
+    {
+        var items = new List<SocialContextMenuUI.Item>();
+        if (invite != null && !FriendInviteFlow.IsBusy)
+            items.Add(new SocialContextMenuUI.Item("Invite", invite));
+        Player player = inGame ? SessionKick.FindByServicesId(memberId) : null;
+        if (SessionKick.CanKick(player))
+            items.Add(new SocialContextMenuUI.Item("Kick", () => KickFriend(player), destructive: true));
+        items.Add(new SocialContextMenuUI.Item("Remove friend", () => RunAction(FriendsManager.RemoveAsync(memberId), "Friend removed."), destructive: true));
+        contextMenu.Open(row, items);
+    }
+
+    private async void KickFriend(Player player)
+    {
+        bool kicked = await SessionKick.KickAsync(player);
+        if (this != null)
+            SetStatus(kicked ? "Player kicked." : "Only the host can kick.", isError: !kicked);
+    }
+
+    // Incoming requests can be accepted or declined; our own sent ones can be cancelled.
+    private void BuildRequestRows()
+    {
+        requestCount = FriendsManager.Incoming.Count + FriendsManager.Outgoing.Count;
+        requestCountText.text = requestCount.ToString();
+        requestToggle.gameObject.SetActive(requestCount > 0);
+        if (requestsCollapsed)
+            return;
+
+        foreach (Relationship request in FriendsManager.Incoming)
+        {
+            string memberId = request.Member.Id;
+            AddRequestRow(request, "Wants to be your friend", requestColor,
+                () => RunAction(FriendsManager.AcceptAsync(memberId), "Friend added."),
+                () => RunAction(FriendsManager.DeclineAsync(memberId), "Request declined."));
+        }
+        foreach (Relationship request in FriendsManager.Outgoing)
+        {
+            string memberId = request.Member.Id;
+            AddRequestRow(request, "Request sent", offlineColor, null,
+                () => RunAction(FriendsManager.CancelRequestAsync(memberId), "Request cancelled."));
+        }
+    }
+
+    private void AddRequestRow(Relationship request, string status, Color color, Action onAccept, Action onRemove)
+    {
+        PauseRequestRowUI row = Instantiate(requestRowTemplate, requestContent);
+        row.gameObject.SetActive(true);
+        row.Setup(FriendsManager.ShortName(request.Member.Profile?.Name), status, color, onAccept, onRemove);
+        requestRows.Add(row);
+    }
+
+    // The service raises OnChanged after each action, which rebuilds the list; this only reports the outcome.
+    private async void RunAction(Task action, string successMessage)
+    {
+        foreach (PauseRequestRowUI row in requestRows)
+            row.SetInteractable(false);
+        try
+        {
+            await action;
+            if (this != null)
+                SetStatus(successMessage, isError: false);
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"PauseFriendsListUI: request action failed - {e.Message}");
+            if (this != null)
+                SetStatus("That didn't work, try again.", isError: true);
+        }
+        if (this != null)
+            foreach (PauseRequestRowUI row in requestRows)
+                row.SetInteractable(true);
+    }
+
     // Driven only by the collapse flags and counts, so it can never disagree with what the sections show; an empty section has nothing to expand, so its arrow is hidden (image only, keeping the title aligned).
     private void RefreshArrows()
     {
         onlineArrow.localRotation = Quaternion.Euler(0f, 0f, onlineCollapsed ? 90f : 0f);
         offlineArrow.localRotation = Quaternion.Euler(0f, 0f, offlineCollapsed ? 90f : 0f);
+        requestArrow.localRotation = Quaternion.Euler(0f, 0f, requestsCollapsed ? 90f : 0f);
         onlineArrow.GetComponent<Image>().enabled = onlineCount > 0;
         offlineArrow.GetComponent<Image>().enabled = offlineCount > 0;
     }
@@ -179,7 +304,7 @@ public class PauseFriendsListUI : MonoBehaviour
         PauseFriendRowUI row = Instantiate(rowTemplate, parent);
         row.gameObject.SetActive(true);
         Action invite = reachable && !inGame ? () => Invite(memberId) : (Action)null;
-        row.Setup(FriendsManager.ShortName(friend.Member.Profile.Name), status, color, reachable, invite);
+        row.Setup(FriendsManager.ShortName(friend.Member.Profile.Name), status, color, reachable, invite, rect => OpenFriendMenu(rect, memberId, inGame, invite));
         rows.Add(row);
     }
 

@@ -24,6 +24,7 @@ public partial class Player
     public static event Action<float, float> OnHealthChanged;
     public static event Action<float, float> OnManaChanged;
     public static event Action<Player> OnPlayerDied;
+    public static event Action OnNotEnoughMana;
 
     public event Action<float, float> OnHealthReplicated;
 
@@ -205,7 +206,11 @@ public partial class Player
     public bool TrySpendMana(float amount)
     {
         if (CurrentMana < amount)
+        {
+            if (this.IsLocallyControlled())
+                OnNotEnoughMana?.Invoke();
             return false;
+        }
 
         CurrentMana -= amount;
         if (this.IsLocallyControlled())

@@ -46,10 +46,12 @@ public partial class Player
         OnClassOrColorChanged += (_, _) => RefreshActiveKit();
     }
 
+    public ClassKit ActiveKit => activeKit;
+
     private void RefreshActiveKit()
     {
-        ClassKit kit = CharacterCustomizationMenu.Instance != null
-            ? CharacterCustomizationMenu.Instance.GetKit(ClassIndex)
+        ClassKit kit = CharacterCatalog.Instance != null
+            ? CharacterCatalog.Instance.GetKit(ClassIndex)
             : null;
         activeKit = kit != null ? kit : defaultKit;
     }

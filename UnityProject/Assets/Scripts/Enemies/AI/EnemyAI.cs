@@ -30,6 +30,10 @@ public class EnemyAI : NetworkBehaviour
     private Vector2 steerDirection;
 
     private Vector2 lastPosition;
+    private float facingDrift;
+    private float lastFlipTime = -1f;
+    private const float FlipDistance = 0.06f;
+    private const float FlipCooldown = 0.2f;
     private float lastMovedTime;
     private float attackVisualEndTime;
     private int currentAnimationHash;
@@ -262,18 +266,26 @@ public class EnemyAI : NetworkBehaviour
         animator.Play(attackHash, 0, 0f);
     }
 
-    // Faces movement and picks Attack/Run/Idle, playing only on state change.
+    // Faces net movement with hysteresis (the drift saturates at FlipDistance, so turning back needs a real move the other way) and picks Attack/Run/Idle; stops interpolation and crowd jitter from flipping the sprite every frame on clients.
     private void UpdateVisuals()
     {
         Vector2 position = transform.position;
         Vector2 delta = position - lastPosition;
         lastPosition = position;
 
-        if (spriteRenderer != null && Mathf.Abs(delta.x) > 0.001f)
+        if (delta.sqrMagnitude > 1f)
+            facingDrift = 0f;
+        else
+            facingDrift = Mathf.Clamp(facingDrift + delta.x, -FlipDistance, FlipDistance);
+
+        if (spriteRenderer != null && Mathf.Abs(facingDrift) >= FlipDistance && Time.time - lastFlipTime >= FlipCooldown)
         {
-            bool faceLeft = delta.x < 0f;
+            bool faceLeft = facingDrift < 0f;
             if (spriteRenderer.flipX != faceLeft)
+            {
                 spriteRenderer.flipX = faceLeft;
+                lastFlipTime = Time.time;
+            }
         }
 
         if (animator == null)

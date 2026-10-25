@@ -13,13 +13,13 @@ public class BackgroundColorUI : MonoBehaviour
 
     void OnEnable()
     {
-        CharacterCustomizationMenu.OnBackgroundChanged += SetBackground;
-        SetBackground(CharacterCustomizationMenu.Instance?.GetCurrentBackground());
+        LocalCharacterLook.OnBackgroundChanged += SetBackground;
+        SetBackground(LocalCharacterLook.CurrentBackground());
     }
 
     void OnDisable()
     {
-        CharacterCustomizationMenu.OnBackgroundChanged -= SetBackground;
+        LocalCharacterLook.OnBackgroundChanged -= SetBackground;
     }
 
     private void SetBackground(Sprite sprite)

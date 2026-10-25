@@ -48,10 +48,10 @@ public class LobbyRosterEntryUI : MonoBehaviour
 
     private void SetAvatar(int classIndex, int colorIndex)
     {
-        if (avatarImage == null || CharacterCustomizationMenu.Instance == null)
+        if (avatarImage == null || CharacterCatalog.Instance == null)
             return;
 
-        Sprite portrait = CharacterCustomizationMenu.Instance.GetPortrait(classIndex, colorIndex);
+        Sprite portrait = CharacterCatalog.Instance.GetPortrait(classIndex, colorIndex);
         if (portrait != null)
             avatarImage.sprite = portrait;
     }
@@ -59,6 +59,6 @@ public class LobbyRosterEntryUI : MonoBehaviour
     private void SetHealth(float current, float max)
     {
         if (healthFillImage != null)
-            healthFillImage.fillAmount = max > 0f ? current / max : 0f;
+            BrushFill.Set(healthFillImage, max > 0f ? current / max : 0f);
     }
 }

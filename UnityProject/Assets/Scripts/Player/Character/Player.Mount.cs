@@ -152,7 +152,7 @@ public partial class Player
             mountInteractRoot.SetActive(shouldShow);
     }
 
-    // Revive ring under a downed player, filled over mountDurationSeconds while someone rides; timed locally from the replicated parenting, so every peer (the downed player included) sees it without extra network state.
+    // Revive bar above a downed player, filled over mountDurationSeconds while someone rides; timed locally from the replicated parenting, so every peer (the downed player included) sees it without extra network state.
     private void UpdateReviveProgress()
     {
         if (reviveProgress == null)
@@ -164,10 +164,12 @@ public partial class Player
         else if (riderSince < 0f)
             riderSince = Time.time;
 
-        if (reviveProgress.gameObject.activeSelf != riding)
-            reviveProgress.gameObject.SetActive(riding);
+        Canvas canvas = reviveProgress.GetComponentInParent<Canvas>(true);
+        GameObject root = canvas != null ? canvas.gameObject : reviveProgress.gameObject;
+        if (root.activeSelf != riding)
+            root.SetActive(riding);
         if (riding)
-            reviveProgress.fillAmount = Mathf.Clamp01((Time.time - riderSince) / mountDurationSeconds);
+            BrushFill.Set(reviveProgress, Mathf.Clamp01((Time.time - riderSince) / mountDurationSeconds));
     }
 
     private bool HasRider()

@@ -13,14 +13,14 @@ public class PlayerNameUI : MonoBehaviour
 
     void OnEnable()
     {
-        CharacterCustomizationMenu.OnNameChanged += SetName;
+        LocalCharacterLook.OnNameChanged += SetName;
 
-        SetName(CharacterCustomizationMenu.Instance?.GetCurrentName());
+        SetName(LocalCharacterLook.CurrentName());
     }
 
     void OnDisable()
     {
-        CharacterCustomizationMenu.OnNameChanged -= SetName;
+        LocalCharacterLook.OnNameChanged -= SetName;
     }
 
     private void SetName(string value)

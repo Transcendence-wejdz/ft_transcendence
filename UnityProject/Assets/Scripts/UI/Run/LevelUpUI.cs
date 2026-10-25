@@ -94,7 +94,7 @@ public class LevelUpUI : MonoBehaviour
             if (bonusLabels[i] == null)
                 continue;
             LevelUpBonusType type = manager.GetOfferedBonusType(i);
-            bonusLabels[i].text = $"{LevelUpBonusCatalog.GetDisplayName(type)}\n{LevelUpBonusCatalog.GetDescription(type)}";
+            bonusLabels[i].text = $"<size=125%><color=#EDE6D6>{LevelUpBonusCatalog.GetDisplayName(type)}</color></size>\n<color=#9E9C94>{LevelUpBonusCatalog.GetDescription(type)}</color>";
         }
     }
 

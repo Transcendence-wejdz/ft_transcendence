@@ -14,6 +14,7 @@ public partial class Player
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     public float AimAngleDegrees => aimAngle.Value;
+    public Vector2 Facing => facing;
     public bool HasMoveInput => moveInput.sqrMagnitude > 0.01f;
 
     private Vector2 moveInput;
@@ -77,6 +78,7 @@ public partial class Player
             playerInput.enabled = true;
             BindDodgeInput();
         }
+        PlayerCameraRig.ClaimAudioListener(transform);
 
         if (NetworkManager.SceneManager != null)
             NetworkManager.SceneManager.OnLoadComplete += HandleSceneLoadComplete;
@@ -264,6 +266,17 @@ public partial class Player
         else if (moveInput.sqrMagnitude > 0.0001f)
             stickAim = moveInput.normalized;
         return stickAim;
+    }
+
+    // Takes over another instance's look (offline player swapped for the networked one), so the swap is invisible; owner only.
+    public void AdoptPose(Vector2 newFacing, float newAimAngle)
+    {
+        if (!this.IsLocallyControlled())
+            return;
+
+        facingApplied = false;
+        UpdateFacing(newFacing);
+        aimAngle.Value = newAimAngle;
     }
 
     // Snaps the aim to one of 8 directions, with an angular deadzone so adjacent directions don't flicker.

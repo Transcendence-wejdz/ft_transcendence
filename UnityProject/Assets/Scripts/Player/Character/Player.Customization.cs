@@ -33,11 +33,16 @@ public partial class Player
     private readonly NetworkVariable<bool> isReady = new OfflineSafeNetworkVariable<bool>(
         false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
+    // Unity Friends "Name#1234", shared so teammates can see it (and add each other) from the party strip.
+    private readonly NetworkVariable<FixedString64Bytes> friendsTag = new OfflineSafeNetworkVariable<FixedString64Bytes>(
+        default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
     public int ClassIndex => classIndex.Value;
     public int ColorIndex => colorIndex.Value;
     public string PlayerName => playerName.Value.ToString();
     public int TeamIndex => teamIndex.Value;
     public bool IsReady => isReady.Value;
+    public string FriendsTag => friendsTag.Value.ToString();
 
     [Header("Customization")]
     [SerializeField] private PlayerNameTag nameTag;
@@ -77,14 +82,28 @@ public partial class Player
         OnClassOrColorChanged?.Invoke(classIndex.Value, colorIndex.Value);
         ActiveInstances.Add(this);
         RefreshAllDisplayNames();
+        if (IsOwner)
+        {
+            PublishFriendsTag();
+            FriendsManager.OnChanged += PublishFriendsTag;
+        }
         OnPlayerRegistered?.Invoke(this);
     }
 
     private void DespawnCustomization()
     {
+        FriendsManager.OnChanged -= PublishFriendsTag;
         ActiveInstances.Remove(this);
         OnPlayerUnregistered?.Invoke(this);
         RefreshAllDisplayNames();
+    }
+
+    // Only once spawned (never from Awake), and again when the friends name arrives or changes.
+    private void PublishFriendsTag()
+    {
+        if (this == null || !IsOwner || !IsSpawned || !FriendsManager.IsReady || FriendsManager.OwnName == FriendsTag)
+            return;
+        friendsTag.Value = FriendsManager.OwnName;
     }
 
     private static void RefreshAllDisplayNames()

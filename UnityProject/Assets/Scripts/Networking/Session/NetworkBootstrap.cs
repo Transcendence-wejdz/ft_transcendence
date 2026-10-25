@@ -20,6 +20,8 @@ public class NetworkBootstrap : MonoBehaviour
     private Vector3? hostSpawnPosition;
     private Quaternion hostSpawnRotation;
     private GameObject detachedCameraHolder;
+    private GameObject standIn;
+    private GameObject capturedOfflinePlayer;
 
     // Set by InviteToastUI before reloading Lobby, so the fresh scene picks up the join automatically.
     public static string PendingJoinCode;
@@ -37,12 +39,20 @@ public class NetworkBootstrap : MonoBehaviour
         {
             string code = PendingJoinCode;
             PendingJoinCode = null;
-            _ = JoinWithCodeAsync(code);
+            StartCoroutine(JoinNextFrame(code));
         }
+    }
+
+    // Start order between objects is undefined: waiting a frame lets the offline player load its saved class/color first, so the join doesn't capture (and save) the defaults.
+    private System.Collections.IEnumerator JoinNextFrame(string code)
+    {
+        yield return null;
+        _ = JoinWithCodeAsync(code, alreadyChecked: true);
     }
 
     private void OnDestroy()
     {
+        Player.OnPlayerRegistered -= HideStandInOnLocalSpawn;
         if (NetworkManager.Singleton != null)
             NetworkManager.Singleton.ConnectionApprovalCallback -= ApprovalCheck;
         if (ipInputField != null)
@@ -80,8 +90,8 @@ public class NetworkBootstrap : MonoBehaviour
         _ = HostGameAsync();
     }
 
-    // Shared by the Host button and invites; false on failure or if already hosting.
-    public async System.Threading.Tasks.Task<bool> HostGameAsync()
+    // Shared by the Host button and invites; false on failure or if already hosting. Invites skip the loading screen and leave a frozen stand-in where the player was.
+    public async System.Threading.Tasks.Task<bool> HostGameAsync(bool showLoadingScreen = true)
     {
         if (NetworkManager.Singleton.IsListening)
             return false;
@@ -99,19 +109,23 @@ public class NetworkBootstrap : MonoBehaviour
         if (hostButton != null)
             hostButton.interactable = false;
         SetJoinControlsInteractable(false);
-        LoadingScreenManager.Show("Creating session...");
+        if (showLoadingScreen)
+            LoadingScreenManager.Show("Creating session...");
 
         try
         {
             SyncTransportWebSockets();
             await ServicesAuth.EnsureSignedInAsync();
 
-            (int classIndex, int colorIndex, string playerName, Vector3 position, Quaternion rotation) customization = CaptureOfflinePlayerState();
+            // Must stay before any network call: the host's approval is processed late, after Netcode auto-spawns active scene-placed players (ghost).
+            (int classIndex, int colorIndex, string playerName, Vector3 position, Quaternion rotation) customization = CaptureOfflinePlayerState(leaveStandIn: !showLoadingScreen);
             hostSpawnPosition = customization.position;
             hostSpawnRotation = customization.rotation;
 
             SessionOptions options = new SessionOptions { MaxPlayers = maxPlayers }.WithRelayNetwork();
             IHostSession session = await MultiplayerService.Instance.CreateSessionAsync(options);
+            ActiveSession.Set(session);
+            await PublishCodeAsync(session);
 
             if (gameModeManagerPrefab != null)
             {
@@ -133,6 +147,7 @@ public class NetworkBootstrap : MonoBehaviour
         catch (System.Exception e)
         {
             Debug.LogError($"NetworkBootstrap: failed to host - {e.Message}");
+            RestoreOfflinePlayer();
             if (placeholderText != null)
                 placeholderText.text = originalPlaceholder;
             if (hostButton != null)
@@ -150,7 +165,8 @@ public class NetworkBootstrap : MonoBehaviour
     }
 
     // Shared by the Join button and invites, which supply their own code.
-    public async System.Threading.Tasks.Task<bool> JoinWithCodeAsync(string code)
+    // Checks the code exists before the loading screen and the offline-player swap, unless the caller already did.
+    public async System.Threading.Tasks.Task<bool> JoinWithCodeAsync(string code, bool alreadyChecked = false)
     {
         if (string.IsNullOrEmpty(code))
         {
@@ -163,6 +179,18 @@ public class NetworkBootstrap : MonoBehaviour
 
         SetJoinControlsInteractable(false);
         SetJoinStatus("Searching for the lobby...", isError: false);
+
+        if (!alreadyChecked)
+        {
+            var check = await SessionJoin.CheckAsync(code);
+            if (!check.ok)
+            {
+                SetJoinStatus(check.message, isError: true);
+                SetJoinControlsInteractable(true);
+                return false;
+            }
+        }
+
         LoadingScreenManager.Show("Joining session...");
 
         if (hostButton != null)
@@ -175,7 +203,8 @@ public class NetworkBootstrap : MonoBehaviour
 
             (int classIndex, int colorIndex, string playerName, Vector3 position, Quaternion rotation) customization = CaptureOfflinePlayerState();
 
-            await MultiplayerService.Instance.JoinSessionByCodeAsync(code);
+            ISession joined = await MultiplayerService.Instance.JoinSessionByCodeAsync(code);
+            ActiveSession.Set(joined);
 
             SetJoinStatus(string.Empty, isError: false);
             if (multiplayerPanel.gameObject.activeInHierarchy)
@@ -187,7 +216,8 @@ public class NetworkBootstrap : MonoBehaviour
         catch (System.Exception e)
         {
             Debug.LogError($"NetworkBootstrap: failed to join - {e.Message}");
-            SetJoinStatus("Couldn't find that lobby - check the code and try again.", isError: true);
+            RestoreOfflinePlayer();
+            SetJoinStatus("Couldn't join that lobby, try again.", isError: true);
             if (hostButton != null)
                 hostButton.interactable = true;
             LoadingScreenManager.Hide();
@@ -228,21 +258,30 @@ public class NetworkBootstrap : MonoBehaviour
     }
 
     // Deactivates the offline player before Host/Join, keeping its camera and customization.
-    private (int classIndex, int colorIndex, string playerName, Vector3 position, Quaternion rotation) CaptureOfflinePlayerState()
+    private (int classIndex, int colorIndex, string playerName, Vector3 position, Quaternion rotation) CaptureOfflinePlayerState(bool leaveStandIn = false)
     {
         GameObject offlinePlayer = LocalPlayer.Get();
         if (offlinePlayer == null)
             return (0, 0, string.Empty, Vector3.zero, Quaternion.identity);
 
+        // The saved profile is the source of truth (every class/color/name change and the web profile write it); the live player may not have loaded it yet.
         Player customization = offlinePlayer.GetComponent<Player>();
-        (int classIndex, int colorIndex, string playerName) current = customization != null
-            ? (customization.ClassIndex, customization.ColorIndex, customization.PlayerName)
-            : (0, 0, string.Empty);
+        (int classIndex, int colorIndex, string playerName) current;
+        if (PlayerProfileStore.TryLoad(out int savedClass, out int savedColor, out string savedName))
+            current = (savedClass, savedColor, !string.IsNullOrEmpty(savedName) ? savedName : (customization != null ? customization.PlayerName : string.Empty));
+        else
+            current = customization != null ? (customization.ClassIndex, customization.ColorIndex, customization.PlayerName) : (0, 0, string.Empty);
         Vector3 position = offlinePlayer.transform.position;
         Quaternion rotation = offlinePlayer.transform.rotation;
 
         detachedCameraHolder = PlayerCameraRig.Detach(offlinePlayer.transform);
+        if (leaveStandIn)
+        {
+            standIn = OfflinePlayerStandIn.Create(offlinePlayer);
+            Player.OnPlayerRegistered += HideStandInOnLocalSpawn;
+        }
 
+        capturedOfflinePlayer = offlinePlayer;
         offlinePlayer.SetActive(false);
         return (current.classIndex, current.colorIndex, current.playerName, position, rotation);
     }
@@ -260,6 +299,8 @@ public class NetworkBootstrap : MonoBehaviour
             Destroy(detachedCameraHolder);
             detachedCameraHolder = null;
         }
+        DestroyStandIn();
+        capturedOfflinePlayer = null;
 
         NetworkObject playerObject = NetworkManager.Singleton.LocalClient?.PlayerObject;
         Player customization = playerObject != null ? playerObject.GetComponent<Player>() : null;
@@ -271,5 +312,59 @@ public class NetworkBootstrap : MonoBehaviour
         }
 
         LoadingScreenManager.Hide();
+    }
+
+    // The networked player appears mid-CreateSessionAsync, well before hosting returns, so the frozen stand-in goes the moment it registers.
+    private void HideStandInOnLocalSpawn(Player player)
+    {
+        if (player.IsOwner)
+            DestroyStandIn();
+    }
+
+    private void DestroyStandIn()
+    {
+        Player.OnPlayerRegistered -= HideStandInOnLocalSpawn;
+        if (standIn != null)
+        {
+            standIn.SetActive(false);
+            Destroy(standIn);
+        }
+        standIn = null;
+    }
+
+    // Lets SessionJoin.CheckAsync find this session by code; a failure only means joiners can't pre-check it.
+    private static async System.Threading.Tasks.Task PublishCodeAsync(IHostSession session)
+    {
+        try
+        {
+            session.SetProperty(SessionJoin.CodeProperty, new SessionProperty(session.Code, VisibilityPropertyOptions.Public, PropertyIndex.String1));
+            await session.SavePropertiesAsync();
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"NetworkBootstrap: couldn't publish the session code - {e.Message}");
+        }
+    }
+
+    // A failed Host/Join hands the scene back to the offline player: cameras re-attached, player re-enabled.
+    private void RestoreOfflinePlayer()
+    {
+        DestroyStandIn();
+        if (capturedOfflinePlayer == null || NetworkManager.Singleton.IsListening)
+            return;
+
+        if (detachedCameraHolder != null)
+        {
+            var cameras = new System.Collections.Generic.List<Transform>();
+            foreach (Transform child in detachedCameraHolder.transform)
+                cameras.Add(child);
+            foreach (Transform camera in cameras)
+                camera.SetParent(capturedOfflinePlayer.transform, worldPositionStays: true);
+            Destroy(detachedCameraHolder);
+            detachedCameraHolder = null;
+        }
+
+        capturedOfflinePlayer.SetActive(true);
+        capturedOfflinePlayer = null;
     }
 }

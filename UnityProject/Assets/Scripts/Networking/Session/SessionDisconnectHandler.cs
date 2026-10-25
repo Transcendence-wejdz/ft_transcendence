@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Unity.Netcode;
@@ -28,6 +29,7 @@ public class SessionDisconnectHandler : MonoBehaviour
     public static async Task LeaveSessionsAsync()
     {
         expectedStopUntil = Time.unscaledTime + ExpectedStopWindow;
+        ActiveSession.Clear();
 
         foreach (ISession session in MultiplayerService.Instance.Sessions.Values.ToList())
         {
@@ -80,16 +82,30 @@ public class SessionDisconnectHandler : MonoBehaviour
         StartCoroutine(ReturnToOfflineLobbyNextFrame());
     }
 
-    // Deferred a frame so the scene load doesn't run inside Netcode's own shutdown callback.
+    // Deferred a frame so the scene load doesn't run inside Netcode's own shutdown callback; never waits on the network.
     private IEnumerator ReturnToOfflineLobbyNextFrame()
     {
         yield return null;
-        _ = LeaveStaleSessionsThenLoadLobbyAsync();
+        Debug.Log("SessionDisconnectHandler: session ended under us, returning to the offline Lobby.");
+        ActiveSession.Clear();
+        List<ISession> stale = MultiplayerService.Instance.Sessions.Values.ToList();
+        LoadingScreenManager.LoadScene(LobbySceneName);
+        _ = ForgetSessionsAsync(stale);
     }
 
-    private static async Task LeaveStaleSessionsThenLoadLobbyAsync()
+    // Best-effort cleanup of sessions the SDK still lists after the host is gone (calls can be slow to fail); never touches the NetworkManager, so a new session started meanwhile is safe.
+    private static async Task ForgetSessionsAsync(List<ISession> sessions)
     {
-        await LeaveSessionsAsync();
-        LoadingScreenManager.LoadScene(LobbySceneName);
+        foreach (ISession session in sessions)
+        {
+            try
+            {
+                await session.LeaveAsync();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"SessionDisconnectHandler: stale session cleanup failed - {e.Message}");
+            }
+        }
     }
 }

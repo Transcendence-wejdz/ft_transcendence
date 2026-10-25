@@ -197,7 +197,7 @@ public class GamepadUINavigator : MonoBehaviour
         if (selectable == null || !selectable.IsInteractable())
             return false;
 
-        if (MenuPanel.CurrentOpen != null)
+        if (MenuPanel.CurrentOpen != null && !PauseManager.IsMenuOpen)
             return selected.transform.IsChildOf(MenuPanel.CurrentOpen.transform);
 
         Canvas canvas = selectable.GetComponentInParent<Canvas>();
@@ -222,7 +222,7 @@ public class GamepadUINavigator : MonoBehaviour
     {
         int count = FillBuffer();
         int front = FrontSortingOrder();
-        Transform panel = MenuPanel.CurrentOpen != null ? MenuPanel.CurrentOpen.transform : null;
+        Transform panel = MenuPanel.CurrentOpen != null && !PauseManager.IsMenuOpen ? MenuPanel.CurrentOpen.transform : null;
 
         Selectable best = null;
         for (int i = 0; i < count; i++)
@@ -260,11 +260,18 @@ public class GamepadUINavigator : MonoBehaviour
         return Selectable.AllSelectablesNoAlloc(buffer);
     }
 
-    // Closes the open NPC panel, else steps back from Settings to Pause, else resumes; level-up and game over have no back.
+    // The pause menu sits above every other menu, so it takes Back first; then the open NPC panel; level-up and game over have no back.
     private static void Back()
     {
         if (LevelUpUI.IsShowing || GameOverUI.IsShowing || KeybindsPanelUI.IsBusy)
             return;
+
+        PauseManager pause = FindAnyObjectByType<PauseManager>();
+        if (PauseManager.IsMenuOpen && pause != null)
+        {
+            pause.Back();
+            return;
+        }
 
         if (MenuPanel.CurrentOpen != null)
         {
@@ -272,7 +279,6 @@ public class GamepadUINavigator : MonoBehaviour
             return;
         }
 
-        PauseManager pause = FindAnyObjectByType<PauseManager>();
         if (pause != null)
             pause.Back();
     }

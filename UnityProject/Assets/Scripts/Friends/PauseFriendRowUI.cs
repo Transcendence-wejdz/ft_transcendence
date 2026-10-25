@@ -30,8 +30,8 @@ public class PauseFriendRowUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         online = isOnline;
         nameText.text = displayName;
-        initialText.text = displayName.Length > 0 ? char.ToUpperInvariant(displayName[0]).ToString() : "?";
-        avatar.color = AvatarColor(displayName);
+        initialText.text = FriendAvatar.InitialFor(displayName);
+        avatar.color = FriendAvatar.ColorFor(displayName);
         statusText.text = status;
         statusText.color = statusColor;
 
@@ -76,14 +76,5 @@ public class PauseFriendRowUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
         background.color = Color.Lerp(backgroundColor, hoverBackgroundColor, highlight);
         rowGroup.alpha = online ? 1f : Mathf.Lerp(offlineAlpha, offlineHoverAlpha, highlight);
         inviteGroup.alpha = Mathf.Lerp(idleInviteAlpha, 1f, highlight);
-    }
-
-    // Stable per-name hue, muted so the initial stays readable.
-    private static Color AvatarColor(string displayName)
-    {
-        uint hash = 2166136261;
-        foreach (char c in displayName)
-            hash = (hash ^ c) * 16777619;
-        return Color.HSVToRGB((hash % 360) / 360f, 0.45f, 0.85f);
     }
 }

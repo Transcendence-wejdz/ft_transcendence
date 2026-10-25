@@ -8,13 +8,11 @@ public class ReadyCheckUI : MonoBehaviour
 {
     [SerializeField] private MenuPanel menuPanel;
     [SerializeField] private RectTransform rowTemplate;
-    [SerializeField] private float rowSpacing = 60f;
     [SerializeField] private TextMeshProUGUI modeNameText;
     [SerializeField] private TextMeshProUGUI readyButtonLabel;
 
     [SerializeField] private RectTransform teamButtonContainer;
     [SerializeField] private RectTransform teamButtonTemplate;
-    [SerializeField] private float teamButtonSpacing = 160f;
 
     // Per-mode display metadata keyed by scene name; no TeamNames means no team picker.
     private readonly struct ModeInfo
@@ -137,7 +135,6 @@ public class ReadyCheckUI : MonoBehaviour
             int teamIndex = i;
             RectTransform buttonRect = Instantiate(teamButtonTemplate, teamButtonTemplate.parent);
             buttonRect.gameObject.SetActive(true);
-            buttonRect.anchoredPosition = new Vector2(teamIndex * teamButtonSpacing, buttonRect.anchoredPosition.y);
 
             TextMeshProUGUI label = buttonRect.GetComponentInChildren<TextMeshProUGUI>();
             if (label != null)
@@ -185,7 +182,6 @@ public class ReadyCheckUI : MonoBehaviour
             Destroy(entry.gameObject);
         rows.Remove(player);
         orderedPlayers.Remove(player);
-        RelayoutRows();
     }
 
     private void AddRow(Player player)
@@ -200,19 +196,6 @@ public class ReadyCheckUI : MonoBehaviour
 
         rows[player] = entry;
         orderedPlayers.Add(player);
-        RelayoutRows();
-    }
-
-    private void RelayoutRows()
-    {
-        for (int i = 0; i < orderedPlayers.Count; i++)
-        {
-            if (!rows.TryGetValue(orderedPlayers[i], out ReadyCheckEntryUI entry) || entry == null)
-                continue;
-
-            RectTransform rect = entry.GetComponent<RectTransform>();
-            rect.anchoredPosition = new Vector2(rect.anchoredPosition.x, -i * rowSpacing);
-        }
     }
 
     public void ToggleReady()

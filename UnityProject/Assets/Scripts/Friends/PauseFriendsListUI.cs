@@ -3,13 +3,23 @@ using System.Collections.Generic;
 using TMPro;
 using Unity.Services.Friends.Models;
 using UnityEngine;
+using UnityEngine.UI;
 
-// Pause-menu friends list: Online and Offline sections with presence, and an Invite button on reachable friends.
+// Pause-menu friends list: collapsible Online and Offline sections, each scrolling on its own, with presence and an Invite button on reachable friends.
 public class PauseFriendsListUI : MonoBehaviour
 {
     [SerializeField] private PauseFriendRowUI rowTemplate;
     [SerializeField] private TMP_Text onlineHeader;
     [SerializeField] private TMP_Text offlineHeader;
+    [SerializeField] private Button onlineToggle;
+    [SerializeField] private Button offlineToggle;
+    [SerializeField] private RectTransform onlineArrow;
+    [SerializeField] private RectTransform offlineArrow;
+    [SerializeField] private RectTransform onlineContent;
+    [SerializeField] private RectTransform offlineContent;
+    [SerializeField] private LayoutElement onlineScroll;
+    [SerializeField] private LayoutElement offlineScroll;
+    [SerializeField] private float minScrollHeight = 72f;
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private Color onlineColor = new Color(0.45f, 0.8f, 0.45f, 1f);
     [SerializeField] private Color awayColor = new Color(0.95f, 0.75f, 0.3f, 1f);
@@ -20,17 +30,40 @@ public class PauseFriendsListUI : MonoBehaviour
     [SerializeField] private Color infoColor = new Color(0.7f, 0.69f, 0.66f, 1f);
 
     private readonly List<PauseFriendRowUI> rows = new List<PauseFriendRowUI>();
+    private int sessionSignature;
+
+    // Static so a collapsed section stays collapsed across pause openings for the rest of the run.
+    private static bool onlineCollapsed;
+    private static bool offlineCollapsed;
+    private int onlineCount;
+    private int offlineCount;
 
     private void Awake()
     {
         rowTemplate.gameObject.SetActive(false);
+        onlineToggle.onClick.AddListener(() => { onlineCollapsed = !onlineCollapsed; Rebuild(); });
+        offlineToggle.onClick.AddListener(() => { offlineCollapsed = !offlineCollapsed; Rebuild(); });
     }
 
     private void OnEnable()
     {
         FriendsManager.OnChanged += Rebuild;
         FriendInviteFlow.OnBusyChanged += SetRowsBusy;
+        sessionSignature = FriendsManager.SessionSignature();
+        RefreshArrows();
         Connect();
+    }
+
+    // Someone joining or leaving changes "In your game" and who can be invited, with no presence event to tell us.
+    private void LateUpdate()
+    {
+        int signature = FriendsManager.SessionSignature();
+        if (signature == sessionSignature)
+            return;
+
+        sessionSignature = signature;
+        if (FriendsManager.IsReady)
+            Rebuild();
     }
 
     private void OnDisable()
@@ -59,11 +92,30 @@ public class PauseFriendsListUI : MonoBehaviour
             Rebuild();
     }
 
-    // Reorders headers and rows as siblings: Online header, online rows, Offline header, offline rows.
+    // Arrows and section heights are restored even if building the rows fails mid-way (e.g. while a join swaps the session).
     private void Rebuild()
     {
+        try
+        {
+            BuildRows();
+        }
+        finally
+        {
+            FitSection(onlineScroll, onlineContent, onlineCollapsed, onlineCount);
+            FitSection(offlineScroll, offlineContent, offlineCollapsed, offlineCount);
+            RefreshArrows();
+        }
+        SetRowsBusy(FriendInviteFlow.IsBusy);
+    }
+
+    private void BuildRows()
+    {
+        // Deactivated first: Destroy is deferred, and FitSection measures the content this frame.
         foreach (PauseFriendRowUI row in rows)
+        {
+            row.gameObject.SetActive(false);
             Destroy(row.gameObject);
+        }
         rows.Clear();
 
         var online = new List<Relationship>();
@@ -72,26 +124,49 @@ public class PauseFriendsListUI : MonoBehaviour
             (IsReachable(friend) ? online : offline).Add(friend);
         online.Sort(CompareByName);
         offline.Sort(CompareByName);
+        onlineCount = online.Count;
+        offlineCount = offline.Count;
 
-        int index = 0;
-        onlineHeader.gameObject.SetActive(true);
         onlineHeader.text = $"Online · {online.Count}";
-        onlineHeader.transform.SetSiblingIndex(index++);
-        foreach (Relationship friend in online)
-            AddRow(friend, ref index);
-
-        offlineHeader.gameObject.SetActive(offline.Count > 0);
         offlineHeader.text = $"Offline · {offline.Count}";
-        offlineHeader.transform.SetSiblingIndex(index++);
-        foreach (Relationship friend in offline)
-            AddRow(friend, ref index);
+        offlineToggle.gameObject.SetActive(offline.Count > 0);
+
+        if (!onlineCollapsed)
+            foreach (Relationship friend in online)
+                AddRow(friend, onlineContent);
+        if (!offlineCollapsed)
+            foreach (Relationship friend in offline)
+                AddRow(friend, offlineContent);
 
         if (FriendsManager.IsReady && online.Count + offline.Count == 0)
-            SetStatus("No friends yet. Add some from the Lobby.", isError: false);
-        SetRowsBusy(FriendInviteFlow.IsBusy);
+            SetStatus("No friends yet. Add some by name above.", isError: false);
     }
 
-    private void AddRow(Relationship friend, ref int index)
+    // Driven only by the collapse flags and counts, so it can never disagree with what the sections show; an empty section has nothing to expand, so its arrow is hidden (image only, keeping the title aligned).
+    private void RefreshArrows()
+    {
+        onlineArrow.localRotation = Quaternion.Euler(0f, 0f, onlineCollapsed ? 90f : 0f);
+        offlineArrow.localRotation = Quaternion.Euler(0f, 0f, offlineCollapsed ? 90f : 0f);
+        onlineArrow.GetComponent<Image>().enabled = onlineCount > 0;
+        offlineArrow.GetComponent<Image>().enabled = offlineCount > 0;
+    }
+
+    // Each section asks for its content height; when both don't fit, the layout shrinks them toward minScrollHeight and they scroll on their own.
+    private void FitSection(LayoutElement scroll, RectTransform content, bool collapsed, int count)
+    {
+        bool visible = !collapsed && count > 0;
+        scroll.gameObject.SetActive(visible);
+        if (!visible)
+            return;
+
+        LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+        float height = LayoutUtility.GetPreferredHeight(content);
+        scroll.preferredHeight = height;
+        scroll.minHeight = Mathf.Min(height, minScrollHeight);
+        scroll.flexibleHeight = 0f;
+    }
+
+    private void AddRow(Relationship friend, RectTransform parent)
     {
         string memberId = friend.Member.Id;
         bool reachable = IsReachable(friend);
@@ -101,9 +176,8 @@ public class PauseFriendsListUI : MonoBehaviour
         Color color;
         Describe(friend, inGame, out status, out color);
 
-        PauseFriendRowUI row = Instantiate(rowTemplate, rowTemplate.transform.parent);
+        PauseFriendRowUI row = Instantiate(rowTemplate, parent);
         row.gameObject.SetActive(true);
-        row.transform.SetSiblingIndex(index++);
         Action invite = reachable && !inGame ? () => Invite(memberId) : (Action)null;
         row.Setup(FriendsManager.ShortName(friend.Member.Profile.Name), status, color, reachable, invite);
         rows.Add(row);

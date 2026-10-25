@@ -3,24 +3,37 @@ using System.Collections;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-// Shows a friend's invite with Join/Dismiss; stays on an always-active object.
+// Shows a friend's invite with Join/Decline on its own top canvas (clickable over the pause menu); stays on an always-active object.
 public class InviteToastUI : MonoBehaviour
 {
     [SerializeField] private GameObject content;
+    [SerializeField] private CanvasGroup contentGroup;
+    [SerializeField] private TMP_Text senderText;
     [SerializeField] private TMP_Text messageText;
+    [SerializeField] private Image avatar;
+    [SerializeField] private TMP_Text avatarInitial;
+    [SerializeField] private Image timerFill;
     [SerializeField] private Button joinButton;
+    [SerializeField] private TMP_Text joinLabel;
     [SerializeField] private Button dismissButton;
     [SerializeField] private NetworkBootstrap bootstrap;
     [SerializeField] private float autoHideSeconds = 30f;
+    [SerializeField] private float animationDuration = 0.2f;
+    [SerializeField] private float slideDistance = 30f;
+    [SerializeField] private Color messageColor = new Color(0.7f, 0.69f, 0.66f, 1f);
+    [SerializeField] private Color warningColor = new Color(0.95f, 0.75f, 0.3f, 1f);
 
     private string pendingCode;
-    private Coroutine hideRoutine;
+    private string pendingSenderId;
+    private bool waitingForCode;
+    private Coroutine routine;
+    private Vector2 restPosition;
 
     private void Awake()
     {
+        restPosition = ((RectTransform)content.transform).anchoredPosition;
         content.SetActive(false);
         joinButton.onClick.AddListener(Join);
         dismissButton.onClick.AddListener(Hide);
@@ -49,53 +62,125 @@ public class InviteToastUI : MonoBehaviour
         }
     }
 
+    // A follow-up only completes the open popup from the same friend with its code; it never reopens a dismissed or expired one.
     private void Show(FriendInvite invite)
     {
+        if (invite.FollowUp)
+        {
+            if (content.activeSelf && invite.SenderId == pendingSenderId && !string.IsNullOrEmpty(invite.SessionCode))
+            {
+                pendingCode = invite.SessionCode;
+                if (waitingForCode)
+                    Join();
+            }
+            return;
+        }
+
         bool alreadyInSession = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+        string sender = FriendsManager.ShortName(invite.SenderName);
 
         pendingCode = invite.SessionCode;
-        messageText.text = alreadyInSession
-            ? $"{FriendsManager.ShortName(invite.SenderName)} invited you - joining will leave your current game"
-            : $"{FriendsManager.ShortName(invite.SenderName)} invited you to play";
+        pendingSenderId = invite.SenderId;
+        waitingForCode = false;
+        joinLabel.text = "Join";
+        joinButton.interactable = true;
+        senderText.text = sender;
+        avatar.color = FriendAvatar.ColorFor(sender);
+        avatarInitial.text = FriendAvatar.InitialFor(sender);
+        messageText.text = alreadyInSession ? "Joining leaves your current game" : "invited you to play";
+        messageText.color = alreadyInSession ? warningColor : messageColor;
+
         content.SetActive(true);
-
-        if (hideRoutine != null)
-            StopCoroutine(hideRoutine);
-        hideRoutine = StartCoroutine(HideAfterDelay());
-    }
-
-    private IEnumerator HideAfterDelay()
-    {
-        yield return new WaitForSecondsRealtime(autoHideSeconds);
-        Hide();
+        Restart(ShowRoutine());
     }
 
     private void Hide()
     {
-        if (hideRoutine != null)
-        {
-            StopCoroutine(hideRoutine);
-            hideRoutine = null;
-        }
-        content.SetActive(false);
+        if (content.activeSelf)
+            Restart(HideRoutine());
     }
 
-    // Closes an existing session first so the invite always wins; shows the loading screen manually since LoadScene() would race the reload.
+    private void Restart(IEnumerator next)
+    {
+        if (routine != null)
+            StopCoroutine(routine);
+        routine = StartCoroutine(next);
+    }
+
+    // Unscaled time throughout, since the pause menu may have frozen timeScale.
+    private IEnumerator ShowRoutine()
+    {
+        yield return Animate(contentGroup.alpha, 1f);
+        float shownAt = Time.unscaledTime;
+        while (Time.unscaledTime - shownAt < autoHideSeconds)
+        {
+            timerFill.fillAmount = 1f - (Time.unscaledTime - shownAt) / autoHideSeconds;
+            yield return null;
+        }
+        yield return HideRoutine();
+    }
+
+    private IEnumerator HideRoutine()
+    {
+        yield return Animate(contentGroup.alpha, 0f);
+        content.SetActive(false);
+        routine = null;
+    }
+
+    // Slides down from above while fading in, and back up while fading out; buttons only take clicks once fully shown.
+    private IEnumerator Animate(float from, float to)
+    {
+        contentGroup.interactable = false;
+        contentGroup.blocksRaycasts = to > 0f;
+        RectTransform rect = (RectTransform)content.transform;
+        float t = 0f;
+        while (t < animationDuration)
+        {
+            t += Time.unscaledDeltaTime;
+            float eased = 1f - Mathf.Pow(1f - Mathf.Clamp01(t / animationDuration), 3f);
+            float alpha = Mathf.Lerp(from, to, eased);
+            contentGroup.alpha = alpha;
+            rect.anchoredPosition = restPosition + Vector2.up * slideDistance * (1f - alpha);
+            yield return null;
+        }
+        contentGroup.alpha = to;
+        rect.anchoredPosition = restPosition + Vector2.up * slideDistance * (1f - to);
+        contentGroup.interactable = to > 0f;
+        if (to > 0f)
+            timerFill.fillAmount = 1f;
+    }
+
+    // Leaves any session first so the invite always wins; without a NetworkBootstrap here (e.g. solo in a mode scene) it joins from a fresh Lobby. Waits for the code if the host's session is still being created.
     private async void Join()
     {
-        string code = pendingCode;
-        Hide();
-
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        if (string.IsNullOrEmpty(pendingCode))
         {
-            await SessionDisconnectHandler.LeaveSessionsAsync();
-            NetworkBootstrap.PendingJoinCode = code;
-
-            LoadingScreenManager.Show("Joining session...");
-            _ = SceneManager.LoadSceneAsync("Lobby");
+            waitingForCode = true;
+            joinButton.interactable = false;
+            joinLabel.text = "...";
+            messageText.text = "Waiting for the host...";
+            messageText.color = messageColor;
             return;
         }
 
-        await bootstrap.JoinWithCodeAsync(code);
+        string code = pendingCode;
+        waitingForCode = false;
+        joinButton.interactable = false;
+        joinLabel.text = "...";
+
+        var check = await SessionJoin.CheckAsync(code);
+        if (this == null)
+            return;
+        if (!check.ok)
+        {
+            messageText.text = check.message;
+            messageText.color = warningColor;
+            joinLabel.text = "Join";
+            joinButton.interactable = true;
+            return;
+        }
+
+        Hide();
+        await SessionJoin.JoinAsync(code, bootstrap, alreadyChecked: true);
     }
 }

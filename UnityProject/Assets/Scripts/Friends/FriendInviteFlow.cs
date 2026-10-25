@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using UnityEngine;
 
-// Shared invite flow for every friends UI: hosts a session first when solo, then sends the invite, one invite at a time.
+// Shared invite flow for every friends UI: when solo, the friend is told instantly while our session is created in the background (no loading screen), then the code follows; one invite at a time.
 public static class FriendInviteFlow
 {
     public static bool IsBusy { get; private set; }
@@ -19,18 +19,32 @@ public static class FriendInviteFlow
         SetBusy(true);
         try
         {
+            bool notified = false;
             if (string.IsNullOrEmpty(FriendsManager.CurrentSessionCode))
             {
                 NetworkBootstrap bootstrap = UnityEngine.Object.FindAnyObjectByType<NetworkBootstrap>(FindObjectsInactive.Include);
                 if (bootstrap == null)
                     return (false, "Can't host from here.");
 
-                progress?.Invoke("Creating your game...");
-                if (!await bootstrap.HostGameAsync())
+                progress?.Invoke("Invite sent, creating your game...");
+                Task notify = FriendsManager.SendPendingInviteAsync(memberId);
+                Task<bool> host = bootstrap.HostGameAsync(showLoadingScreen: false);
+
+                try
+                {
+                    await notify;
+                    notified = true;
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"FriendInviteFlow: instant invite failed, the code invite will still be sent - {e.Message}");
+                }
+
+                if (!await host)
                     return (false, "Couldn't start hosting, try again.");
             }
 
-            await FriendsManager.InviteAsync(memberId);
+            await FriendsManager.InviteAsync(memberId, followUp: notified);
             return (true, "Invite sent.");
         }
         catch (Exception e)

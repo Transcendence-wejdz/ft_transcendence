@@ -1,18 +1,25 @@
 using System.Collections;
 using UnityEngine;
 
-// Entrance played every time the panel is shown (backdrop fades in, content slides in from the left, items fade in one after another), reversed by Hide.
+// Entrance played every time the panel is shown (backdrop fades in, blocks slide in from their side, items fade in one after another), reversed by Hide.
 public class PanelSlideIn : MonoBehaviour
 {
+    [System.Serializable]
+    private class Slide
+    {
+        public RectTransform target;
+        public Vector2 from = Vector2.left;
+        [System.NonSerialized] public Vector2 rest;
+    }
+
     [SerializeField] private CanvasGroup backdrop;
-    [SerializeField] private RectTransform slideTarget;
+    [SerializeField] private Slide[] slides;
     [SerializeField] private CanvasGroup[] items;
     [SerializeField] private float slideDistance = 60f;
     [SerializeField] private float duration = 0.3f;
     [SerializeField] private float itemFade = 0.2f;
     [SerializeField] private float itemStagger = 0.05f;
 
-    private Vector2 restPosition;
     private bool hasRestPosition;
     private float time;
     private bool closing;
@@ -50,7 +57,8 @@ public class PanelSlideIn : MonoBehaviour
     {
         if (!hasRestPosition)
         {
-            restPosition = slideTarget.anchoredPosition;
+            foreach (Slide slide in slides)
+                slide.rest = slide.target.anchoredPosition;
             hasRestPosition = true;
         }
         time = 0f;
@@ -93,7 +101,8 @@ public class PanelSlideIn : MonoBehaviour
         float eased = EaseOut(time / duration);
         if (backdrop != null)
             backdrop.alpha = eased;
-        slideTarget.anchoredPosition = restPosition + Vector2.left * slideDistance * (1f - eased);
+        foreach (Slide slide in slides)
+            slide.target.anchoredPosition = slide.rest + slide.from.normalized * slideDistance * (1f - eased);
 
         for (int i = 0; i < items.Length; i++)
         {

@@ -36,6 +36,20 @@ public static class FriendsManager
     public static IReadOnlyList<Relationship> Incoming => IsReady ? FriendsService.Instance.IncomingFriendRequests : Empty;
     public static IReadOnlyList<Relationship> Outgoing => IsReady ? FriendsService.Instance.OutgoingFriendRequests : Empty;
 
+    // Connects at boot in any scene so friends lists open already filled; failures are retried by the lists themselves.
+    [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static async void Preload()
+    {
+        try
+        {
+            await InitializeAsync();
+        }
+        catch (Exception e)
+        {
+            UnityEngine.Debug.LogWarning($"FriendsManager: preload failed, friends lists will retry - {e.Message}");
+        }
+    }
+
     // Safe to call repeatedly; concurrent callers share one init.
     public static Task InitializeAsync()
     {

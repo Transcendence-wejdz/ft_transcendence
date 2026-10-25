@@ -53,6 +53,16 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 	});
 	if (!target) return json({ success: false, error: 'Player not found' }, { status: 404 });
 	if (target.id === locals.user.id) return json({ success: false, error: 'You cannot add yourself' }, { status: 400 });
+	const block = await prisma.block.findFirst({
+		where: {
+			OR: [
+				{ blockerId: locals.user.id, blockedId: target.id },
+				{ blockerId: target.id, blockedId: locals.user.id }
+			]
+		},
+		select: { id: true }
+	});
+	if (block) return json({ success: false, error: 'Cannot send a friend request to this player' }, { status: 403 });
 
 	const userLowId = locals.user.id < target.id ? locals.user.id : target.id;
 	const userHighId = locals.user.id < target.id ? target.id : locals.user.id;

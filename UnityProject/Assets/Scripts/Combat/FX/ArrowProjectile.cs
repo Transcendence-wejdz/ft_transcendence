@@ -28,6 +28,9 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
     {
         owner = attacker;
         hasHitbox = hasHitboxValue;
+        Color tint = CharacterCatalog.FxColorOf(attacker);
+        (fxSpriteRenderer != null ? fxSpriteRenderer : GetComponent<SpriteRenderer>()).color = tint;
+        FxGlow.Setup(gameObject, attacker, kit, ability);
         damage = ability switch
         {
             AbilityType.Special => kit.SpecialDamage,

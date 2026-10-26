@@ -21,6 +21,9 @@ public class SlashAttackFX : MonoBehaviour, IAttackFX
     public void Init(GameObject attacker, bool hasHitbox, ClassKit kit, AbilityType ability, float damageMultiplier)
     {
         owner = attacker;
+        Color tint = CharacterCatalog.FxColorOf(attacker);
+        GetComponent<SpriteRenderer>().color = tint;
+        FxGlow.Setup(gameObject, attacker, kit, ability);
         bool followCaster;
         (damage, followCaster) = ability switch
         {

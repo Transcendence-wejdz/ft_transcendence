@@ -16,6 +16,7 @@ public class LeaderboardUI : MonoBehaviour
     [SerializeField] private Button[] modeTabs;
     [SerializeField] private TMP_Text modeTitle;
     [SerializeField] private bool columns;
+    [SerializeField] private TMP_FontAsset rankFont;
 
     private static readonly string[] ModeNames = { "Solo", "Coop", "Two vs Two", "Three vs One" };
 
@@ -25,6 +26,8 @@ public class LeaderboardUI : MonoBehaviour
     // Tab index matches the LeaderboardMode value.
     void Awake()
     {
+        if (rankFont != null)
+            MaterialReferenceManager.AddFontAsset(rankFont);
         for (int i = 0; i < modeTabs.Length; i++)
         {
             LeaderboardMode tabMode = (LeaderboardMode)i;
@@ -138,8 +141,8 @@ public class LeaderboardUI : MonoBehaviour
         return rows;
     }
 
-    // Columns mode lays rank, names and score out with TMP pos tags for the Lobby table.
-    private static string FormatRows(List<TeamRow> rows, bool columns)
+    // Columns mode lays rank, names and score out with TMP pos tags for the Lobby table; the rank uses rankFont when set.
+    private string FormatRows(List<TeamRow> rows, bool columns)
     {
         if (rows.Count == 0)
             return "No scores yet";
@@ -147,8 +150,9 @@ public class LeaderboardUI : MonoBehaviour
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < rows.Count; i++)
         {
+            string rank = rankFont != null ? $"<font=\"{rankFont.name}\">{i + 1}</font>" : $"{i + 1}";
             string line = columns
-                ? $"{i + 1}<pos=10%>{rows[i].names}<pos=82%>{rows[i].score:0}"
+                ? $"{rank}<pos=10%>{rows[i].names}<pos=82%>{rows[i].score:0}"
                 : $"{i + 1}. {rows[i].names}  {rows[i].score:0}";
             builder.AppendLine(rows[i].isMine ? $"<color=#FFD973>{line}</color>" : line);
         }

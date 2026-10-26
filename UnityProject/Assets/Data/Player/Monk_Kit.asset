@@ -16,6 +16,10 @@ MonoBehaviour:
   healthRegenPerSecond: 2
   maxMana: 75
   manaRegenPerSecond: 2
+  dodgeCharges: 2
+  dodgeRechargeSeconds: 3
+  dodgeDistance: 2.5
+  dodgeDuration: 0.2
   attackCooldown: 1
   attackFxPrefab: {fileID: 4015171861668935641, guid: 4dcb863a98523a8de8ac257b0da82862, type: 3}
   attackFxDistance: 1
@@ -26,6 +30,9 @@ MonoBehaviour:
   attackSize: 1.5
   attackIgnoreAimRotation: 0
   attackFollowCaster: 1
+  attackGlowIntensity: 1.2
+  attackGlowSize: 1.1
+  attackGlowDuration: 0
   hasProjectile: 1
   projectileSpeed: 10
   projectileMaxDistance: 8
@@ -41,6 +48,9 @@ MonoBehaviour:
   specialSize: 1
   specialIgnoreAimRotation: 0
   specialFollowCaster: 1
+  specialGlowIntensity: 1.2
+  specialGlowSize: 1.1
+  specialGlowDuration: 0.42
   ultimateCooldown: 4
   ultimateManaCost: 0
   ultimateFxPrefab: {fileID: 0}
@@ -52,6 +62,9 @@ MonoBehaviour:
   ultimateSize: 1
   ultimateIgnoreAimRotation: 0
   ultimateFollowCaster: 1
+  ultimateGlowIntensity: 1.2
+  ultimateGlowSize: 1.1
+  ultimateGlowDuration: 0.42
   hasShield: 0
   shieldHoldDuration: 10
   shieldHealth: 150
@@ -60,7 +73,3 @@ MonoBehaviour:
   shieldPushInterval: 0.5
   shieldTurnSpeed: 120
   shieldHoldAnimation: 0
-  dodgeCharges: 2
-  dodgeRechargeSeconds: 3
-  dodgeDistance: 2.5
-  dodgeDuration: 0.2

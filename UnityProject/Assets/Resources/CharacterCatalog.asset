@@ -115,3 +115,21 @@ MonoBehaviour:
   - {fileID: 21300000, guid: ea52b89b9810e4968a3469259847eb2e, type: 3}
   - {fileID: 21300000, guid: 35c505eaaaff643fe930fee0bae3d49a, type: 3}
   - {fileID: 21300000, guid: 793e8df8c7f754aa6a01497c873f7310, type: 3}
+  accentColorsByColor:
+  - {r: 0.75, g: 0.75, b: 0.75, a: 1}
+  - {r: 0.45, g: 0.65, b: 1, a: 1}
+  - {r: 0.8, g: 0.55, b: 1, a: 1}
+  - {r: 1, g: 0.45, b: 0.42, a: 1}
+  - {r: 1, g: 0.86, b: 0.35, a: 1}
+  fxColorsByColor:
+  - {r: 0.3, g: 0.3, b: 0.35, a: 1}
+  - {r: 0.24, g: 0.47, b: 1, a: 1}
+  - {r: 0.65, g: 0.3, b: 1, a: 1}
+  - {r: 1, g: 0.23, b: 0.19, a: 1}
+  - {r: 1, g: 0.8, b: 0.1, a: 1}
+  fxLightColorsByColor:
+  - {r: 1, g: 1, b: 1, a: 1}
+  - {r: 0.24, g: 0.47, b: 1, a: 1}
+  - {r: 0.65, g: 0.3, b: 1, a: 1}
+  - {r: 1, g: 0.23, b: 0.19, a: 1}
+  - {r: 1, g: 0.8, b: 0.1, a: 1}

@@ -35,6 +35,12 @@ export const SOCIAL_ERROR_CODES = [
     'blocked'                 // 403: one player blocked the other, never saying which
 ] as const;
 
+// Codes of the chat routes.
+export const CHAT_ERROR_CODES = [
+    'message_empty',   // 400: nothing left once spaces are trimmed
+    'message_too_long' // 400: longer than MESSAGE_MAX_LENGTH
+] as const;
+
 
 // ---- Users ----
 

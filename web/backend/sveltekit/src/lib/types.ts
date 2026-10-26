@@ -23,6 +23,19 @@ export const GENERIC_ERROR_CODES = [
     'unknown'            // 500, or a code this front does not know yet
 ] as const;
 
+// Codes of the friends and block routes.
+export const SOCIAL_ERROR_CODES = [
+    'player_not_found',       // 404: no player with this name or id
+    'cannot_add_yourself',    // 400
+    'cannot_block_yourself',  // 400
+    'already_friends',        // 409
+    'request_already_sent',   // 409: you already have a pending request to this player
+    'relationship_not_found', // 404: no such request or friendship, or not one of yours
+    'not_friends',            // 403: the action needs a friendship, e.g. sending a message
+    'blocked'                 // 403: one player blocked the other, never saying which
+] as const;
+
+
 // ---- Users ----
 
 // ---- Friends ----

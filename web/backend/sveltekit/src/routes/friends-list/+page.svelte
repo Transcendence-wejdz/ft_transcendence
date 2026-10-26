@@ -2,6 +2,7 @@
     import { onMount } from 'svelte';
 
     type Friend = {
+        relationshipId: string;
         id: string;
         displayName: string;
         color: string;
@@ -155,7 +156,7 @@
                             class="button secondary"
                             type="button"
                             onclick={() => {
-                                void handleRelationship('remove', friend.id);
+                                void handleRelationship('remove', friend.relationshipId);
                             }}
                         >
                             Remove

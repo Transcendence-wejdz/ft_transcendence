@@ -53,13 +53,6 @@ export const PATCH: RequestHandler = async ({ locals, params, request }) => {
 	return json({ success: true });
 };
 
-const isUuid = (value: string) => /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(value);
-
-async function getTarget(playerId: string) {
-	if (!isUuid(playerId)) return null;
-	return prisma.user.findUnique({ where: { id: playerId }, select: { id: true } });
-}
-
 export const DELETE: RequestHandler = async ({ locals, params }) => {
     if (!locals.user) {
         return json({ success: false, error: 'Not authenticated' }, { status: 401 });

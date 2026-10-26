@@ -26,11 +26,16 @@ export const GET: RequestHandler = async ({ locals }) => {
 
 	const friends = rows
 		.filter((row) => row.relationStatus === 'ACCEPTED')
-		.map((row) => row.userLowId === locals.user!.id ? row.userHigh : row.userLow);
+		.map((row) => ({
+    relationshipId: row.id,
+    ...(row.userLowId === locals.user!.id ? row.userHigh : row.userLow)
+	}));
 	const requests = rows
 		.filter((row) => row.relationStatus === 'PENDING' && row.requesterId !== locals.user!.id)
-		.map((row) => ({ relationshipId: row.id, ...(row.userLowId === locals.user!.id ? row.userHigh : row.userLow) }));
-
+	.map((row) => ({
+    relationshipId: row.id,
+    ...(row.userLowId === locals.user!.id ? row.userHigh : row.userLow)
+	}));
 	return json({ success: true, friends, requests }, { headers: { 'Cache-Control': 'no-store' } });
 };
 

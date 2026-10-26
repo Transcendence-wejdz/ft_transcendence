@@ -6,6 +6,12 @@
 
 // ---- Base ----
 
+// Postgres uuid, the id of every database row.
+export type Uuid = string;
+
+// A date sent as JSON text, e.g. "2026-10-26T20:15:00.000Z". Read it with new Date(value).
+export type IsoDate = string;
+
 // ---- API responses ----
 
 // ---- Users ----

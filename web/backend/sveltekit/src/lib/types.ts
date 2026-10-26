@@ -14,6 +14,15 @@ export type IsoDate = string;
 
 // ---- API responses ----
 
+// Codes any route can return. The front translates each one with the i18n key error_<code>.
+export const GENERIC_ERROR_CODES = [
+    'not_authenticated', // 401: no session, or it expired
+    'invalid_json',      // 400: the body is not JSON
+    'invalid_body',      // 400: valid JSON, but fields are missing or have the wrong type
+    'rate_limited',      // 429: too many requests
+    'unknown'            // 500, or a code this front does not know yet
+] as const;
+
 // ---- Users ----
 
 // ---- Friends ----

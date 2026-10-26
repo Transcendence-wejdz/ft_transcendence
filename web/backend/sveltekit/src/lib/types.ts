@@ -41,8 +41,26 @@ export const CHAT_ERROR_CODES = [
     'message_too_long' // 400: longer than MESSAGE_MAX_LENGTH
 ] as const;
 
+// Codes of the auth, account and settings routes.
+export const ACCOUNT_ERROR_CODES = [
+    'invalid_credentials', // 401: unknown email or name, or wrong password, never saying which
+    'invalid_email',       // 400
+    'invalid_name',        // 400: breaks the display name rules
+    'invalid_password',    // 400: not 8 to 128 characters
+    'invalid_avatar',      // 400: not a PNG, JPG, WebP or GIF under 500 KB
+    'email_taken',         // 409
+    'name_taken',          // 409
+    'wrong_password',      // 403: the current password, asked before changing email or password
+    'invalid_totp_code',   // 401: wrong or expired 2FA code
+    'oauth_denied',        // sent as /login?error=oauth_denied: the player refused on the 42 page
+    'oauth_failed'         // sent as /login?error=oauth_failed: 42 did not answer, or the link expired
+] as const;
 
 // ---- Users ----
+
+// TODO:    Rules of login differ depending of the route, we need to choose between:
+// TODO:    - /api/register that allow 3 to 20 char (letters, numbers, '_', '-'))
+// TODO:    - settings (in validation.ts) that allow 2 to 24 char and autorize space
 
 // ---- Friends ----
 

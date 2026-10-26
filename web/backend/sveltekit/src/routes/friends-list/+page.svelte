@@ -2,18 +2,18 @@
     import { onMount } from 'svelte';
 
     type Friend = {
-        relationshipId: string;
         id: string;
         displayName: string;
         color: string;
         online: boolean;
+        relationshipId: string;
     };
 
     type FriendRequest = {
-        relationshipId: string;
         id: string;
         displayName: string;
         color: string;
+        relationshipId: string;
     };
 
     let search = $state('');
@@ -56,6 +56,23 @@
             await updateRelationship(relationshipId, action === 'accept' ? 'PATCH' : 'DELETE', action === 'accept' ? { action } : undefined);
         } catch (cause) {
             error = cause instanceof Error ? cause.message : 'Could not update relationship.';
+        } finally {
+            loading = false;
+        }
+    }
+
+    async function handleBlock(playerId: string) {
+        error = '';
+        loading = true;
+        try {
+            const response = await fetch(`/api/friends-list/players/${playerId}/block`, {
+                method: 'POST'
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error ?? 'Could not block player.');
+            await loadFriends();
+        } catch (cause) {
+            error = cause instanceof Error ? cause.message : 'Could not block player.';
         } finally {
             loading = false;
         }
@@ -114,6 +131,10 @@
         </p>
     </header>
 
+    {#if error}
+        <p class="error" role="alert">{error}</p>
+    {/if}
+
     <section class="panel">
         <div class="section-heading">
             <div>
@@ -155,11 +176,20 @@
                         <button
                             class="button secondary"
                             type="button"
+                            disabled={loading}
                             onclick={() => {
                                 void handleRelationship('remove', friend.relationshipId);
                             }}
                         >
                             Remove
+                        </button>
+                        <button
+                            class="button secondary"
+                            type="button"
+                            disabled={loading}
+                            onclick={() => void handleBlock(friend.id)}
+                        >
+                            Block
                         </button>
                     </li>
                 {/each}
@@ -202,6 +232,7 @@
                             <button
                                 class="button"
                                 type="button"
+                                disabled={loading}
                                 onclick={() => void handleRelationship('accept', request.relationshipId)}
                             >
                                 Accept
@@ -209,9 +240,18 @@
                             <button
                                 class="button secondary"
                                 type="button"
+                                disabled={loading}
                                 onclick={() => void handleRelationship('decline', request.relationshipId)}
                             >
                                 Decline
+                            </button>
+                            <button
+                                class="button secondary"
+                                type="button"
+                                disabled={loading}
+                                onclick={() => void handleBlock(request.id)}
+                            >
+                                Block
                             </button>
                         </div>
                     </li>
@@ -238,10 +278,6 @@
                 autocomplete="off"
                 required
             />
-
-            {#if error}
-                <p class="error" role="alert">{error}</p>
-            {/if}
 
             <button class="button" type="submit" disabled={loading}>
                 {loading ? 'Sending request...' : 'Send friend request'}

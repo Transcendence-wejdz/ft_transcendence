@@ -56,6 +56,17 @@ export const ACCOUNT_ERROR_CODES = [
     'oauth_failed'         // sent as /login?error=oauth_failed: 42 did not answer, or the link expired
 ] as const;
 
+// Every error code the API can send.
+export const API_ERROR_CODES = [
+    ...GENERIC_ERROR_CODES,
+    ...SOCIAL_ERROR_CODES,
+    ...CHAT_ERROR_CODES,
+    ...ACCOUNT_ERROR_CODES
+] as const;
+
+export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
+
+
 // ---- Users ----
 
 // TODO:    Rules of login differ depending of the route, we need to choose between:

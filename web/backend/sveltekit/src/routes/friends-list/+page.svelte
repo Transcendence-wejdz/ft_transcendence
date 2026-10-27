@@ -16,6 +16,11 @@
         relationshipId: string;
     };
 
+    type BlockedPlayer = {
+        id: string;
+        displayName: string;
+    };
+
     let search = $state('');
     let identifier = $state('');
     let error = $state('');
@@ -23,6 +28,7 @@
 
     let friends = $state<Friend[]>([]);
     let requests = $state<FriendRequest[]>([]);
+    let blockedPlayers = $state<BlockedPlayer[]>([]);
 
     async function loadFriends() {
         const response = await fetch('/api/friends-list');
@@ -32,9 +38,16 @@
         requests = result.requests;
     }
 
+    async function loadBlockedPlayers() {
+        const response = await fetch('/api/friends-list/blocked');
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error ?? 'Could not load blocked players.');
+        blockedPlayers = result.blockedPlayers;
+    }
+
     onMount(() => {
         loading = true;
-        loadFriends()
+        Promise.all([loadFriends(), loadBlockedPlayers()])
             .catch((cause: unknown) => { error = cause instanceof Error ? cause.message : 'Could not load friends.'; })
             .finally(() => { loading = false; });
     });
@@ -70,9 +83,26 @@
             });
             const result = await response.json();
             if (!response.ok) throw new Error(result.error ?? 'Could not block player.');
-            await loadFriends();
+            await Promise.all([loadFriends(), loadBlockedPlayers()]);
         } catch (cause) {
             error = cause instanceof Error ? cause.message : 'Could not block player.';
+        } finally {
+            loading = false;
+        }
+    }
+
+    async function handleUnblock(playerId: string) {
+        error = '';
+        loading = true;
+        try {
+            const response = await fetch(`/api/friends-list/players/${playerId}/block`, {
+                method: 'DELETE'
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error ?? 'Could not unblock player.');
+            await loadBlockedPlayers();
+        } catch (cause) {
+            error = cause instanceof Error ? cause.message : 'Could not unblock player.';
         } finally {
             loading = false;
         }
@@ -198,6 +228,40 @@
             <p class="empty-state">
                 {search ? 'No friends match your search.' : 'Your friend list is empty.'}
             </p>
+        {/if}
+    </section>
+
+    <section class="panel">
+        <div class="section-heading">
+            <div>
+                <h2>Blocked players</h2>
+                <p class="section-description">
+                    {blockedPlayers.length} {blockedPlayers.length === 1 ? 'player' : 'players'} blocked
+                </p>
+            </div>
+        </div>
+
+        {#if blockedPlayers.length > 0}
+            <ul class="friend-list">
+                {#each blockedPlayers as player (player.id)}
+                    <li class="friend-item">
+                        <div class="friend-info">
+                            <span class="friend-name">{player.displayName}</span>
+                            <span class="friend-status">Blocked by you</span>
+                        </div>
+                        <button
+                            class="button secondary"
+                            type="button"
+                            disabled={loading}
+                            onclick={() => void handleUnblock(player.id)}
+                        >
+                            Unblock
+                        </button>
+                    </li>
+                {/each}
+            </ul>
+        {:else}
+            <p class="empty-state">You have not blocked anyone.</p>
         {/if}
     </section>
 

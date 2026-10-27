@@ -129,6 +129,10 @@ export type CurrentUser = UserSummary & {
 };
 
 // ---- Friends ----
+// The link between the logged-in player and another one, seen from the logged-in side.
+// The database only stores PENDING or ACCEPTED: the API works out sent or received from requesterId.
+// blocked: either player blocked the other, never saying which (like the blocked error code).
+export type RelationshipStatus = 'none' | 'friends' | 'request_sent' | 'request_received' | 'blocked';
 
 // ---- Chat ----
 

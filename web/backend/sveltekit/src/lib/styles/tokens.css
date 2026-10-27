@@ -6,4 +6,11 @@
 	--color-bg-raised: #34304a;
 	--color-bg-raised-hover: #403b5a;
 	--color-border-subtle: #3d3950;
+
+	/* Parchment */
+	--color-parchment: #f3e6c6;
+	--color-parchment-text: #2a1a0c;
+	--color-parchment-text-muted: #5e4a33;
+	--color-input-bg: #fffaf0;
 }
+

@@ -118,13 +118,13 @@ export type UserSummary = {
 export type OnlineStatus = 'online' | 'in_game' | 'offline';
 
 // The logged-in player, from /api/me: their summary plus private fields only they may see.
-// TODO:    change the return of /api/me from snake_case to camelCase so it matches the Prisma names:
+// TODO:    change the return of /api/me from snake_case to camelCase so it matches the prisma name: 
 // TODO:    display_name -> displayName and avatar_url -> avatarUrl
 export type CurrentUser = UserSummary & {
     email: string;
     class: PlayerClass;
     gold: number;
-    authProvider: 'password' | '42'; // how the account signs in; '42' has no password to change
+    authProvider: 'password' | '42';
     hasTwoFactor: boolean;
 };
 

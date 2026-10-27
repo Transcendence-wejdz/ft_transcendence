@@ -31,5 +31,12 @@
 	--color-online: #7cd65a;
 	--color-ribbon: #8a4f2a;
 	--color-focus: #2f6fd6;
+
+	/* Team colors */
+	--color-team-black: #171923;
+	--color-team-blue: #3985f6;
+	--color-team-purple: #9667e8;
+	--color-team-red: #ec5a61;
+	--color-team-yellow: #e7bd48;
 }
 

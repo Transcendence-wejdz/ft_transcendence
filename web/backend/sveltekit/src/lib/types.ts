@@ -134,6 +134,12 @@ export type CurrentUser = UserSummary & {
 // blocked: either player blocked the other, never saying which (like the blocked error code).
 export type RelationshipStatus = 'none' | 'friends' | 'request_sent' | 'request_received' | 'blocked';
 
+// A row of the friends list. relationshipId (the Friendship row) is what accept and remove send back.
+export type Friend = UserSummary & {
+    relationshipId: Uuid;
+    onlineStatus: OnlineStatus; // value at page load; the presence store keeps it live after that
+};
+
 // ---- Chat ----
 
 // ---- Notifications ----

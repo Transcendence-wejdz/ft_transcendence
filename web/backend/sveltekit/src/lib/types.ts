@@ -114,6 +114,9 @@ export type UserSummary = {
     avatarUrl: string | null; // a URL to load the picture from, never the picture itself
 };
 
+// The dot on a player's avatar. in_game: has the game page open. Worked out by the WebSocket server.
+export type OnlineStatus = 'online' | 'in_game' | 'offline';
+
 // ---- Friends ----
 
 // ---- Chat ----

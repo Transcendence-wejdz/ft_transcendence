@@ -78,6 +78,12 @@ export type ApiSuccess<T extends object = object> = { success: true } & T;
 // What a route sends back: check success before reading the data.
 export type ApiResponse<T extends object = object> = ApiSuccess<T> | ApiFailure;
 
+// One page of a long list (messages, match history). Send nextCursor back for the next page; null means the end.
+export type Page<T> = {
+    items: T[];
+    nextCursor: string | null;
+};
+
 // ---- Users ----
 
 // TODO:    Rules of login differ depending of the route, we need to choose between:

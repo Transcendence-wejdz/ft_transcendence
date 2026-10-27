@@ -22,6 +22,36 @@ public class CharacterCatalog : ScriptableObject
     [SerializeField] private ColorVariant[] colorVariants;
     [SerializeField] private Sprite[] backgroundSpritesByColor;
 
+    // Indexed by ColorIndex: Black, Blue, Purple, Red, Yellow; light tints readable as name tag text.
+    [SerializeField] private Color[] accentColorsByColor =
+    {
+        new Color(0.75f, 0.75f, 0.75f),
+        new Color(0.45f, 0.65f, 1f),
+        new Color(0.8f, 0.55f, 1f),
+        new Color(1f, 0.45f, 0.42f),
+        new Color(1f, 0.86f, 0.35f),
+    };
+
+    // Same order, saturated so the tint still reads on white ability FX.
+    [SerializeField] private Color[] fxColorsByColor =
+    {
+        new Color(0.3f, 0.3f, 0.35f),
+        new Color(0.24f, 0.47f, 1f),
+        new Color(0.65f, 0.3f, 1f),
+        new Color(1f, 0.23f, 0.19f),
+        new Color(1f, 0.8f, 0.1f),
+    };
+
+    // Same order, color of the light under ability FX; Black glows white since a dark light shows nothing.
+    [SerializeField] private Color[] fxLightColorsByColor =
+    {
+        Color.white,
+        new Color(0.24f, 0.47f, 1f),
+        new Color(0.65f, 0.3f, 1f),
+        new Color(1f, 0.23f, 0.19f),
+        new Color(1f, 0.8f, 0.1f),
+    };
+
     [System.Serializable]
     private class ColorVariant
     {
@@ -61,6 +91,50 @@ public class CharacterCatalog : ScriptableObject
             return null;
 
         return backgroundSpritesByColor[colorIndex];
+    }
+
+    public Color GetAccentColor(int colorIndex)
+    {
+        if (colorIndex < 0 || colorIndex >= accentColorsByColor.Length)
+            return Color.white;
+
+        return accentColorsByColor[colorIndex];
+    }
+
+    public Color GetFxColor(int colorIndex)
+    {
+        if (colorIndex < 0 || colorIndex >= fxColorsByColor.Length)
+            return Color.white;
+
+        return fxColorsByColor[colorIndex];
+    }
+
+    public Color GetFxLightColor(int colorIndex)
+    {
+        if (colorIndex < 0 || colorIndex >= fxLightColorsByColor.Length)
+            return Color.white;
+
+        return fxLightColorsByColor[colorIndex];
+    }
+
+    // FX tint of the player owning this object, white when it has none (dummies, editor previews).
+    public static Color FxColorOf(GameObject owner)
+    {
+        Player player = owner != null ? owner.GetComponentInParent<Player>() : null;
+        if (player == null || Instance == null)
+            return Color.white;
+
+        return Instance.GetFxColor(player.ColorIndex);
+    }
+
+    // FX light color of the player owning this object, white when it has none.
+    public static Color FxLightColorOf(GameObject owner)
+    {
+        Player player = owner != null ? owner.GetComponentInParent<Player>() : null;
+        if (player == null || Instance == null)
+            return Color.white;
+
+        return Instance.GetFxLightColor(player.ColorIndex);
     }
 
     public bool ApplyVisuals(GameObject player, int classIndex, int colorIndex)

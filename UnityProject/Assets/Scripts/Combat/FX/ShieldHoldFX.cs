@@ -35,6 +35,10 @@ public class ShieldHoldFX : MonoBehaviour, IAttackFX, IHealthStats
     public void Init(GameObject attacker, bool hasHitbox, ClassKit kit, AbilityType ability, float damageMultiplier)
     {
         owner = attacker.GetComponent<Player>();
+        Color tint = CharacterCatalog.FxColorOf(attacker);
+        if (spriteRenderer != null)
+            spriteRenderer.color = tint;
+        FxGlow.Setup(gameObject, attacker, kit, ability);
         if (kit == null || kit.UltimateFollowCaster)
             transform.SetParent(attacker.transform);
         tracksFacing = kit == null || !kit.UltimateIgnoreAimRotation;

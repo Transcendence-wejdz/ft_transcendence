@@ -37,6 +37,6 @@ public class StatBarUI : MonoBehaviour
         BrushFill.Set(fillImage, max > 0f ? current / max : 0f);
 
         if (valueText != null)
-            valueText.text = $"{Mathf.CeilToInt(current)}/{Mathf.CeilToInt(max)}";
+            valueText.text = $"{Mathf.CeilToInt(current)}<space=0.12em>/<space=0.12em>{Mathf.CeilToInt(max)}";
     }
 }

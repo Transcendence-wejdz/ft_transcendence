@@ -14,11 +14,19 @@ public class LevelUpUI : MonoBehaviour
     [SerializeField] private GameObject readyListGroup;
     [SerializeField] private TMP_Text readyListText;
     [SerializeField] private TMP_Text waitingText;
+    [SerializeField] private TMP_FontAsset nameFont;
+    [SerializeField] private float warningSeconds = 5f;
+    [SerializeField] private Color warningColor = new Color(1f, 0.24f, 0.24f, 1f);
+    [SerializeField] private float warningPulseScale = 1.3f;
+    [SerializeField] private float warningBeatSeconds = 0.35f;
 
     private readonly StringBuilder readyListBuilder = new StringBuilder();
 
     private LevelUpManager manager;
     private TMP_Text[] bonusLabels;
+    private Color timerBaseColor;
+    private int lastTimerSecond = -1;
+    private float lastTimerTickTime;
     private bool localChosen;
     private bool shown;
 
@@ -28,6 +36,9 @@ public class LevelUpUI : MonoBehaviour
     {
         IsShowing = false;
         panel.SetActive(false);
+        if (nameFont != null)
+            MaterialReferenceManager.AddFontAsset(nameFont);
+        timerBaseColor = timerText.color;
 
         bonusLabels = new TMP_Text[bonusButtons.Length];
         for (int i = 0; i < bonusButtons.Length; i++)
@@ -75,11 +86,38 @@ public class LevelUpUI : MonoBehaviour
 
         if (multi)
         {
-            timerText.text = Mathf.CeilToInt(manager.SecondsRemaining).ToString();
+            int second = Mathf.CeilToInt(manager.SecondsRemaining);
+            timerText.text = second.ToString();
+            PaintTimerWarning(second);
             RefreshReadyList();
         }
 
         waitingText.gameObject.SetActive(localChosen);
+    }
+
+    // Last seconds: red heartbeat timed locally from each tick, since the server only replicates whole seconds.
+    private void PaintTimerWarning(int second)
+    {
+        if (second != lastTimerSecond)
+        {
+            lastTimerSecond = second;
+            lastTimerTickTime = Time.unscaledTime;
+        }
+
+        if (second > warningSeconds || second <= 0)
+        {
+            timerText.color = timerBaseColor;
+            timerText.rectTransform.localScale = Vector3.one;
+            return;
+        }
+
+        float sinceTick = Time.unscaledTime - lastTimerTickTime;
+        float fade = 1f - Mathf.Clamp01(sinceTick);
+        float beat = 1f - Mathf.Clamp01(sinceTick / Mathf.Max(warningBeatSeconds, 0.01f));
+        Color color = warningColor;
+        color.a = Mathf.Lerp(0.35f, 1f, fade);
+        timerText.color = color;
+        timerText.rectTransform.localScale = Vector3.one * Mathf.Lerp(1f, warningPulseScale, beat * beat);
     }
 
     private void BeginShow()
@@ -94,7 +132,8 @@ public class LevelUpUI : MonoBehaviour
             if (bonusLabels[i] == null)
                 continue;
             LevelUpBonusType type = manager.GetOfferedBonusType(i);
-            bonusLabels[i].text = $"<size=125%><color=#EDE6D6>{LevelUpBonusCatalog.GetDisplayName(type)}</color></size>\n<color=#9E9C94>{LevelUpBonusCatalog.GetDescription(type)}</color>";
+            string bonusName = nameFont != null ? $"<font=\"{nameFont.name}\"><size=150%>{LevelUpBonusCatalog.GetDisplayName(type)}</size></font>" : $"<size=125%>{LevelUpBonusCatalog.GetDisplayName(type)}</size>";
+            bonusLabels[i].text = $"<color=#EDE6D6>{bonusName}</color>\n<color=#9E9C94>{LevelUpBonusCatalog.GetDescription(type)}</color>";
         }
     }
 

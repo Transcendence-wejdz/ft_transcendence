@@ -85,11 +85,11 @@ public class ClassKitEditor : Editor
         new("GENERAL", "Mana", "maxMana", "manaRegenPerSecond"),
         new("GENERAL", "Dodge", "dodgeCharges", "dodgeRechargeSeconds", "dodgeDistance", "dodgeDuration"),
         new("ACTIONS", "Attack", "attackCooldown", "attackFxPrefab", "attackFxDistance", "attackDamage", "attackMoveLockDuration", "attackMoveSpeedMultiplier",
-            "attackAnimSpeed", "attackSize", "attackIgnoreAimRotation", "attackFollowCaster", "hasProjectile", "projectileSpeed", "projectileMaxDistance", "pierceCount"),
+            "attackAnimSpeed", "attackSize", "attackIgnoreAimRotation", "attackFollowCaster", "attackGlowIntensity", "attackGlowSize", "attackGlowDuration", "hasProjectile", "projectileSpeed", "projectileMaxDistance", "pierceCount"),
         new("ACTIONS", "Special", "specialCooldown", "specialManaCost", "specialFxPrefab", "specialFxDistance", "specialDamage", "specialMoveLockDuration",
-            "specialMoveSpeedMultiplier", "specialAnimSpeed", "specialSize", "specialIgnoreAimRotation", "specialFollowCaster"),
+            "specialMoveSpeedMultiplier", "specialAnimSpeed", "specialSize", "specialIgnoreAimRotation", "specialFollowCaster", "specialGlowIntensity", "specialGlowSize", "specialGlowDuration"),
         new("ACTIONS", "Ultimate", "ultimateCooldown", "ultimateManaCost", "ultimateFxPrefab", "ultimateFxDistance", "ultimateDamage", "ultimateMoveLockDuration",
-            "ultimateMoveSpeedMultiplier", "ultimateAnimSpeed", "ultimateSize", "ultimateIgnoreAimRotation", "ultimateFollowCaster", "hasShield", "shieldHoldDuration",
+            "ultimateMoveSpeedMultiplier", "ultimateAnimSpeed", "ultimateSize", "ultimateIgnoreAimRotation", "ultimateFollowCaster", "ultimateGlowIntensity", "ultimateGlowSize", "ultimateGlowDuration", "hasShield", "shieldHoldDuration",
             "shieldHealth", "shieldKnockbackForce", "shieldKnockbackDuration", "shieldPushInterval", "shieldTurnSpeed", "shieldHoldAnimation"),
     };
 

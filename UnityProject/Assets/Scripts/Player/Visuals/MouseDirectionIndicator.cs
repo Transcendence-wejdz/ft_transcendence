@@ -1,24 +1,24 @@
 using UnityEngine;
 
-// Ground ring at the player's feet pointing at the mouse.
+// Ground ring at the player's feet pointing at the mouse: ring plus a bolder tip, tinted to the player's color over a dark outline.
 public class MouseDirectionIndicator : MonoBehaviour
 {
-    // Indexed by ColorIndex: Black, Blue, Purple, Red, Yellow.
-    [SerializeField] private Color[] colorsByColorIndex =
-    {
-        new Color(0.15f, 0.15f, 0.15f),
-        new Color(0.25f, 0.45f, 0.95f),
-        new Color(0.6f, 0.3f, 0.85f),
-        new Color(0.85f, 0.25f, 0.25f),
-        new Color(0.95f, 0.8f, 0.2f),
-    };
+    [SerializeField] private SpriteRenderer ringRenderer;
+    [SerializeField] private SpriteRenderer tipRenderer;
+    [SerializeField] private SpriteRenderer outlineRenderer;
+    [Range(0f, 1f)]
+    [SerializeField] private float ringAlpha = 0.6f;
+    [Range(0f, 1f)]
+    [SerializeField] private float tipAlpha = 1f;
+    [Range(0f, 1f)]
+    [SerializeField] private float outlineAlpha = 0.55f;
 
-    private SpriteRenderer spriteRenderer;
     private Player player;
 
     void Awake()
     {
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        if (ringRenderer == null)
+            ringRenderer = GetComponent<SpriteRenderer>();
         player = GetComponentInParent<Player>();
     }
 
@@ -39,10 +39,19 @@ public class MouseDirectionIndicator : MonoBehaviour
 
     private void ApplyColor(int classIndex, int colorIndex)
     {
-        if (colorIndex < 0 || colorIndex >= colorsByColorIndex.Length)
+        Color color = CharacterCatalog.Instance != null ? CharacterCatalog.Instance.GetFxLightColor(colorIndex) : Color.white;
+        SetColor(ringRenderer, color, ringAlpha);
+        SetColor(tipRenderer, color, tipAlpha);
+        SetColor(outlineRenderer, Color.black, outlineAlpha);
+    }
+
+    private static void SetColor(SpriteRenderer target, Color color, float alpha)
+    {
+        if (target == null)
             return;
 
-        spriteRenderer.color = colorsByColorIndex[colorIndex];
+        color.a = alpha;
+        target.color = color;
     }
 
     // Hidden while the player is a pig (dead), since a downed player can't aim or fight; the aim angle itself doesn't change while paused.
@@ -51,8 +60,13 @@ public class MouseDirectionIndicator : MonoBehaviour
         if (player == null)
             return;
 
-        spriteRenderer.enabled = !player.IsDead;
-        if (!spriteRenderer.enabled)
+        bool visible = !player.IsDead;
+        ringRenderer.enabled = visible;
+        if (tipRenderer != null)
+            tipRenderer.enabled = visible;
+        if (outlineRenderer != null)
+            outlineRenderer.enabled = visible;
+        if (!visible)
             return;
 
         transform.rotation = Quaternion.Euler(0f, 0f, player.AimAngleDegrees - 90f);

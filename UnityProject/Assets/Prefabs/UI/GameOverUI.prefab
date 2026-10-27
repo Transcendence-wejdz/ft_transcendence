@@ -750,6 +750,7 @@ MonoBehaviour:
   modeTabs: []
   modeTitle: {fileID: 0}
   columns: 1
+  rankFont: {fileID: 11400000, guid: 97db784e5595b54b4bc04bcb174fe704, type: 2}
 --- !u!1 &1873942185395661079
 GameObject:
   m_ObjectHideFlags: 0

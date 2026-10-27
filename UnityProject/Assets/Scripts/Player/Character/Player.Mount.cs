@@ -17,6 +17,9 @@ public partial class Player
     private Player collisionIgnoredWith;
     private float riderSince = -1f;
 
+    // 0..1 while an ally rides this downed player, -1 otherwise; local per peer like the world revive bar.
+    public float ReviveFraction { get; private set; } = -1f;
+
     public bool IsMounted => isMounted;
     public float MountProgress01 => isMounted ? Mathf.Clamp01(mountElapsed / mountDurationSeconds) : 0f;
 
@@ -155,21 +158,24 @@ public partial class Player
     // Revive bar above a downed player, filled over mountDurationSeconds while someone rides; timed locally from the replicated parenting, so every peer (the downed player included) sees it without extra network state.
     private void UpdateReviveProgress()
     {
-        if (reviveProgress == null)
-            return;
-
         bool riding = IsDead && HasRider();
         if (!riding)
             riderSince = -1f;
         else if (riderSince < 0f)
             riderSince = Time.time;
+        ReviveFraction = riding ? Mathf.Clamp01((Time.time - riderSince) / mountDurationSeconds) : -1f;
+
+        if (reviveProgress == null)
+            return;
 
         Canvas canvas = reviveProgress.GetComponentInParent<Canvas>(true);
         GameObject root = canvas != null ? canvas.gameObject : reviveProgress.gameObject;
         if (root.activeSelf != riding)
             root.SetActive(riding);
+        if (nameTag != null)
+            nameTag.SetHidden(riding);
         if (riding)
-            BrushFill.Set(reviveProgress, Mathf.Clamp01((Time.time - riderSince) / mountDurationSeconds));
+            BrushFill.Set(reviveProgress, ReviveFraction);
     }
 
     private bool HasRider()

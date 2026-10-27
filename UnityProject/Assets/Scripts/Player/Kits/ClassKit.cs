@@ -54,6 +54,15 @@ public class ClassKit : ScriptableObject
     [SerializeField] private float attackSize = 1f;
     [SerializeField] private bool attackIgnoreAimRotation;
     [SerializeField] private bool attackFollowCaster = true;
+    [Range(0f, 5f)]
+    [Tooltip("Peak intensity of the light under the FX (0 = no glow).")]
+    [SerializeField] private float attackGlowIntensity = 1.2f;
+    [Range(0.5f, 3f)]
+    [Tooltip("Size of the glow relative to the FX sprite.")]
+    [SerializeField] private float attackGlowSize = 1.1f;
+    [Range(0f, 3f)]
+    [Tooltip("Seconds of the glow flash (0 = stays lit while the FX lives).")]
+    [SerializeField] private float attackGlowDuration = 0.42f;
     [SerializeField] private bool hasProjectile;
     [Range(0.5f, 40f)]
     [Tooltip("Projectile speed in units per second.")]
@@ -91,6 +100,15 @@ public class ClassKit : ScriptableObject
     [SerializeField] private float specialSize = 1f;
     [SerializeField] private bool specialIgnoreAimRotation;
     [SerializeField] private bool specialFollowCaster = true;
+    [Range(0f, 5f)]
+    [Tooltip("Peak intensity of the light under the FX (0 = no glow).")]
+    [SerializeField] private float specialGlowIntensity = 1.2f;
+    [Range(0.5f, 3f)]
+    [Tooltip("Size of the glow relative to the FX sprite.")]
+    [SerializeField] private float specialGlowSize = 1.1f;
+    [Range(0f, 3f)]
+    [Tooltip("Seconds of the glow flash (0 = stays lit while the FX lives).")]
+    [SerializeField] private float specialGlowDuration = 0.42f;
     [PowerRange(0.05f, 30f, 2f)]
     [Tooltip("Seconds before the action can be used again.")]
     [SerializeField] private float ultimateCooldown = 5f;
@@ -118,6 +136,15 @@ public class ClassKit : ScriptableObject
     [SerializeField] private float ultimateSize = 1f;
     [SerializeField] private bool ultimateIgnoreAimRotation;
     [SerializeField] private bool ultimateFollowCaster = true;
+    [Range(0f, 5f)]
+    [Tooltip("Peak intensity of the light under the FX (0 = no glow).")]
+    [SerializeField] private float ultimateGlowIntensity = 1.2f;
+    [Range(0.5f, 3f)]
+    [Tooltip("Size of the glow relative to the FX sprite.")]
+    [SerializeField] private float ultimateGlowSize = 1.1f;
+    [Range(0f, 3f)]
+    [Tooltip("Seconds of the glow flash (0 = stays lit while the FX lives).")]
+    [SerializeField] private float ultimateGlowDuration = 0.42f;
     [SerializeField] private bool hasShield;
     [Range(0.5f, 30f)]
     [Tooltip("Max seconds the shield stays up before dropping on its own.")]
@@ -155,6 +182,9 @@ public class ClassKit : ScriptableObject
     public float AttackSize => attackSize;
     public bool AttackIgnoreAimRotation => attackIgnoreAimRotation;
     public bool AttackFollowCaster => attackFollowCaster;
+    public float AttackGlowIntensity => attackGlowIntensity;
+    public float AttackGlowSize => attackGlowSize;
+    public float AttackGlowDuration => attackGlowDuration;
 
     public bool HasProjectile => hasProjectile;
     public float ProjectileSpeed => projectileSpeed;
@@ -172,6 +202,9 @@ public class ClassKit : ScriptableObject
     public float SpecialSize => specialSize;
     public bool SpecialIgnoreAimRotation => specialIgnoreAimRotation;
     public bool SpecialFollowCaster => specialFollowCaster;
+    public float SpecialGlowIntensity => specialGlowIntensity;
+    public float SpecialGlowSize => specialGlowSize;
+    public float SpecialGlowDuration => specialGlowDuration;
 
     public float UltimateCooldown => ultimateCooldown;
     public float UltimateManaCost => ultimateManaCost;
@@ -184,6 +217,9 @@ public class ClassKit : ScriptableObject
     public float UltimateSize => ultimateSize;
     public bool UltimateIgnoreAimRotation => ultimateIgnoreAimRotation;
     public bool UltimateFollowCaster => ultimateFollowCaster;
+    public float UltimateGlowIntensity => ultimateGlowIntensity;
+    public float UltimateGlowSize => ultimateGlowSize;
+    public float UltimateGlowDuration => ultimateGlowDuration;
 
     public bool HasShield => hasShield;
     public float ShieldHoldDuration => shieldHoldDuration;

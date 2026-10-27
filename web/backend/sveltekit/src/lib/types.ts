@@ -129,6 +129,7 @@ export type CurrentUser = UserSummary & {
 };
 
 // ---- Friends ----
+
 // The link between the logged-in player and another one, seen from the logged-in side.
 // The database only stores PENDING or ACCEPTED: the API works out sent or received from requesterId.
 // blocked: either player blocked the other, never saying which (like the blocked error code).
@@ -139,6 +140,15 @@ export type Friend = UserSummary & {
     relationshipId: Uuid;
     onlineStatus: OnlineStatus; // value at page load; the presence store keeps it live after that
 };
+
+// A pending friend request: incoming (accept or decline) or outgoing (cancel).
+// No onlineStatus: presence is only shared between accepted friends.
+export type FriendRequest = UserSummary & {
+    relationshipId: Uuid;
+    direction: 'incoming' | 'outgoing';
+    sentAt: IsoDate;
+};
+
 
 // ---- Chat ----
 

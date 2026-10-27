@@ -20,5 +20,7 @@
 - [ ] CI is green
 - [ ] Tested in Google Chrome, no errors in the browser console
 - [ ] No secrets/credentials committed
-- [ ] Reviewed by at least two other human teammates
+- [ ] Reviewed by at least two humans, three is recommended
 - [ ] LLM checks passed
+
+Everything must be written in English! PR's description, comments, etc...

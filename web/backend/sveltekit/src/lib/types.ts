@@ -72,6 +72,10 @@ export type ApiFailure = {
     code: ApiErrorCode;
 };
 
+// Body of every successful response: success, then the route's data at the top level.
+export type ApiSuccess<T extends object = object> = { success: true } & T;
+
+
 // ---- Users ----
 
 // TODO:    Rules of login differ depending of the route, we need to choose between:

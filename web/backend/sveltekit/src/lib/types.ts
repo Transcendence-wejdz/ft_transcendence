@@ -66,6 +66,11 @@ export const API_ERROR_CODES = [
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
 
+// Body of every failed response: the HTTP status says how bad it is, the code says what happened.
+export type ApiFailure = {
+    success: false;
+    code: ApiErrorCode;
+};
 
 // ---- Users ----
 

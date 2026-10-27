@@ -90,6 +90,13 @@ export type Page<T> = {
 // TODO:    - /api/register that allow 3 to 20 char (letters, numbers, '_', '-'))
 // TODO:    - settings (in validation.ts) that allow 2 to 24 char and autorize space
 
+// Playable classes. Must match the game and CLASSES in $lib/server/validation.ts.
+// TODO:    List of player_class now exist both in types.ts and validation.ts, 
+// TODO:    in the end, we need to import the list from types.ts to validation.ts (we can't import from server)
+export const PLAYER_CLASSES = ['Warrior', 'Archer', 'Lancer', 'Monk', 'Pawn'] as const;
+
+export type PlayerClass = (typeof PLAYER_CLASSES)[number];
+
 // ---- Friends ----
 
 // ---- Chat ----

@@ -12,5 +12,10 @@
 	--color-parchment-text: #2a1a0c;
 	--color-parchment-text-muted: #5e4a33;
 	--color-input-bg: #fffaf0;
+
+	/* Text on dark */
+	--color-text: #f6efe0;
+	--color-text-secondary: #d9cfb8;
+	--color-text-muted: #b3a98f;
 }
 

@@ -17,8 +17,9 @@
 ## Checklist
 
 - [ ] Targets `develop` (only `develop` → `main` for a release)
+- [ ] You have assigned yourself on this PR
 - [ ] CI is green
-- [ ] Tested in Google Chrome, no errors in the browser console
+- [ ] Tested in Google Chrome, if applicable
 - [ ] No secrets/credentials committed
 - [ ] Reviewed by at least two humans, three is recommended
 - [ ] LLM checks passed

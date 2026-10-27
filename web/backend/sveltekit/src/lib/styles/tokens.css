@@ -23,5 +23,13 @@
 	--color-gold-shadow: #c98f22;
 	--color-gold-hover: #ffd36a;
 	--color-link-hover: #ffd978;
+
+	/* Status */
+	--color-danger: #ec5a61;
+	--color-danger-shadow: #b8383f;
+	--color-danger-hover: #f37a80;
+	--color-online: #7cd65a;
+	--color-ribbon: #8a4f2a;
+	--color-focus: #2f6fd6;
 }
 

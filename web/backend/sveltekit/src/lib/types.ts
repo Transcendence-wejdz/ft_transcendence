@@ -117,6 +117,13 @@ export type UserSummary = {
 // The dot on a player's avatar. in_game: has the game page open. Worked out by the WebSocket server.
 export type OnlineStatus = 'online' | 'in_game' | 'offline';
 
+// The logged-in player, from /api/me: their summary plus private fields only they may see.
+export type CurrentUser = UserSummary & {
+    email: string;
+    class: PlayerClass;
+    gold: number;
+};
+
 // ---- Friends ----
 
 // ---- Chat ----

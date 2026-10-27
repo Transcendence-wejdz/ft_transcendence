@@ -1,0 +1,9 @@
+:root {
+	/* Dark surfaces */
+	--color-bg-page: #1d1b26;
+	--color-bg-bar: #16141e;
+	--color-bg-card: #2a2734;
+	--color-bg-raised: #34304a;
+	--color-bg-raised-hover: #403b5a;
+	--color-border-subtle: #3d3950;
+}

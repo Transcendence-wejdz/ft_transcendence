@@ -75,6 +75,8 @@ export type ApiFailure = {
 // Body of every successful response: success, then the route's data at the top level.
 export type ApiSuccess<T extends object = object> = { success: true } & T;
 
+// What a route sends back: check success before reading the data.
+export type ApiResponse<T extends object = object> = ApiSuccess<T> | ApiFailure;
 
 // ---- Users ----
 

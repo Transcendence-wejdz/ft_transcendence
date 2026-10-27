@@ -17,5 +17,11 @@
 	--color-text: #f6efe0;
 	--color-text-secondary: #d9cfb8;
 	--color-text-muted: #b3a98f;
+
+	/* Gold accent */
+	--color-gold: #f2c14e;
+	--color-gold-shadow: #c98f22;
+	--color-gold-hover: #ffd36a;
+	--color-link-hover: #ffd978;
 }
 

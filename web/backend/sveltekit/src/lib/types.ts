@@ -103,6 +103,17 @@ export const PLAYER_COLORS = ['Black', 'Blue', 'Purple', 'Red', 'Yellow'] as con
 
 export type PlayerColor = (typeof PLAYER_COLORS)[number];
 
+// Just enough to show any player: a friends list row, a chat header, a leaderboard line.
+// Seen by other players: never add private fields (email, gold, settings) here.
+// TODO:    actually, avatarUrl does not contain the url, but the image itself:
+// TODO:    maybe we can set a route GET /api/players/[id]/avatar that return the image with cache header.
+export type UserSummary = {
+    id: Uuid;
+    displayName: string;
+    color: PlayerColor;
+    avatarUrl: string | null; // a URL to load the picture from, never the picture itself
+};
+
 // ---- Friends ----
 
 // ---- Chat ----

@@ -38,5 +38,15 @@
 	--color-team-purple: #9667e8;
 	--color-team-red: #ec5a61;
 	--color-team-yellow: #e7bd48;
+
+	/* Shape */
+	--color-outline: #120f18;
+	--color-drop: #0b0a10;
+	--color-bg-raised-shadow: #24212f;
+	--border-width: 3px;
+	--radius: 6px;
+	--radius-card: 8px;
+	--radius-pill: 999px;
+	--shadow-drop: 0 4px 0 var(--color-drop);
 }
 

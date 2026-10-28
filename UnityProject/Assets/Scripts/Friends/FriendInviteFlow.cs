@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using UnityEngine;
 
-// Shared invite flow for every friends UI: when solo, the friend is told instantly while our session is created in the background (no loading screen), then the code follows; one invite at a time.
+// Invite flow for every friends UI, one at a time: solo, the friend is told at once and the code follows once hosting is done.
 public static class FriendInviteFlow
 {
     public static bool IsBusy { get; private set; }

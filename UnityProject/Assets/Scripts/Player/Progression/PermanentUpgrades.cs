@@ -22,8 +22,6 @@ public static class PermanentUpgrades
 
     public static LevelUpBonusType[] Types => AllTypes;
 
-    public static bool PurchasePending => purchasePending;
-
     public static int GetLevel(LevelUpBonusType type)
     {
         int index = (int)type;

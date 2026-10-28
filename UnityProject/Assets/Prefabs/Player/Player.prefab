@@ -16284,7 +16284,7 @@ Camera:
   m_Depth: -10
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 2048
+    m_Bits: 18432
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 8400000, guid: 667d313fc75302ecc92eb1f168e037a4, type: 2}
   m_TargetDisplay: 0
@@ -16667,7 +16667,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 4294965247
+    m_Bits: 4294950911
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -16890,7 +16890,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8897892346695445125}
   - component: {fileID: 2420840674277884552}
-  m_Layer: 11
+  m_Layer: 14
   m_Name: PreviewLight
   m_TagString: Untagged
   m_Icon: {fileID: 0}

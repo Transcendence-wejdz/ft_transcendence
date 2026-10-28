@@ -35,7 +35,7 @@ public class LeaderboardUI : MonoBehaviour
         }
     }
 
-    // Active tab is non-interactable and pinned to read as selected, same as SettingsTabGroup.
+    // Active tab is non-interactable and pinned to read as selected.
     public void SetMode(LeaderboardMode newMode)
     {
         mode = newMode;

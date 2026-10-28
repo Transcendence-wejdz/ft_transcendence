@@ -6,7 +6,7 @@ using Unity.Services.Multiplayer;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-// Shared "join this code" entry point for invites and typed codes: checks the code first when joining would cost something, leaves any current session, and joins from a fresh Lobby when this scene has no NetworkBootstrap.
+// Single "join this code" path for invites and typed codes: checks the code, leaves any session, then joins.
 public static class SessionJoin
 {
     // Public, indexed session property the host publishes its code into, so a code can be looked up before joining.

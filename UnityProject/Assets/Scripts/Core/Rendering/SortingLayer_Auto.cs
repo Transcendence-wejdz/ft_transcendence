@@ -28,11 +28,6 @@ public class SortingLayer_Auto : MonoBehaviour
     // Pure, not a cached field - safe to read from another object's LateUpdate regardless of execution order.
     public int CurrentSortingOrder => OrderForY(SortPivotWorldPosition.y) + sortingOffset;
 
-    public void AddSortingOffset(int extra)
-    {
-        sortingOffset += extra;
-    }
-
     public void SetSortingOffset(int value)
     {
         sortingOffset = value;

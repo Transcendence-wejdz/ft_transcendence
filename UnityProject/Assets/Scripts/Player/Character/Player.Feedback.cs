@@ -51,7 +51,7 @@ public partial class Player
             Destroy(edgeFlash.gameObject);
     }
 
-    // Everyone sees the flash; only the owner gets shake, red edges and (big hits) a camera punch, all scaled by the share of max health lost. A drop that lands on full health is a max-health clamp (class switch), not a hit.
+    // Everyone sees the flash; the owner also gets shake, red edges and a punch on big hits; a drop to full health is a class switch, not a hit.
     private void HandleHealthReplicated(float current, float max)
     {
         bool tookDamage = lastHealth >= 0f && current < lastHealth && current < max;

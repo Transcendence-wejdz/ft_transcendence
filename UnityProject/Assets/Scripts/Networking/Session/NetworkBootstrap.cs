@@ -86,7 +86,6 @@ public class NetworkBootstrap : MonoBehaviour
             SyncTransportWebSockets();
             await ServicesAuth.EnsureSignedInAsync();
 
-            // Must stay before any network call: the host's approval is processed late, after Netcode auto-spawns active scene-placed players (ghost).
             (int classIndex, int colorIndex, string playerName, Vector3 position, Quaternion rotation) customization = CaptureOfflinePlayerState(leaveStandIn: !showLoadingScreen);
             hostSpawnPosition = customization.position;
             hostSpawnRotation = customization.rotation;
@@ -160,7 +159,7 @@ public class NetworkBootstrap : MonoBehaviour
         }
     }
 
-    // Relay allocates a WebSocket or raw-UDP endpoint based on RelayProtocol.Default (WSS for WebGL, DTLS otherwise - see Unity.Services.Multiplayer); UnityTransport's checkbox must match whatever the SDK actually requested, or StartHost/StartClient throws. Deriving it from that same enum instead of a second, independent platform check keeps the two from ever disagreeing.
+    // Matches UnityTransport's WebSocket flag to the protocol Relay picks (WSS on WebGL), or StartHost/StartClient throws.
     private static void SyncTransportWebSockets()
     {
         if (NetworkManager.Singleton.NetworkConfig.NetworkTransport is not UnityTransport transport)
@@ -170,7 +169,7 @@ public class NetworkBootstrap : MonoBehaviour
     }
 
 
-    // Deactivates the offline player before Host/Join, keeping its camera and customization.
+    // Deactivates the offline player before Host/Join, keeping its camera and look; must run before the session exists, or Netcode spawns it as a ghost.
     private (int classIndex, int colorIndex, string playerName, Vector3 position, Quaternion rotation) CaptureOfflinePlayerState(bool leaveStandIn = false)
     {
         GameObject offlinePlayer = LocalPlayer.Get();

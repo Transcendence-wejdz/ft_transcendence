@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
-// Drives the level-up choice sequence: solo waits indefinitely, multiplayer (2+ players) adds a 20s timer.
+// Drives the level-up choice: solo waits indefinitely, multiplayer adds a timer (multiplayerChoiceSeconds).
 public class LevelUpManager : NetworkBehaviour
 {
     public const int BonusOptionCount = 3;
@@ -32,7 +32,6 @@ public class LevelUpManager : NetworkBehaviour
     public bool SequenceActive => IsSpawned ? sequenceActive.Value : offlineSequenceActive;
     public int ProcessedLevel => processedLevel;
     public int SequenceLevel => IsSpawned ? sequenceLevel.Value : offlineSequenceLevel;
-    public bool IsTimedSequence => IsSpawned && timedSequence.Value;
     public float SecondsRemaining => IsSpawned ? secondsRemaining.Value : 0f;
 
     public LevelUpBonusType GetOfferedBonusType(int slot) =>
@@ -98,16 +97,6 @@ public class LevelUpManager : NetworkBehaviour
         TickActiveSequence();
     }
 
-    // Offline solo play never registers in AllActiveInstances, same gap XPManager/GameOverCheck work around.
-    private static IEnumerable<Player> ActivePlayers()
-    {
-        if (Player.AllActiveInstances.Count > 0)
-            return Player.AllActiveInstances;
-
-        Player local = LocalPlayer.GetPlayer();
-        return local != null ? new[] { local } : System.Array.Empty<Player>();
-    }
-
     private void TickActiveSequence()
     {
         if (IsSpawned ? timedSequence.Value : false)
@@ -119,7 +108,7 @@ public class LevelUpManager : NetworkBehaviour
 
             if (remainingUnscaled <= 0d)
             {
-                foreach (Player player in ActivePlayers())
+                foreach (Player player in Player.ActivePlayers)
                     if (!player.HasChosenLevelUpBonus)
                         player.ForceLevelUpBonus(GetOfferedBonusType(Random.Range(0, BonusOptionCount)));
                 EndSequence();
@@ -127,7 +116,7 @@ public class LevelUpManager : NetworkBehaviour
             }
         }
 
-        foreach (Player player in ActivePlayers())
+        foreach (Player player in Player.ActivePlayers)
             if (!player.HasChosenLevelUpBonus)
                 return;
 
@@ -141,7 +130,7 @@ public class LevelUpManager : NetworkBehaviour
         remainingUnscaled = multiplayerChoiceSeconds;
         OfferedBonusSet offers = PickRandomOffers();
 
-        foreach (Player player in ActivePlayers())
+        foreach (Player player in Player.ActivePlayers)
             player.ResetLevelUpChoice();
 
         if (IsSpawned)

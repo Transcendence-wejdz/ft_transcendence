@@ -142,8 +142,8 @@ public class ScoreManager : NetworkBehaviour
         if (subscribed)
             return;
         subscribed = true;
-        EnemyStats.OnEnemyKilled += HandleEnemyKilled;
-        BossStats.OnBossKilled += HandleBossKilled;
+        Enemy.OnEnemyKilled += HandleEnemyKilled;
+        Boss.OnBossKilled += HandleBossKilled;
         WaveSpawner.OnWaveStarted += HandleWaveStarted;
     }
 
@@ -152,8 +152,8 @@ public class ScoreManager : NetworkBehaviour
         if (!subscribed)
             return;
         subscribed = false;
-        EnemyStats.OnEnemyKilled -= HandleEnemyKilled;
-        BossStats.OnBossKilled -= HandleBossKilled;
+        Enemy.OnEnemyKilled -= HandleEnemyKilled;
+        Boss.OnBossKilled -= HandleBossKilled;
         WaveSpawner.OnWaveStarted -= HandleWaveStarted;
     }
 
@@ -207,28 +207,20 @@ public class ScoreManager : NetworkBehaviour
 
         frozen = true;
         PlayerKillTable table = PlayerKills;
-        foreach (Player player in Player.AllActiveInstances)
+        foreach (Player player in Player.ActivePlayers)
             table.GetOrAdd(player.OwnerClientId, player.PlayerName);
-        if (Player.AllActiveInstances.Count == 0)
-        {
-            Player local = LocalPlayer.GetPlayer();
-            if (local != null)
-                table.GetOrAdd(NetworkManager.ServerClientId, local.PlayerName);
-        }
         WriteKills(table);
     }
 
-    // Offline the only player is the local one, whatever client id the kill reported.
+    // The offline player has the server's client id (0), the id offline kills report.
     private static string FindPlayerName(ulong clientId)
     {
-        foreach (Player player in Player.AllActiveInstances)
+        foreach (Player player in Player.ActivePlayers)
         {
             if (player.OwnerClientId == clientId)
                 return player.PlayerName;
         }
-
-        Player local = Player.AllActiveInstances.Count == 0 ? LocalPlayer.GetPlayer() : null;
-        return local != null ? local.PlayerName : null;
+        return null;
     }
 
     private void WriteKills(PlayerKillTable table)

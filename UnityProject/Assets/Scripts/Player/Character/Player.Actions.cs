@@ -11,6 +11,7 @@ public partial class Player
     [SerializeField] private ClassKit defaultKit;
 
     private ClassKit activeKit;
+    private Vector2? aimIndicatorCenter;
 
     private bool isAttackHeld;
     private float attackReadyTime;
@@ -32,7 +33,7 @@ public partial class Player
     // Dead players (pigs) can still move but not fight.
     private bool CanFight => !IsBlocked && !IsDead;
 
-    // Animator parameter strings stay as-is (LightAttack/HeavyAttack) - only the C#-facing names change.
+    // Animator params keep their original names (LightAttack/HeavyAttack) for Attack/Special.
     private static readonly int AttackHash = Animator.StringToHash("LightAttack");
     private static readonly int SpecialHash = Animator.StringToHash("HeavyAttack");
     private static readonly int UltimateHash = Animator.StringToHash("Ultimate");
@@ -125,18 +126,28 @@ public partial class Player
         SpawnAbilityFx(AbilityType.Ultimate);
     }
 
+    // Offset of this player's aim indicator ring from its feet, read once since the ring only rotates.
+    private Vector2 AimIndicatorCenter
+    {
+        get
+        {
+            if (!aimIndicatorCenter.HasValue)
+            {
+                MouseDirectionIndicator indicator = GetComponentInChildren<MouseDirectionIndicator>(true);
+                aimIndicatorCenter = indicator != null ? (Vector2)(indicator.transform.position - transform.position) : Vector2.zero;
+            }
+            return aimIndicatorCenter.Value;
+        }
+    }
+
+    // Where this player's FX for an action spawns, relative to its feet (see ClassKit.FxOffset).
+    public Vector2 FxOffset(AbilityType ability, Vector2 aim) => activeKit != null ? activeKit.FxOffset(ability, aim, AimIndicatorCenter) : Vector2.zero;
+
     private GameObject GetFxPrefab(AbilityType ability) => ability switch
     {
         AbilityType.Special => activeKit.SpecialFxPrefab,
         AbilityType.Ultimate => activeKit.UltimateFxPrefab,
         _ => activeKit.AttackFxPrefab,
-    };
-
-    private float GetFxDistance(AbilityType ability) => ability switch
-    {
-        AbilityType.Special => activeKit.SpecialFxDistance,
-        AbilityType.Ultimate => activeKit.UltimateFxDistance,
-        _ => activeKit.AttackFxDistance,
     };
 
     private float GetSize(AbilityType ability) => ability switch
@@ -189,7 +200,7 @@ public partial class Player
             return;
 
         Vector2 dir = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
-        Vector3 spawnPos = transform.position + (Vector3)(dir * GetFxDistance(ability));
+        Vector3 spawnPos = transform.position + (Vector3)FxOffset(ability, dir);
         Quaternion rotation = GetIgnoreAimRotation(ability) ? Quaternion.identity : Quaternion.Euler(0f, 0f, angle);
 
         GameObject fx = Instantiate(prefab, spawnPos, rotation);

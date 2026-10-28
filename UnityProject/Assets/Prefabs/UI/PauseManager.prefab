@@ -6023,6 +6023,7 @@ GameObject:
   - component: {fileID: 8959057445482931180}
   - component: {fileID: 2430545900368369415}
   - component: {fileID: 6834186460308408545}
+  - component: {fileID: 6179067287886231001}
   m_Layer: 0
   m_Name: FriendsPanel
   m_TagString: Untagged
@@ -6116,8 +6117,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseFriendsListUI
   rowTemplate: {fileID: 8583597244231274395}
-  onlineHeader: {fileID: 1358927353101290233}
-  offlineHeader: {fileID: 6188819057647924777}
   onlineCountText: {fileID: 6370619008919389684}
   offlineCountText: {fileID: 7170183090713306344}
   requestCountText: {fileID: 1256858474110264016}
@@ -6131,7 +6130,6 @@ MonoBehaviour:
   offlineScroll: {fileID: 9121591336452512248}
   minScrollHeight: 72
   requestRowTemplate: {fileID: 8568589915375412161}
-  requestHeader: {fileID: 349551589909531026}
   requestToggle: {fileID: 7843845962333607346}
   requestArrow: {fileID: 7791099125575583043}
   requestContent: {fileID: 6143240984763628401}
@@ -6163,7 +6161,6 @@ MonoBehaviour:
   - {fileID: 322238764517482890}
   - {fileID: 2299929867068559389}
   - {fileID: 8622721357685037202}
-  header: {fileID: 8180183442356947890}
   countText: {fileID: 6521503763725018804}
   contextMenu: {fileID: 8022022500531186988}
   statusText: {fileID: 1027548266297919478}
@@ -6191,6 +6188,18 @@ MonoBehaviour:
   statusText: {fileID: 1027548266297919478}
   errorColor: {r: 0.9, g: 0.4, b: 0.35, a: 1}
   infoColor: {r: 0.7, g: 0.69, b: 0.66, a: 1}
+--- !u!114 &6179067287886231001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1518805444852098248}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8d4091292a229607b81e2570baad722, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ExplicitVerticalNavigation
 --- !u!1 &1523685398298947057
 GameObject:
   m_ObjectHideFlags: 0
@@ -13032,6 +13041,7 @@ GameObject:
   - component: {fileID: 3990076213974726303}
   - component: {fileID: 6894208760453851175}
   - component: {fileID: 7195458305602849897}
+  - component: {fileID: 3569990373588976222}
   m_Layer: 0
   m_Name: GeneralContent
   m_TagString: Untagged
@@ -13108,6 +13118,18 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &3569990373588976222
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2926228669673431282}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8d4091292a229607b81e2570baad722, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ExplicitVerticalNavigation
 --- !u!1 &2949359391761219610
 GameObject:
   m_ObjectHideFlags: 0
@@ -28226,6 +28248,7 @@ GameObject:
   - component: {fileID: 8520852360440704281}
   - component: {fileID: 8701649786877692750}
   - component: {fileID: 698492114757780181}
+  - component: {fileID: 5509081299059539996}
   m_Layer: 5
   m_Name: Resume
   m_TagString: Untagged
@@ -28405,6 +28428,18 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &5509081299059539996
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6831126717127391764}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: feb9d30b96c8e2dcebf64f3c2b98f3a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DefaultSelection
 --- !u!1 &6856343607156455988
 GameObject:
   m_ObjectHideFlags: 0

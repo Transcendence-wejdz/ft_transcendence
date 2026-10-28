@@ -15,7 +15,6 @@ public partial class Player
 
     public float AimAngleDegrees => aimAngle.Value;
     public Vector2 Facing => facing;
-    public bool HasMoveInput => moveInput.sqrMagnitude > 0.01f;
 
     private Vector2 moveInput;
     private Vector2 facing = Vector2.down;
@@ -175,7 +174,7 @@ public partial class Player
         return Vector2.ClampMagnitude(push / Time.deltaTime, MaxPushSpeed);
     }
 
-    // Player bodies never block each other physically (each owner is authoritative); instead this peer's own player slides out of half of any overlap, so running into someone pushes them on their own machine too.
+    // Players never block each other physically; the local player slides out of half of any overlap instead.
     private void UpdateSoftPlayerCollision()
     {
         if (!this.IsLocallyControlled() || bodyCollider == null || rb == null)

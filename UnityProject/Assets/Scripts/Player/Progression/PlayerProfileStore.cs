@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using UnityEngine;
 
-// Local JSON save of class, color and name; placeholder for web user management.
+// Local JSON save of class, color and name; the web profile overwrites it when signed in.
 public static class PlayerProfileStore
 {
     [Serializable]

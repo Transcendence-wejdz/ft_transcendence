@@ -2,7 +2,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Root player component: movement/actions/stats/customization/feedback/pig-form, split by concern across Player.*.cs files.
+// One networked player; behavior is split across Player.*.cs by concern.
 public partial class Player : NetworkBehaviour, IDamageable
 {
     private Animator animator;
@@ -13,6 +13,9 @@ public partial class Player : NetworkBehaviour, IDamageable
     private SortingLayer_Auto sortingLayerAuto;
 
     private bool IsBlocked => PauseManager.IsPaused;
+
+    // Collider centre, since pivots sit at different heights; used by enemy range and hit checks.
+    public Vector2 Center => bodyCollider != null ? (Vector2)bodyCollider.bounds.center : (Vector2)transform.position;
 
     // False for stripped instances (e.g. the preview doll) - also checked in OnNetworkSpawn/Despawn, which ignore enabled.
     private bool isValidInstance;

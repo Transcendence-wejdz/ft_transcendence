@@ -63,6 +63,7 @@ public partial class Player
         }
 
         flipProxy.enabled = true;
+        flipProxy.gameObject.layer = gameObject.layer;
         flipProxy.sprite = spriteRenderer.sprite;
         flipProxy.flipX = spriteRenderer.flipX;
         flipProxy.color = spriteRenderer.color;

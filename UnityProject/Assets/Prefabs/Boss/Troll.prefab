@@ -248,8 +248,6 @@ GameObject:
   - component: {fileID: 952958455396138803}
   - component: {fileID: 580641980520786029}
   - component: {fileID: 2808323838944924841}
-  - component: {fileID: 3436251832436394563}
-  - component: {fileID: 1531073082332841933}
   - component: {fileID: 1307655809101516818}
   m_Layer: 12
   m_Name: Troll
@@ -441,6 +439,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SpriteHitFlash
   flashColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   duration: 0.15
+  holdFraction: 0.35
 --- !u!114 &2808323838944924841
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -455,32 +454,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DamageNumberSpawner
   damageNumberPrefab: {fileID: 1363164118058132356, guid: b62b04b50060d6d08accea0da4101a45, type: 3}
   spawnOffset: {x: 0, y: 3.5, z: 0}
---- !u!114 &3436251832436394563
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7480997331069641413}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8010b979b2cfe2a6c953b523c26b8e95, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BossStats
-  ShowTopMostFoldoutHeaderGroup: 1
---- !u!114 &1531073082332841933
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7480997331069641413}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 05ac5d89313d7624193fdaa29a55d234, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BossAI
-  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &1307655809101516818
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -493,6 +466,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a026f894b3ab9b7148aa0fde722787aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Boss
+  ShowTopMostFoldoutHeaderGroup: 1
   kit: {fileID: 11400000, guid: 19bb375fe621e1c18bafea29605e7368, type: 2}
-  ai: {fileID: 1531073082332841933}
-  stats: {fileID: 3436251832436394563}

@@ -28,8 +28,9 @@ public class DecorFlipbook : MonoBehaviour
         if (timer < frameDuration)
             return;
 
-        timer -= frameDuration;
-        frameIndex = (frameIndex + 1) % frames.Length;
+        int steps = (int)(timer / frameDuration);
+        timer -= steps * frameDuration;
+        frameIndex = (frameIndex + steps) % frames.Length;
         spriteRenderer.sprite = frames[frameIndex];
     }
 }

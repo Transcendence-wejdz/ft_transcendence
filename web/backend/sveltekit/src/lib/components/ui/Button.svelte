@@ -4,15 +4,22 @@
 	type Props = {
 		variant?: 'primary' | 'secondary' | 'danger' | '42';
 		size?: 'md' | 'sm';
+		href?: string;
 		children: Snippet;
 	};
 
-	let { variant = 'primary', size = 'md', children }: Props = $props();
+	let { variant = 'primary', size = 'md', href, children }: Props = $props();
 </script>
 
-<button type="button" class="btn variant-{variant} size-{size}">
-	{@render children()}
-</button>
+{#if href}
+	<a {href} class="btn variant-{variant} size-{size}">
+		{@render children()}
+	</a>
+{:else}
+	<button type="button" class="btn variant-{variant} size-{size}">
+		{@render children()}
+	</button>
+{/if}
 
 <style>
 	.btn {
@@ -28,6 +35,7 @@
 		border: var(--border-width) solid var(--color-outline);
 		border-radius: var(--radius);
 		cursor: pointer;
+		text-decoration: none;
 	}
 
 	.size-sm {

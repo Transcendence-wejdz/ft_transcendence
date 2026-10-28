@@ -5,7 +5,7 @@ import { prisma } from '$lib/server/db.js';
 export const SESSION_COOKIE = 'session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-const hashToken = (token: string) =>
+export const hashToken = (token: string) =>
     createHash('sha256').update(token).digest('hex');
 
 export async function createSession(userId: string, cookies: Cookies) {

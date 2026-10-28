@@ -35,6 +35,7 @@ model Session {
   id        String   @id
   userId    String   @map("user_id") @db.Uuid
   expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  lastOnline  DateTime @default(now()) @map("last_online") @db.Timestamptz(6)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId], map: "sessions_user_id_idx")

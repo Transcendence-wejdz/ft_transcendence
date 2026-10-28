@@ -34,7 +34,7 @@
         const response = await fetch('/api/friends-list');
         const result = await response.json();
         if (!response.ok) throw new Error(result.error ?? 'Could not load friends.');
-        friends = result.friends.map((friend: Omit<Friend, 'online'>) => ({ ...friend, online: false }));
+        friends = result.friends;
         requests = result.requests;
     }
 
@@ -44,12 +44,49 @@
         if (!response.ok) throw new Error(result.error ?? 'Could not load blocked players.');
         blockedPlayers = result.blockedPlayers;
     }
+    const HEARTBEAT_INTERVAL_MS = 5_000;
+    let intervalId: ReturnType<typeof setInterval> | undefined;
+
+    async function sendHeartbeat() {
+        try {
+            const response = await fetch('/api/friends-list/presence', {
+                method: 'POST'
+            });
+
+            if (!response.ok) {
+                console.error('Heartbeat request failed.');
+            }
+        } catch (cause) {
+            console.error('Heartbeat network error:', cause);
+        }
+    }
+
+    async function refreshPresence() {
+        await sendHeartbeat();
+
+        try {
+            await loadFriends();
+        } catch (cause) {
+            error = cause instanceof Error
+                ? cause.message
+                : 'Could not refresh friends.';
+        }
+    }
 
     onMount(() => {
         loading = true;
         Promise.all([loadFriends(), loadBlockedPlayers()])
             .catch((cause: unknown) => { error = cause instanceof Error ? cause.message : 'Could not load friends.'; })
             .finally(() => { loading = false; });
+
+        void sendHeartbeat();
+        intervalId = setInterval(() => {
+            void refreshPresence();
+        }, HEARTBEAT_INTERVAL_MS);
+
+        return () => {
+            if (intervalId !== undefined) clearInterval(intervalId);
+        };
     });
 
     async function updateRelationship(relationshipId: string, method: 'PATCH' | 'DELETE', body?: object) {

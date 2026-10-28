@@ -27,16 +27,40 @@ export const GET: RequestHandler = async ({ locals }) => {
 	const friends = rows
 		.filter((row) => row.relationStatus === 'ACCEPTED')
 		.map((row) => ({
-    relationshipId: row.id,
-    ...(row.userLowId === locals.user!.id ? row.userHigh : row.userLow)
+			relationshipId: row.id,
+			...(row.userLowId === locals.user!.id ? row.userHigh : row.userLow)
 	}));
 	const requests = rows
 		.filter((row) => row.relationStatus === 'PENDING' && row.requesterId !== locals.user!.id)
-	.map((row) => ({
-    relationshipId: row.id,
-    ...(row.userLowId === locals.user!.id ? row.userHigh : row.userLow)
-	}));
-	return json({ success: true, friends, requests }, { headers: { 'Cache-Control': 'no-store' } });
+		.map((row) => ({
+			relationshipId: row.id,
+			...(row.userLowId === locals.user!.id ? row.userHigh : row.userLow)
+		}));
+
+	const friendIds = friends.map((friend) => friend.id);
+	const onlineSince = new Date(Date.now() - 15_000);
+
+	const activeSessions = await prisma.session.findMany({
+		where: {
+			userId: { in: friendIds },
+			expiresAt: { gt: new Date() },
+			lastOnline: { gt: onlineSince }
+		},
+		select: { userId: true }
+	});
+
+	const onlineUserIds = new Set(activeSessions.map((session) => session.userId));
+	return json(
+		{
+			success: true,
+			friends: friends.map((friend) => ({
+				...friend,
+				online: onlineUserIds.has(friend.id)
+			})),
+			requests
+		},
+		{ headers: { 'Cache-Control': 'no-store' } }
+	);
 };
 
 export const POST: RequestHandler = async ({ locals, request }) => {

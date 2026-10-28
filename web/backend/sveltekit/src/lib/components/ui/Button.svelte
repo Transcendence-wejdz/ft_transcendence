@@ -51,7 +51,7 @@
 		box-shadow: inset 0 -5px 0 var(--color-gold-shadow), var(--shadow-drop);
 	}
 
-	.variant-primary:hover {
+	.variant-primary:hover:not(:disabled) {
 		background: var(--color-gold-hover);
 	}
 
@@ -61,7 +61,7 @@
 		box-shadow: inset 0 -5px 0 var(--color-bg-raised-shadow), var(--shadow-drop);
 	}
 
-	.variant-secondary:hover {
+	.variant-secondary:hover:not(:disabled) {
 		color: #fff;
 		background: var(--color-bg-raised-hover);
 	}
@@ -72,7 +72,7 @@
 		box-shadow: inset 0 -5px 0 var(--color-danger-shadow), var(--shadow-drop);
 	}
 
-	.variant-danger:hover {
+	.variant-danger:hover:not(:disabled) {
 		background: var(--color-danger-hover);
 	}
 
@@ -82,7 +82,17 @@
 		box-shadow: inset 0 -5px 0 #d3bd88, var(--shadow-drop);
 	}
 
-	.variant-42:hover {
+	.variant-42:hover:not(:disabled) {
 		background: #fff;
+	}
+
+	.btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.btn:focus-visible {
+		outline: 3px solid var(--color-focus);
+		outline-offset: 3px;
 	}
 </style>

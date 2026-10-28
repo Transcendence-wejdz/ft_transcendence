@@ -155,6 +155,15 @@ export type BlockedPlayer = UserSummary & {
     blockedAt: IsoDate;
 };
 
+// Response of GET /api/friends-list: everything the three /friends tabs need, loaded once.
+// requests holds both directions: filter on direction to split Received and Sent.
+export type FriendsList = {
+    friends: Friend[];
+    requests: FriendRequest[];
+    blocked: BlockedPlayer[];
+};
+
+
 // ---- Chat ----
 
 // ---- Notifications ----

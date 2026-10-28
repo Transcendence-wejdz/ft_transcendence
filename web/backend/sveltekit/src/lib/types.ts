@@ -190,6 +190,12 @@ export type ChatMessage = {
     sentAt: IsoDate;
 };
 
+// A row of /chat: the other player, their latest message (null if none yet) and the unread badge (0: hidden).
+export type Conversation = {
+    peer: UserSummary;
+    lastMessage: ChatMessage | null;
+    unreadCount: number;
+};
 
 // ---- Notifications ----
 

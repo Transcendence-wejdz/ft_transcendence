@@ -1,22 +1,23 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements';
 
 	type Props = {
 		variant?: 'primary' | 'secondary' | 'danger' | '42';
 		size?: 'md' | 'sm';
 		href?: string;
 		children: Snippet;
-	};
+	} & HTMLButtonAttributes & HTMLAnchorAttributes;
 
-	let { variant = 'primary', size = 'md', href, children }: Props = $props();
+	let { variant = 'primary', size = 'md', href, type = 'button', children, ...rest }: Props = $props();
 </script>
 
 {#if href}
-	<a {href} class="btn variant-{variant} size-{size}">
+	<a {href} {...rest} class="btn variant-{variant} size-{size}">
 		{@render children()}
 	</a>
 {:else}
-	<button type="button" class="btn variant-{variant} size-{size}">
+	<button {type} {...rest} class="btn variant-{variant} size-{size}">
 		{@render children()}
 	</button>
 {/if}

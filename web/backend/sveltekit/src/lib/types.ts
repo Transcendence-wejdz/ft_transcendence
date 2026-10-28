@@ -139,6 +139,7 @@ export type RelationshipStatus = 'none' | 'friends' | 'request_sent' | 'request_
 export type Friend = UserSummary & {
     relationshipId: Uuid;
     onlineStatus: OnlineStatus; // value at page load; the presence store keeps it live after that
+    lastSeenAt: IsoDate | null;
 };
 
 // A pending friend request: incoming (accept or decline) or outgoing (cancel).

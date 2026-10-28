@@ -24,4 +24,8 @@
 - [ ] Reviewed by at least two humans, three is recommended
 - [ ] LLM checks passed
 
+## What to preview/test
+
+<!-- A list of what to test/review, so reviewers quickly know what to test. -->
+
 Everything must be written in English! PR's description, comments, etc...

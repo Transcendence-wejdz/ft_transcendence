@@ -170,6 +170,12 @@ export type FriendRequestBody = {
     displayName: string;
 };
 
+// Body of PATCH /api/friends-list/relationships/[relationshipId]: accept an incoming request.
+// Decline, cancel and remove send no body: they are a DELETE on the same route.
+export type RelationshipActionBody = {
+    action: 'accept';
+};
+
 // ---- Chat ----
 
 // ---- Notifications ----

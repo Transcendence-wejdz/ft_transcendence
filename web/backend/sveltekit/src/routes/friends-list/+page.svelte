@@ -44,26 +44,10 @@
         if (!response.ok) throw new Error(result.error ?? 'Could not load blocked players.');
         blockedPlayers = result.blockedPlayers;
     }
-    const HEARTBEAT_INTERVAL_MS = 5_000;
+    const PRESENCE_REFRESH_INTERVAL_MS = 5_000;
     let intervalId: ReturnType<typeof setInterval> | undefined;
 
-    async function sendHeartbeat() {
-        try {
-            const response = await fetch('/api/friends-list/presence', {
-                method: 'POST'
-            });
-
-            if (!response.ok) {
-                console.error('Heartbeat request failed.');
-            }
-        } catch (cause) {
-            console.error('Heartbeat network error:', cause);
-        }
-    }
-
-    async function refreshPresence() {
-        await sendHeartbeat();
-
+    async function refreshFriends() {
         try {
             await loadFriends();
         } catch (cause) {
@@ -79,10 +63,9 @@
             .catch((cause: unknown) => { error = cause instanceof Error ? cause.message : 'Could not load friends.'; })
             .finally(() => { loading = false; });
 
-        void sendHeartbeat();
         intervalId = setInterval(() => {
-            void refreshPresence();
-        }, HEARTBEAT_INTERVAL_MS);
+            void refreshFriends();
+        }, PRESENCE_REFRESH_INTERVAL_MS);
 
         return () => {
             if (intervalId !== undefined) clearInterval(intervalId);

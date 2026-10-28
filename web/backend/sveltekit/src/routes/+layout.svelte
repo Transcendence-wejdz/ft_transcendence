@@ -2,6 +2,32 @@
     import { page } from '$app/state';
 
     let { data, children } = $props();
+    const HEARTBEAT_INTERVAL_MS = 5_000;
+
+    $effect(() => {
+        if (!data.user) return;
+
+        async function sendHeartbeat() {
+            try {
+                const response = await fetch('/api/friends-list/presence', {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    console.error('Heartbeat request failed.');
+                }
+            } catch (cause) {
+                console.error('Heartbeat network error:', cause);
+            }
+        }
+
+        void sendHeartbeat();
+        const intervalId = setInterval(() => {
+            void sendHeartbeat();
+        }, HEARTBEAT_INTERVAL_MS);
+
+        return () => clearInterval(intervalId);
+    });
 
     async function logout() {
         const response = await fetch('/api/logout', {

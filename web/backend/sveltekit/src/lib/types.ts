@@ -149,6 +149,11 @@ export type FriendRequest = UserSummary & {
     sentAt: IsoDate;
 };
 
+// A player I blocked, in the list on /friends. Unblocking sends id, since the block route takes a player id.
+// Only the blocker gets this list: a blocked player is never told who blocked them.
+export type BlockedPlayer = UserSummary & {
+    blockedAt: IsoDate;
+};
 
 // ---- Chat ----
 

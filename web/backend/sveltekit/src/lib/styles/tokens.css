@@ -48,5 +48,10 @@
 	--radius-card: 8px;
 	--radius-pill: 999px;
 	--shadow-drop: 0 4px 0 var(--color-drop);
+
+	/* Fonts */
+	--font-title: "Pirata One", serif;
+	--font-ui: "Pixelify Sans", monospace;
+	--font-body: Inter, system-ui, sans-serif;
 }
 

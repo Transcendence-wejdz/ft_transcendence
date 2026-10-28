@@ -181,6 +181,16 @@ export type RelationshipActionBody = {
 // Longest message allowed, checked on both sides: the front stops typing, the API answers message_too_long.
 export const MESSAGE_MAX_LENGTH = 1000;
 
+// One chat message. Mine when senderId is the logged-in player; receiverId tells my other tabs which conversation it goes in.
+export type ChatMessage = {
+    id: Uuid;
+    senderId: Uuid;
+    receiverId: Uuid;
+    text: string;
+    sentAt: IsoDate;
+};
+
+
 // ---- Notifications ----
 
 // ---- Game ----

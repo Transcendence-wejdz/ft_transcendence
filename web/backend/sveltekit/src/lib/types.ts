@@ -178,6 +178,9 @@ export type RelationshipActionBody = {
 
 // ---- Chat ----
 
+// Longest message allowed, checked on both sides: the front stops typing, the API answers message_too_long.
+export const MESSAGE_MAX_LENGTH = 1000;
+
 // ---- Notifications ----
 
 // ---- Game ----

@@ -3,9 +3,14 @@
 
     let { data, children } = $props();
     const HEARTBEAT_INTERVAL_MS = 5_000;
+    let onlineAlerts = $state<{ id: string; name: string }[]>([]);
 
     $effect(() => {
         if (!data.user) return;
+
+        let previousOnline = new Set<string>();
+        let hasInitialSnapshot = false;
+        let polling = false;
 
         async function sendHeartbeat() {
             try {
@@ -26,7 +31,44 @@
             void sendHeartbeat();
         }, HEARTBEAT_INTERVAL_MS);
 
-        return () => clearInterval(intervalId);
+        async function checkFriends() {
+            if (polling) return;
+            polling = true;
+            try {
+                const response = await fetch('/api/friends-list', { cache: 'no-store' });
+                if (!response.ok) return;
+                const result = await response.json();
+                if (!result.success || !Array.isArray(result.friends)) return;
+
+                const onlineFriends = result.friends.filter((friend: { online?: boolean }) => friend.online);
+                const currentOnline = new Set<string>(onlineFriends.map((friend: { id: string }) => friend.id));
+                if (hasInitialSnapshot) {
+                    for (const friend of onlineFriends) {
+                        if (!previousOnline.has(friend.id)) {
+                            const alert = { id: `${friend.id}-${Date.now()}`, name: friend.displayName };
+                            onlineAlerts = [...onlineAlerts, alert];
+                            setTimeout(() => {
+                                onlineAlerts = onlineAlerts.filter((item) => item.id !== alert.id);
+                            }, 5_000);
+                        }
+                    }
+                }
+                previousOnline = currentOnline;
+                hasInitialSnapshot = true;
+            } catch (cause) {
+                console.error('Friends presence check failed:', cause);
+            } finally {
+                polling = false;
+            }
+        }
+
+        void checkFriends();
+        const friendsIntervalId = setInterval(() => void checkFriends(), HEARTBEAT_INTERVAL_MS);
+
+        return () => {
+            clearInterval(intervalId);
+            clearInterval(friendsIntervalId);
+        };
     });
 
     async function logout() {
@@ -71,6 +113,18 @@
         {@render children()}
     </main>
 </div>
+
+{#if onlineAlerts.length > 0}
+    <aside class="online-alerts" aria-label="Friend activity" aria-live="polite">
+        {#each onlineAlerts as alert (alert.id)}
+            <div class="online-alert">
+                <span class="online-dot" aria-hidden="true"></span>
+                <span><strong>{alert.name}</strong> just connected</span>
+                <button aria-label="Dismiss notification" onclick={() => onlineAlerts = onlineAlerts.filter((item) => item.id !== alert.id)}>×</button>
+            </div>
+        {/each}
+    </aside>
+{/if}
 
 <style>
     :global(*) {
@@ -158,6 +212,34 @@
     .account-nav {
         gap: 1rem;
     }
+
+    .online-alerts {
+        position: fixed;
+        z-index: 30;
+        top: 1rem;
+        right: 1rem;
+        display: grid;
+        gap: 0.65rem;
+        width: min(24rem, calc(100vw - 2rem));
+    }
+
+    .online-alert {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        padding: 0.9rem 1rem;
+        border: 1px solid rgba(119, 224, 163, 0.35);
+        border-radius: 0.85rem;
+        color: #eaf7ef;
+        background: #182b2a;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+        animation: alert-enter 180ms ease-out;
+    }
+
+    .online-alert strong { color: #9de5b7; }
+    .online-dot { width: 0.55rem; height: 0.55rem; flex: 0 0 auto; border-radius: 50%; background: #69d991; }
+    .online-alert button { margin-left: auto; border: 0; color: #c8d6d2; background: transparent; font-size: 1.25rem; cursor: pointer; }
+    @keyframes alert-enter { from { opacity: 0; transform: translateY(-0.4rem); } to { opacity: 1; transform: translateY(0); } }
 
     .welcome {
         color: #aeb8d3;

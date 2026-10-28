@@ -1,5 +1,14 @@
 <script lang="ts">
     import { page } from '$app/state';
+	import '$lib/styles/tokens.css';
+	import '@fontsource/pirata-one';
+    import '@fontsource/pixelify-sans/400.css';
+    import '@fontsource/pixelify-sans/600.css';
+    import '@fontsource/pixelify-sans/700.css';
+    import '@fontsource/inter/400.css';
+    import '@fontsource/inter/500.css';
+    import '@fontsource/inter/700.css';
+
 
     let { data, children } = $props();
     const HEARTBEAT_INTERVAL_MS = 5_000;

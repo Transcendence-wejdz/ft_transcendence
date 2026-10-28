@@ -166,7 +166,7 @@ export type FriendsList = {
 
 // Body of POST /api/friends-list: send a friend request.
 // A name, not an id: it is what the player types in "Find a player"; the API looks up the id.
-export type FindRequestBody = {
+export type FriendRequestBody = {
     displayName: string;
 };
 

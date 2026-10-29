@@ -21,10 +21,6 @@ public class WaveSpawner : NetworkBehaviour
     [Tooltip("Off for scenes that continue a run (the boss scene), so reaching them doesn't open a new gold run.")]
     [SerializeField] private bool startsRun = true;
 
-    [Header("Boss Transition")]
-    [SerializeField] private string bossSceneName;
-    [SerializeField] private float bossSceneSeconds = 300f;
-
     private readonly NetworkVariable<int> currentWave = new OfflineSafeNetworkVariable<int>(
         0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private readonly NetworkVariable<double> startServerTime = new OfflineSafeNetworkVariable<double>(
@@ -114,25 +110,6 @@ public class WaveSpawner : NetworkBehaviour
 
         wavesStarted = true;
         StartCoroutine(RunWaves());
-        if (!string.IsNullOrEmpty(bossSceneName))
-            StartCoroutine(RunBossSceneTransition());
-    }
-
-    // Server/offline only (BeginWaves never runs on a joined client): at bossSceneSeconds, outside any level-up choice, hands the run state over and moves the whole party to the boss scene.
-    private IEnumerator RunBossSceneTransition()
-    {
-        LevelUpManager levelUp = FindAnyObjectByType<LevelUpManager>();
-        GameOverCheck gameOver = FindAnyObjectByType<GameOverCheck>();
-        yield return new WaitUntil(() => ElapsedSeconds >= bossSceneSeconds && (levelUp == null || !levelUp.SequenceActive));
-        if (gameOver != null && gameOver.IsGameOver)
-            yield break;
-
-        XPManager xp = FindAnyObjectByType<XPManager>();
-        ScoreManager score = FindAnyObjectByType<ScoreManager>();
-        bool isNetworked = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
-        RunCarryOver.Capture(bossSceneName, xp != null ? xp.TotalXP : 0, score != null ? score.Breakdown : default, score != null ? score.PlayerKills : default, CurrentWave, levelUp != null ? levelUp.ProcessedLevel : 1,
-            ElapsedSeconds, isNetworked ? null : LocalPlayer.GetPlayer());
-        GameModeLoader.LoadNow(bossSceneName);
     }
 
     private IEnumerator RunWaves()
@@ -176,7 +153,7 @@ public class WaveSpawner : NetworkBehaviour
 
         while (elapsed < timeBetweenWaves)
         {
-            if (FindObjectsByType<EnemyStats>(FindObjectsInactive.Exclude).Length == 0)
+            if (FindObjectsByType<Enemy>(FindObjectsInactive.Exclude).Length == 0)
                 yield break;
 
             yield return checkDelay;
@@ -193,13 +170,13 @@ public class WaveSpawner : NetworkBehaviour
             offlineStartTime = Time.time - alreadyElapsed;
     }
 
-    // Public so EnemyAI can resolve the same kit by index on every peer (see EnemyAI.ApplyKitFromIndex).
+    // Public so every peer resolves the same kit from the replicated index (see Enemy.HandleKitIndexChanged).
     public EnemyKit GetKit(int index)
     {
         return index >= 0 && index < enemyKits.Length ? enemyKits[index] : null;
     }
 
-    // Each enemy independently rolls a random kit from whatever tiers are unlocked this wave; SetNetworkedKitIndex must run before Spawn() so remote clients get it in the initial state.
+    // Each enemy rolls a random kit among the tiers unlocked this wave.
     private void SpawnWave(int count)
     {
         RefreshUnlockedKitIndices();
@@ -228,20 +205,22 @@ public class WaveSpawner : NetworkBehaviour
         return center;
     }
 
+    // The kit index is set before Spawn() so remote clients get it in the spawn payload.
     private void SpawnEnemy(int kitIndex, Vector3 position)
     {
         EnemyKit kit = GetKit(kitIndex);
         GameObject instance = Instantiate(kit.EnemyPrefab, position, Quaternion.identity);
-        instance.GetComponent<Enemy>().Initialize(kit);
+        Enemy enemy = instance.GetComponent<Enemy>();
+        enemy.Initialize(kit);
 
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
-            instance.GetComponent<EnemyAI>().SetNetworkedKitIndex(kitIndex);
+            enemy.SetNetworkedKitIndex(kitIndex);
             instance.GetComponent<NetworkObject>().Spawn(true);
         }
     }
 
-    // A kit's tier unlocks once waveNumber reaches tierUnlockWave[tier-1]; tiers past that array are never unlocked. Falls back to kit 0 if nothing qualifies yet.
+    // Tier N unlocks at wave tierUnlockWave[N-1]; falls back to kit 0 while none is unlocked.
     private void RefreshUnlockedKitIndices()
     {
         unlockedKitIndices.Clear();
@@ -257,7 +236,7 @@ public class WaveSpawner : NetworkBehaviour
             unlockedKitIndices.Add(0);
     }
 
-    // Falls back to the spawner's own position if no valid point is found; public so EnemyAI can reuse it to recycle stray enemies.
+    // Falls back to the spawner's own position if no valid point is found; public so Enemy can reuse it to recycle stray enemies.
     public Vector3 FindSpawnPosition()
     {
         ProceduralMapGenerator mapGenerator = FindAnyObjectByType<ProceduralMapGenerator>();
@@ -276,7 +255,7 @@ public class WaveSpawner : NetworkBehaviour
         return center;
     }
 
-    // Spawns just off a random living player's screen instead of the spawner's own (map-center) position.
+    // Spawns just off a random living player's screen.
     private Vector3 GetSpawnCenter()
     {
         EnemyFlowFieldManager manager = EnemyFlowFieldManager.Instance;
@@ -286,7 +265,7 @@ public class WaveSpawner : NetworkBehaviour
         return living.Count > 0 ? living[Random.Range(0, living.Count)].transform.position : transform.position;
     }
 
-    // The collider sits above the pivot, so spawn checks test the body position; all enemy variants share the same base collider setup, so any kit's prefab is representative.
+    // Spawn checks test the body, which sits above the pivot; every variant shares the base collider.
     private Vector2 GetEnemyBodyOffset()
     {
         GameObject prefab = enemyKits.Length > 0 ? enemyKits[0].EnemyPrefab : null;

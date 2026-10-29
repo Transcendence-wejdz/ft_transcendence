@@ -1,6 +1,6 @@
 using Unity.Netcode;
 
-// NetworkVariable for offline-first objects: until it belongs to a spawned NetworkBehaviour (solo play, or before spawn) a write only updates the local value and fires OnValueChanged, never marking anything to send.
+// NetworkVariable usable offline: until spawned, a write only updates the local value and fires OnValueChanged.
 public class OfflineSafeNetworkVariable<T> : NetworkVariable<T>
 {
     public OfflineSafeNetworkVariable(T value = default,

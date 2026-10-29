@@ -27,8 +27,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.4, y: 1.4, z: 1.4}
-  m_ConstrainProportionsScale: 1
+  m_LocalScale: {x: 1.4, y: 1.2, z: 1.4}
+  m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6262183949149678745}
   - {fileID: 2388723770231939013}
@@ -167,7 +167,7 @@ MonoBehaviour:
   pulseSpeed: 1
   timeOffset: 0.2
   minLightIntensity: 0.6
-  maxLightIntensity: 1.7
+  maxLightIntensity: 2
 --- !u!1 &1804413019025694399
 GameObject:
   m_ObjectHideFlags: 0
@@ -280,7 +280,7 @@ MonoBehaviour:
   pulseSpeed: 1
   timeOffset: 0.2
   minLightIntensity: 0.6
-  maxLightIntensity: 1.7
+  maxLightIntensity: 2
 --- !u!1 &1812277116765261346
 GameObject:
   m_ObjectHideFlags: 0
@@ -498,7 +498,7 @@ MonoBehaviour:
   pulseSpeed: 1
   timeOffset: 0.2
   minLightIntensity: 0.6
-  maxLightIntensity: 1.7
+  maxLightIntensity: 2
 --- !u!1 &3304548030135170283
 GameObject:
   m_ObjectHideFlags: 0
@@ -727,7 +727,7 @@ MonoBehaviour:
   pulseSpeed: 1
   timeOffset: 0.2
   minLightIntensity: 0.6
-  maxLightIntensity: 1.7
+  maxLightIntensity: 2
 --- !u!1 &5120858274862205542
 GameObject:
   m_ObjectHideFlags: 0

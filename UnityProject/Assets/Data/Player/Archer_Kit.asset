@@ -23,6 +23,8 @@ MonoBehaviour:
   attackCooldown: 0.75
   attackFxPrefab: {fileID: 8561813417502051360, guid: cdcba958b8be78ae8a9cfcc3b63754ef, type: 3}
   attackFxDistance: 1
+  attackFxOrigin: {x: 0, y: 0}
+  attackFxFromAimIndicator: 1
   attackDamage: 20
   attackMoveLockDuration: 0.5
   attackMoveSpeedMultiplier: 0.75
@@ -35,12 +37,14 @@ MonoBehaviour:
   attackGlowDuration: 0
   hasProjectile: 1
   projectileSpeed: 12
-  projectileMaxDistance: 24
+  projectileMaxDistance: 18
   pierceCount: 3
   specialCooldown: 2
   specialManaCost: 0
   specialFxPrefab: {fileID: 0}
   specialFxDistance: 1
+  specialFxOrigin: {x: 0, y: 0}
+  specialFxFromAimIndicator: 0
   specialDamage: 15
   specialMoveLockDuration: 0.3
   specialMoveSpeedMultiplier: 0.35
@@ -55,6 +59,8 @@ MonoBehaviour:
   ultimateManaCost: 0
   ultimateFxPrefab: {fileID: 0}
   ultimateFxDistance: 1
+  ultimateFxOrigin: {x: 0, y: 0}
+  ultimateFxFromAimIndicator: 0
   ultimateDamage: 15
   ultimateMoveLockDuration: 0.3
   ultimateMoveSpeedMultiplier: 0.35

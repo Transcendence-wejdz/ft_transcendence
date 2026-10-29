@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// Light2D that only shines at night (see NightLighting), dimmed when other night lights crowd around it; can flicker like a flame and follow a sprite's facing, e.g. a torch held in one hand.
+// Light2D on only at night (see NightLighting), dimmed when crowded; can flicker and follow a sprite's facing, e.g. a held torch.
 [RequireComponent(typeof(Light2D))]
 public class NightLight : MonoBehaviour
 {

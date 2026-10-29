@@ -97,20 +97,10 @@ public class EnemyFlowFieldManager : MonoBehaviour
         nextPlayerRefreshTime = Time.time + PlayerRefreshInterval;
         scratchPlayers.Clear();
 
-        if (Player.AllActiveInstances.Count == 0)
+        foreach (Player player in Player.ActivePlayers)
         {
-            GameObject localPlayer = LocalPlayer.Get();
-            Player localInstance = localPlayer != null ? localPlayer.GetComponent<Player>() : null;
-            if (localInstance != null && !localInstance.IsDead)
-                scratchPlayers.Add(localInstance);
-        }
-        else
-        {
-            foreach (Player player in Player.AllActiveInstances)
-            {
-                if (!player.IsDead)
-                    scratchPlayers.Add(player);
-            }
+            if (!player.IsDead)
+                scratchPlayers.Add(player);
         }
 
         if (SameContents(scratchPlayers, livingPlayers))

@@ -20,9 +20,6 @@ public partial class Player
     // 0..1 while an ally rides this downed player, -1 otherwise; local per peer like the world revive bar.
     public float ReviveFraction { get; private set; } = -1f;
 
-    public bool IsMounted => isMounted;
-    public float MountProgress01 => isMounted ? Mathf.Clamp01(mountElapsed / mountDurationSeconds) : 0f;
-
     // Wired to the MountInteract zone's onInteract (a child of the downed player); starts mounting whichever local player interacted.
     public void RequestMountByLocalPlayer()
     {
@@ -37,7 +34,7 @@ public partial class Player
         localPlayer.StartMounting(this);
     }
 
-    // Real Netcode parenting instead of copying position each frame; only the server reparents, and LateUpdateMount applies the offset once that replicates back (writing it immediately would snap under the stale old parent).
+    // The server parents the rider to the pig; LateUpdateMount applies the offset once that parenting replicates.
     private void StartMounting(Player pig)
     {
         if (!this.IsLocallyControlled() || isMounted || pig == null || !pig.IsDead)
@@ -80,7 +77,7 @@ public partial class Player
         mountElapsed = 0f;
     }
 
-    // worldPositionStays must be true: false would reinterpret the rider's old world position as a local offset from the pig, teleporting them for one frame before LateUpdateMount corrects it.
+    // worldPositionStays true, else the rider teleports for a frame before LateUpdateMount corrects it.
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     private void RequestMountParentServerRpc(NetworkObjectReference pigRef)
     {
@@ -110,7 +107,7 @@ public partial class Player
             Physics2D.IgnoreCollision(bodyCollider, collisionIgnoredWith.bodyCollider, true);
     }
 
-    // Unparents before reviving: both go out as separate RPCs, and the revive effect could otherwise land on observers before the unparent does, dragging the rider along behind the now-moving revived player.
+    // Unparents before reviving, or observers could see the revived player drag the rider along.
     private void UpdateMount()
     {
         if (!isMounted || !this.IsLocallyControlled())
@@ -144,7 +141,7 @@ public partial class Player
         }
     }
 
-    // Hides the "press E to revive" prompt once someone is riding; runs off the replicated transform.parent, not a local-only flag, same as UpdateMountCollisionIgnore.
+    // Hides the revive prompt while someone rides, read from the replicated transform.parent.
     private void UpdateMountInteractVisibility()
     {
         if (mountInteractRoot == null || !IsDead)
@@ -155,7 +152,7 @@ public partial class Player
             mountInteractRoot.SetActive(shouldShow);
     }
 
-    // Revive bar above a downed player, filled over mountDurationSeconds while someone rides; timed locally from the replicated parenting, so every peer (the downed player included) sees it without extra network state.
+    // Revive bar filled over mountDurationSeconds while someone rides, timed locally from the replicated parenting.
     private void UpdateReviveProgress()
     {
         bool riding = IsDead && HasRider();

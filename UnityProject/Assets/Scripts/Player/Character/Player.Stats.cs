@@ -161,7 +161,7 @@ public partial class Player
         DummyStats.ApplyRemoteHit(position, amount);
     }
 
-    // Called by a rider once the 20s mount channel completes; routed to the downed player's own owner, same pattern as damage.
+    // Called by a rider once the mount channel completes; routed to the downed player's owner, like damage.
     public void RequestRevive()
     {
         if (!NetworkObject.IsSpawned)

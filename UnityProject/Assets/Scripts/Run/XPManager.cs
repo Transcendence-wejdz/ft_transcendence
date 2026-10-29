@@ -55,7 +55,7 @@ public class XPManager : NetworkBehaviour
         if (subscribed || !grantXP)
             return;
         subscribed = true;
-        EnemyStats.OnEnemyKilled += HandleEnemyKilled;
+        Enemy.OnEnemyKilled += HandleEnemyKilled;
     }
 
     private void Unsubscribe()
@@ -63,7 +63,7 @@ public class XPManager : NetworkBehaviour
         if (!subscribed)
             return;
         subscribed = false;
-        EnemyStats.OnEnemyKilled -= HandleEnemyKilled;
+        Enemy.OnEnemyKilled -= HandleEnemyKilled;
     }
 
     private void HandleEnemyKilled(EnemyKit kit, ulong killerClientId)

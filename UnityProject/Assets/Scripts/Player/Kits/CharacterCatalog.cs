@@ -60,9 +60,6 @@ public class CharacterCatalog : ScriptableObject
         public Sprite[] portraitSpritesByClass;
     }
 
-    public int ClassCount => kitsByClass.Length;
-    public int ColorCount => colorVariants.Length;
-
     public bool IsValid(int classIndex, int colorIndex)
     {
         return classIndex >= 0 && classIndex < kitsByClass.Length

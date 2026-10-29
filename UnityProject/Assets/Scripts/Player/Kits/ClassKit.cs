@@ -34,8 +34,12 @@ public class ClassKit : ScriptableObject
     [SerializeField] private float attackCooldown = 0.5f;
     [SerializeField] private GameObject attackFxPrefab;
     [Range(0f, 10f)]
-    [Tooltip("Distance from the player where the FX (and its hitbox) spawns, along the aim.")]
+    [Tooltip("Distance from the FX origin where the FX (and its hitbox) spawns, along the aim.")]
     [SerializeField] private float attackFxDistance = 1f;
+    [Tooltip("Point the FX distance is measured from, relative to the player's feet; X mirrors when aiming left.")]
+    [SerializeField] private Vector2 attackFxOrigin;
+    [Tooltip("Uses the center of the aim indicator ring as the FX origin instead of FX Origin.")]
+    [SerializeField] private bool attackFxFromAimIndicator;
     [FormerlySerializedAs("damage")]
     [PowerRange(0f, 300f, 2f)]
     [Tooltip("Damage per hit.")]
@@ -81,8 +85,12 @@ public class ClassKit : ScriptableObject
     [SerializeField] private float specialManaCost;
     [SerializeField] private GameObject specialFxPrefab;
     [Range(0f, 10f)]
-    [Tooltip("Distance from the player where the FX (and its hitbox) spawns, along the aim.")]
+    [Tooltip("Distance from the FX origin where the FX (and its hitbox) spawns, along the aim.")]
     [SerializeField] private float specialFxDistance = 1f;
+    [Tooltip("Point the FX distance is measured from, relative to the player's feet; X mirrors when aiming left.")]
+    [SerializeField] private Vector2 specialFxOrigin;
+    [Tooltip("Uses the center of the aim indicator ring as the FX origin instead of FX Origin.")]
+    [SerializeField] private bool specialFxFromAimIndicator;
     [PowerRange(0f, 300f, 2f)]
     [Tooltip("Damage per hit.")]
     [SerializeField] private float specialDamage = 15f;
@@ -117,8 +125,12 @@ public class ClassKit : ScriptableObject
     [SerializeField] private float ultimateManaCost;
     [SerializeField] private GameObject ultimateFxPrefab;
     [Range(0f, 10f)]
-    [Tooltip("Distance from the player where the FX (and its hitbox) spawns, along the aim.")]
+    [Tooltip("Distance from the FX origin where the FX (and its hitbox) spawns, along the aim.")]
     [SerializeField] private float ultimateFxDistance = 1f;
+    [Tooltip("Point the FX distance is measured from, relative to the player's feet; X mirrors when aiming left.")]
+    [SerializeField] private Vector2 ultimateFxOrigin;
+    [Tooltip("Uses the center of the aim indicator ring as the FX origin instead of FX Origin.")]
+    [SerializeField] private bool ultimateFxFromAimIndicator;
     [PowerRange(0f, 300f, 2f)]
     [Tooltip("Damage per hit.")]
     [SerializeField] private float ultimateDamage = 15f;
@@ -164,7 +176,7 @@ public class ClassKit : ScriptableObject
     [Range(0f, 720f)]
     [Tooltip("Degrees per second the raised shield turns towards the aim.")]
     [SerializeField] private float shieldTurnSpeed = 120f;
-    // When true, the character's Ultimate cast animation loops/holds instead of auto-returning to Idle/Walk, for as long as the shield is up - needs a "ShieldHeld" bool param on that class's Animator Controller to have any effect.
+    // Holds the Ultimate animation while the shield is up; needs a "ShieldHeld" bool on the class controller.
     [SerializeField] private bool shieldHoldAnimation;
 
     public float MaxHealth => maxHealth;
@@ -175,6 +187,8 @@ public class ClassKit : ScriptableObject
     public float AttackCooldown => attackCooldown;
     public GameObject AttackFxPrefab => attackFxPrefab;
     public float AttackFxDistance => attackFxDistance;
+    public Vector2 AttackFxOrigin => attackFxOrigin;
+    public bool AttackFxFromAimIndicator => attackFxFromAimIndicator;
     public float AttackDamage => attackDamage;
     public float AttackMoveLockDuration => attackMoveLockDuration;
     public float AttackMoveSpeedMultiplier => attackMoveSpeedMultiplier;
@@ -186,7 +200,6 @@ public class ClassKit : ScriptableObject
     public float AttackGlowSize => attackGlowSize;
     public float AttackGlowDuration => attackGlowDuration;
 
-    public bool HasProjectile => hasProjectile;
     public float ProjectileSpeed => projectileSpeed;
     public float ProjectileMaxDistance => projectileMaxDistance;
     public int PierceCount => pierceCount;
@@ -195,6 +208,8 @@ public class ClassKit : ScriptableObject
     public float SpecialManaCost => specialManaCost;
     public GameObject SpecialFxPrefab => specialFxPrefab;
     public float SpecialFxDistance => specialFxDistance;
+    public Vector2 SpecialFxOrigin => specialFxOrigin;
+    public bool SpecialFxFromAimIndicator => specialFxFromAimIndicator;
     public float SpecialDamage => specialDamage;
     public float SpecialMoveLockDuration => specialMoveLockDuration;
     public float SpecialMoveSpeedMultiplier => specialMoveSpeedMultiplier;
@@ -210,6 +225,8 @@ public class ClassKit : ScriptableObject
     public float UltimateManaCost => ultimateManaCost;
     public GameObject UltimateFxPrefab => ultimateFxPrefab;
     public float UltimateFxDistance => ultimateFxDistance;
+    public Vector2 UltimateFxOrigin => ultimateFxOrigin;
+    public bool UltimateFxFromAimIndicator => ultimateFxFromAimIndicator;
     public float UltimateDamage => ultimateDamage;
     public float UltimateMoveLockDuration => ultimateMoveLockDuration;
     public float UltimateMoveSpeedMultiplier => ultimateMoveSpeedMultiplier;
@@ -220,6 +237,22 @@ public class ClassKit : ScriptableObject
     public float UltimateGlowIntensity => ultimateGlowIntensity;
     public float UltimateGlowSize => ultimateGlowSize;
     public float UltimateGlowDuration => ultimateGlowDuration;
+
+    // Where an action's FX spawns relative to the player's feet: its origin (the aim indicator center, or FX Origin with X mirrored when aiming left) plus its distance along the aim.
+    public Vector2 FxOffset(AbilityType ability, Vector2 aim, Vector2 aimIndicatorCenter)
+    {
+        (Vector2 origin, bool fromIndicator, float distance) = ability switch
+        {
+            AbilityType.Special => (specialFxOrigin, specialFxFromAimIndicator, specialFxDistance),
+            AbilityType.Ultimate => (ultimateFxOrigin, ultimateFxFromAimIndicator, ultimateFxDistance),
+            _ => (attackFxOrigin, attackFxFromAimIndicator, attackFxDistance),
+        };
+        if (fromIndicator)
+            origin = aimIndicatorCenter;
+        else if (aim.x < -0.01f)
+            origin.x = -origin.x;
+        return origin + aim * distance;
+    }
 
     public bool HasShield => hasShield;
     public float ShieldHoldDuration => shieldHoldDuration;

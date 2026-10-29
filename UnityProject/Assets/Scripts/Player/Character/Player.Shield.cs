@@ -2,7 +2,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Warrior-style held Ultimate: a directional wall that pushes enemies in front and absorbs damage aimed at anything behind it, until its own HP runs out or the hold timer expires.
+// Held shield Ultimate: a wall that pushes enemies and absorbs hits aimed behind it, until its HP or timer runs out.
 public partial class Player
 {
     [Header("Shield")]
@@ -20,7 +20,7 @@ public partial class Player
     private static readonly Collider2D[] ShieldPushBuffer = new Collider2D[32];
     private static readonly Collider2D[] WallOverlapBuffer = new Collider2D[32];
     private static readonly RaycastHit2D[] ShieldLineBuffer = new RaycastHit2D[8];
-    // Only meaningful on a class whose Animator Controller actually has a "ShieldHeld" bool param (see ClassKit.ShieldHoldAnimation); Animator.SetBool on a missing param is a harmless no-op elsewhere.
+    // Only classes whose controller has a "ShieldHeld" bool use it (see ClassKit.ShieldHoldAnimation).
     private static readonly int ShieldHeldHash = Animator.StringToHash("ShieldHeld");
 
     private readonly NetworkVariable<bool> isShieldActive = new OfflineSafeNetworkVariable<bool>(
@@ -41,7 +41,7 @@ public partial class Player
     public float ShieldMaxHealth => activeKit != null ? activeKit.ShieldHealth : 0f;
     public float ShieldFacingAngle => shieldFacingAngle.Value;
 
-    // Routed here from Ultimate() when activeKit.HasShield; a press raises it, a second press lowers it early (it also drops on its own when the hold timer or its HP runs out).
+    // Called from Ultimate() for shield kits: a press raises it, a second press lowers it early.
     private void UltimateShield(InputAction.CallbackContext ctx)
     {
         if (!this.IsLocallyControlled() || !ctx.performed)
@@ -134,7 +134,7 @@ public partial class Player
             return;
 
         Vector2 facing = DirFromAngle(facingDegrees);
-        Vector2 shieldCenter = center + facing * activeKit.UltimateFxDistance;
+        Vector2 shieldCenter = center + FxOffset(AbilityType.Ultimate, facing);
         Vector2 querySize = ShieldWallSize(template);
 
         ContactFilter2D filter = new ContactFilter2D { useTriggers = false };
@@ -172,7 +172,7 @@ public partial class Player
         ApplyPush(center, facingDegrees, onSpawn);
     }
 
-    // Padding added on top of the shield's actual collider size for the push query only - the solid collider already stops enemies at its surface (touching, not overlapping), so an unpadded query of the same shape would never actually detect them.
+    // Extra size for the push query only, since the solid wall keeps enemies touching it, never overlapping.
     private const float PushQueryPadding = 0.8f;
 
     // Knocks back enemies near the shield's real wall shape on its facing side; on spawn, those caught inside the wall are pushed forward too.
@@ -183,7 +183,7 @@ public partial class Player
             return;
 
         Vector2 facing = DirFromAngle(facingDegrees);
-        Vector2 shieldCenter = center + facing * activeKit.UltimateFxDistance;
+        Vector2 shieldCenter = center + FxOffset(AbilityType.Ultimate, facing);
         Vector2 wallSize = ShieldWallSize(template);
         Vector2 querySize = wallSize + new Vector2(PushQueryPadding, PushQueryPadding);
 
@@ -193,7 +193,7 @@ public partial class Player
 
         for (int i = 0; i < count; i++)
         {
-            EnemyAI enemy = ShieldPushBuffer[i].GetComponent<EnemyAI>();
+            Enemy enemy = ShieldPushBuffer[i].GetComponent<Enemy>();
             if (enemy == null)
                 continue;
 
@@ -222,7 +222,7 @@ public partial class Player
 
         float facingDegrees = shieldFacingAngle.Value;
         Vector2 facing = DirFromAngle(facingDegrees);
-        Vector2 shieldCenter = (Vector2)transform.position + facing * activeKit.UltimateFxDistance;
+        Vector2 shieldCenter = (Vector2)transform.position + FxOffset(AbilityType.Ultimate, facing);
         Vector2 wallSize = ShieldWallSize(template);
 
         Player local = LocalPlayer.GetPlayer();
@@ -246,7 +246,7 @@ public partial class Player
         int count = Physics2D.OverlapCapsule(shieldCenter, querySize, template.direction, facingDegrees, filter, ShieldPushBuffer);
         for (int i = 0; i < count; i++)
         {
-            EnemyAI enemy = ShieldPushBuffer[i].GetComponent<EnemyAI>();
+            Enemy enemy = ShieldPushBuffer[i].GetComponent<Enemy>();
             if (enemy == null || Time.deltaTime <= 0f)
                 continue;
 
@@ -292,7 +292,7 @@ public partial class Player
         shieldWall = wall;
     }
 
-    // Displacement that moves a body in front of the wall straight out along the facing until it sits lead past the wall's front face; reachBehind also catches bodies the wall already passed (up to the caster).
+    // Push along the facing that puts a body lead past the wall's front; reachBehind also catches bodies the wall passed.
     private static Vector2 WallFrontPushOut(Vector2 bodyCenter, Collider2D collider, Vector2 shieldCenter, Vector2 facing, Vector2 wallSize, float lead, float reachBehind)
     {
         Vector2 offset = bodyCenter - shieldCenter;
@@ -338,7 +338,7 @@ public partial class Player
         if (template != null)
         {
             Vector2 facing = DirFromAngle(local.shieldFacingAngle.Value);
-            Vector2 shieldCenter = (Vector2)local.transform.position + facing * local.activeKit.UltimateFxDistance;
+            Vector2 shieldCenter = (Vector2)local.transform.position + local.FxOffset(AbilityType.Ultimate, facing);
             Vector2 wallPush = WallFrontPushOut(center + push, bodyCollider, shieldCenter, facing, local.ShieldWallSize(template), 0f, local.activeKit.UltimateFxDistance);
             if (wallPush != Vector2.zero && !IsPushBlocked(bodyCollider, wallPush))
                 push += wallPush;
@@ -382,7 +382,7 @@ public partial class Player
         return new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
     }
 
-    // Callable on any peer; a line between attacker and target that crosses an active shield's real collider gets absorbed by it instead of reaching the target.
+    // Any peer: a hit whose attacker-to-target line crosses an active shield is absorbed by it.
     public static bool TryAbsorbWithShield(Vector2 attackerPos, Vector2 targetPos, float damage)
     {
         ContactFilter2D filter = new ContactFilter2D { useLayerMask = true, layerMask = Physics2D.DefaultRaycastLayers, useTriggers = Physics2D.queriesHitTriggers };

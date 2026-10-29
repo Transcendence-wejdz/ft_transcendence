@@ -22,7 +22,9 @@ MonoBehaviour:
   dodgeDuration: 0.2
   attackCooldown: 0.65
   attackFxPrefab: {fileID: 6017984809242283011, guid: 758d47d8121e100dea21c1680b93a746, type: 3}
-  attackFxDistance: 2.5
+  attackFxDistance: 2.75
+  attackFxOrigin: {x: 0, y: -0.4}
+  attackFxFromAimIndicator: 1
   attackDamage: 20
   attackMoveLockDuration: 0.45
   attackMoveSpeedMultiplier: 0.2
@@ -40,7 +42,9 @@ MonoBehaviour:
   specialCooldown: 2
   specialManaCost: 20
   specialFxPrefab: {fileID: 4619342916149783007, guid: 02fc21b42b5baf2ea8d53f3c6a169115, type: 3}
-  specialFxDistance: 3
+  specialFxDistance: 3.34
+  specialFxOrigin: {x: 0, y: 0}
+  specialFxFromAimIndicator: 1
   specialDamage: 50
   specialMoveLockDuration: 0.3
   specialMoveSpeedMultiplier: 0.35
@@ -49,12 +53,14 @@ MonoBehaviour:
   specialIgnoreAimRotation: 1
   specialFollowCaster: 0
   specialGlowIntensity: 1.2
-  specialGlowSize: 1.1
+  specialGlowSize: 1.05
   specialGlowDuration: 1
   ultimateCooldown: 5
   ultimateManaCost: 0
   ultimateFxPrefab: {fileID: 0}
   ultimateFxDistance: 1
+  ultimateFxOrigin: {x: 0, y: 0}
+  ultimateFxFromAimIndicator: 0
   ultimateDamage: 15
   ultimateMoveLockDuration: 0.3
   ultimateMoveSpeedMultiplier: 0.35

@@ -214,6 +214,7 @@ GameObject:
   - component: {fileID: 5927942744404691021}
   - component: {fileID: 270056449459605352}
   - component: {fileID: 227354742320272167}
+  - component: {fileID: 1370110714148172171}
   m_Layer: 0
   m_Name: WaveSpawner
   m_TagString: Untagged
@@ -293,8 +294,7 @@ MonoBehaviour:
   maxSpawnPointAttempts: 10
   spawnClearance: 1
   spawnWaves: 1
-  bossSceneName: Boss
-  bossSceneSeconds: 600
+  startsRun: 1
 --- !u!114 &227354742320272167
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -308,6 +308,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapSeedSync
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &1370110714148172171
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5377253627517246972}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5a736b463d826ee2983cff81643f7e5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossSceneTransition
+  bossSceneName: Boss
+  bossSceneSeconds: 600
 --- !u!1 &6366737301997334087
 GameObject:
   m_ObjectHideFlags: 0

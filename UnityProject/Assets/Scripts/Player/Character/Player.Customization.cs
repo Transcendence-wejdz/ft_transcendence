@@ -10,6 +10,20 @@ public partial class Player
 
     public static IReadOnlyList<Player> AllActiveInstances => ActiveInstances;
 
+    private static readonly Player[] OfflinePlayer = new Player[1];
+
+    // Session players, or the offline solo player alone, since it never registers in AllActiveInstances; read it right away, the offline list is reused.
+    public static IReadOnlyList<Player> ActivePlayers
+    {
+        get
+        {
+            if (ActiveInstances.Count > 0)
+                return ActiveInstances;
+            OfflinePlayer[0] = LocalPlayer.GetPlayer();
+            return OfflinePlayer[0] != null ? OfflinePlayer : Array.Empty<Player>();
+        }
+    }
+
     public static event Action<Player> OnPlayerRegistered;
     public static event Action<Player> OnPlayerUnregistered;
 
@@ -37,8 +51,7 @@ public partial class Player
     private readonly NetworkVariable<FixedString64Bytes> friendsTag = new OfflineSafeNetworkVariable<FixedString64Bytes>(
         default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
-    // Unity services player id, so a friend entry or the host can find this player (e.g. to kick them from the session).
-    // Server-writable and claimed once through ClaimServicesIdServerRpc, so a tampered client can't take over another member's id.
+    // Unity services id, so a friend entry or the host can find this player; claimed once via ClaimServicesIdServerRpc.
     private readonly NetworkVariable<FixedString64Bytes> servicesId = new OfflineSafeNetworkVariable<FixedString64Bytes>(
         default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
@@ -56,7 +69,7 @@ public partial class Player
 
     private int layerBeforePreview;
 
-    // Toggled while the customization panel is open; also swaps to the CharacterPreview layer so its camera sees only this player.
+    // Toggled while the customization panel is open; the CharacterPreview layer isolates this player for the preview camera, the main camera still sees it.
     public void SetPreviewCameraActive(bool active)
     {
         if (previewCamera != null)

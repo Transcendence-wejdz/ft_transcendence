@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -28,6 +29,9 @@ public class GamepadUINavigator : MonoBehaviour
     private InputSystemUIInputModule patchedModule;
     private RectTransform highlighted;
     private Vector3 highlightedBaseScale;
+    private GameObject suppressedHover;
+    private GameObject lastScrolled;
+    private readonly List<RaycastResult> hoverHits = new List<RaycastResult>();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap()
@@ -52,6 +56,8 @@ public class GamepadUINavigator : MonoBehaviour
     private void OnInputModeChanged(bool usingGamepad)
     {
         SetInputFieldsActivateOnSelect(!usingGamepad);
+        if (!usingGamepad)
+            RestoreMouseHover();
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -104,6 +110,76 @@ public class GamepadUINavigator : MonoBehaviour
         }
 
         UpdateHighlight(GamepadActive ? selected : null);
+        if (GamepadActive)
+        {
+            SuppressMouseHover();
+            if (selected != lastScrolled)
+                ScrollIntoView(selected);
+        }
+        lastScrolled = selected;
+    }
+
+    // Scrolls the list holding a newly focused control so it stays inside the viewport.
+    private static void ScrollIntoView(GameObject selected)
+    {
+        if (selected == null)
+            return;
+        ScrollRect scroll = selected.GetComponentInParent<ScrollRect>();
+        if (scroll == null || scroll.content == null || !selected.transform.IsChildOf(scroll.content))
+            return;
+
+        RectTransform viewport = scroll.viewport != null ? scroll.viewport : (RectTransform)scroll.transform;
+        Bounds bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(viewport, selected.transform);
+        Rect view = viewport.rect;
+        float shift = bounds.max.y > view.yMax ? bounds.max.y - view.yMax : bounds.min.y < view.yMin ? bounds.min.y - view.yMin : 0f;
+        if (shift == 0f)
+            return;
+
+        scroll.velocity = Vector2.zero;
+        scroll.content.anchoredPosition -= new Vector2(0f, shift);
+    }
+
+    // A still mouse cursor keeps whatever it hovers lit while the pad selects elsewhere, so its hover is cancelled for as long as the pad is in use.
+    private void SuppressMouseHover()
+    {
+        GameObject hovered = UIUnderMouse();
+        if (hovered == suppressedHover)
+            return;
+
+        suppressedHover = hovered;
+        SendToHierarchy(hovered, ExecuteEvents.pointerExitHandler);
+    }
+
+    // Back on the mouse, gives the hover back if the cursor still sits on it, since the input module never re-sends an enter.
+    private void RestoreMouseHover()
+    {
+        GameObject hovered = suppressedHover;
+        suppressedHover = null;
+        if (hovered != null && hovered == UIUnderMouse())
+            SendToHierarchy(hovered, ExecuteEvents.pointerEnterHandler);
+    }
+
+    private GameObject UIUnderMouse()
+    {
+        EventSystem eventSystem = EventSystem.current;
+        if (eventSystem == null || Mouse.current == null)
+            return null;
+
+        var pointer = new PointerEventData(eventSystem) { position = Mouse.current.position.ReadValue() };
+        hoverHits.Clear();
+        eventSystem.RaycastAll(pointer, hoverHits);
+        return hoverHits.Count > 0 ? hoverHits[0].gameObject : null;
+    }
+
+    // Pointer enter/exit reach every object from the hit up to the root, as the input module sends them.
+    private static void SendToHierarchy<T>(GameObject target, ExecuteEvents.EventFunction<T> handler) where T : IEventSystemHandler
+    {
+        if (target == null || EventSystem.current == null)
+            return;
+
+        var pointer = new PointerEventData(EventSystem.current) { position = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero };
+        for (Transform t = target.transform; t != null; t = t.parent)
+            ExecuteEvents.Execute(t.gameObject, pointer, handler);
     }
 
     // Left stick navigation with hysteresis: a direction holds within 60 degrees, so a diagonal push no longer alternates between two moves.
@@ -197,6 +273,8 @@ public class GamepadUINavigator : MonoBehaviour
         if (selectable == null || !selectable.IsInteractable())
             return false;
 
+        if (SocialContextMenuUI.OpenMenu != null)
+            return selected.transform.IsChildOf(SocialContextMenuUI.OpenMenu);
         if (MenuPanel.CurrentOpen != null && !PauseManager.IsMenuOpen)
             return selected.transform.IsChildOf(MenuPanel.CurrentOpen.transform);
 
@@ -217,12 +295,23 @@ public class GamepadUINavigator : MonoBehaviour
         return front;
     }
 
-    // Top-most then left-most control of the open NPC panel, else of the highest screen-space canvas.
+    // The menu's DefaultSelection if it has one, else its top-most then left-most control; the menu is the open NPC panel, else the highest screen-space canvas.
     private Selectable FirstInFrontMenu()
     {
         int count = FillBuffer();
         int front = FrontSortingOrder();
-        Transform panel = MenuPanel.CurrentOpen != null && !PauseManager.IsMenuOpen ? MenuPanel.CurrentOpen.transform : null;
+        Transform panel = SocialContextMenuUI.OpenMenu != null ? SocialContextMenuUI.OpenMenu
+            : MenuPanel.CurrentOpen != null && !PauseManager.IsMenuOpen ? MenuPanel.CurrentOpen.transform : null;
+
+        foreach (DefaultSelection marked in DefaultSelection.All)
+        {
+            Selectable s = marked.Selectable;
+            Canvas canvas = s != null ? s.GetComponentInParent<Canvas>() : null;
+            if (canvas == null || !IsCandidate(s, canvas))
+                continue;
+            if (panel != null ? s.transform.IsChildOf(panel) : canvas.rootCanvas.sortingOrder == front)
+                return s;
+        }
 
         Selectable best = null;
         for (int i = 0; i < count; i++)
@@ -265,6 +354,8 @@ public class GamepadUINavigator : MonoBehaviour
     {
         if (LevelUpUI.IsShowing || GameOverUI.IsShowing || KeybindsPanelUI.IsBusy)
             return;
+        if (SocialContextMenuUI.CloseOpen())
+            return;
 
         PauseManager pause = FindAnyObjectByType<PauseManager>();
         if (PauseManager.IsMenuOpen && pause != null)
@@ -285,7 +376,7 @@ public class GamepadUINavigator : MonoBehaviour
 
     private void UpdateHighlight(GameObject selected)
     {
-        RectTransform target = selected != null ? selected.transform as RectTransform : null;
+        RectTransform target = selected != null && selected.GetComponent<IFocusVisual>() == null ? selected.transform as RectTransform : null;
         if (target == highlighted)
             return;
 

@@ -142,18 +142,12 @@ public class GameOverCheck : NetworkBehaviour
 
     private bool AllPlayersDead()
     {
-        if (Player.AllActiveInstances.Count == 0)
-        {
-            GameObject localPlayer = LocalPlayer.Get();
-            Player localInstance = localPlayer != null ? localPlayer.GetComponent<Player>() : null;
-            return localInstance != null && localInstance.CurrentHealth <= 0f;
-        }
-
-        foreach (Player player in Player.AllActiveInstances)
+        IReadOnlyList<Player> players = Player.ActivePlayers;
+        foreach (Player player in players)
         {
             if (player.CurrentHealth > 0f)
                 return false;
         }
-        return true;
+        return players.Count > 0;
     }
 }

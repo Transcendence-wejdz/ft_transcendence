@@ -6,9 +6,10 @@
 
 ## Scope
 
-- [ ] `web/`
-- [ ] `UnityProject/`
-- [ ] Vault / docs / repo config
+<!-- KEEP ONLY WHAT GETS AFFECTED BY YOUR PR -->
+- `web/`
+- `UnityProject/`
+- Vault / docs / repo config
 
 ## How was this tested?
 

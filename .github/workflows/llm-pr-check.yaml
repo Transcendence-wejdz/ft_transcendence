@@ -70,7 +70,7 @@ jobs:
             - 🚨 Critical issue
 
             Bla bla bla.
-            Triggered by commit <hash>.
+            Last run was on commit <hash>.
             ```
 
             # Re-review

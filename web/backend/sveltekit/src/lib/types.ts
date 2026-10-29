@@ -201,6 +201,15 @@ export type Conversation = {
     unreadCount: number;
 };
 
+// Body of POST /api/players/[playerId]/messages: only what the player typed.
+export type SendMessageBody = {
+    text: string;
+};
+
+
+// ---- Notifications ----
+
+
 // ---- Notifications ----
 
 // ---- Game ----

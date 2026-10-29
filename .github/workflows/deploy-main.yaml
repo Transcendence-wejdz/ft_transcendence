@@ -2,7 +2,7 @@ name: deploy-main
 
 on:
   push:
-    branches: [main, feat/ci-cd]
+    branches: [main]
   workflow_dispatch:
 
 concurrency:

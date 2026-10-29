@@ -181,8 +181,11 @@ export type RelationshipActionBody = {
 // Longest message allowed, checked on both sides: the front stops typing, the API answers message_too_long.
 export const MESSAGE_MAX_LENGTH = 1000;
 
+// TODO:    the chat-thread.html mockup shows match invites as messages (Join / Decline):
+// TODO:    if we keep them, add a kind field ('text' | 'match_invite') with the invite data.
 // One chat message. Mine when senderId is the logged-in player; receiverId tells my other tabs which conversation it goes in.
 export type ChatMessage = {
+
     id: Uuid;
     senderId: Uuid;
     receiverId: Uuid;
@@ -191,7 +194,7 @@ export type ChatMessage = {
 };
 
 // A row of /chat: the other player, their latest message (null if none yet) and the unread badge (0: hidden).
-// TODO: Need to clarify if we still want to implemant the unread counter to show the number of message unread (https://website/chat.html)
+// TODO: Need to clarify if we still want to implement the unread counter to show the number of message unread (see the chat.html mockup)
 export type Conversation = {
     peer: UserSummary;
     lastMessage: ChatMessage | null;

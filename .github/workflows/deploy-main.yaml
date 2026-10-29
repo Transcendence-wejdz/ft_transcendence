@@ -1,0 +1,139 @@
+name: deploy-main
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: true
+
+env:
+  DIR: /srv/app
+
+jobs:
+  build-web:
+    name: build-web
+    runs-on: [self-hosted, deploy]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: false
+
+      - name: build-web
+        run: |
+          touch web/.env
+          COMPOSE_FILE=web/compose.yaml docker compose build
+
+  build-unity:
+    name: build-unity
+    needs: build-web
+    runs-on: [self-hosted, deploy]
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: false
+
+      - name: cleanup
+        run: |
+          rm -rf build
+
+      - name: load-unity-license
+        run: |
+          set -a; . "$HOME/.unity/credentials"; set +a
+          echo "::add-mask::$UNITY_PASSWORD"
+          echo "UNITY_EMAIL=$UNITY_EMAIL" >> "$GITHUB_ENV"
+          echo "UNITY_PASSWORD=$UNITY_PASSWORD" >> "$GITHUB_ENV"
+          { echo "UNITY_LICENSE<<ULF_EOF"; cat "$HOME/.unity/Unity_lic.ulf"; echo "ULF_EOF"; } >> "$GITHUB_ENV"
+
+      - name: build-unity-webgl
+        uses: game-ci/unity-builder@v4
+        with:
+          projectPath: UnityProject
+          unityVersion: 6000.5.6f1
+          targetPlatform: WebGL
+          buildProfile: "Assets/Settings/Build Profiles/webgl-release.asset"
+          buildName: game
+          buildsPath: build
+          versioning: None
+          runAsHostUser: true
+
+      - name: build-unity-check
+        run: |
+          test -f build/WebGL/game/Build/game.loader.js
+
+      - name: stage-game
+        run: |
+          rm -rf "$DIR.game"
+          mv build/WebGL/game "$DIR.game"
+
+  deploy:
+    name: deploy
+    needs: [build-web, build-unity]
+    runs-on: [self-hosted, deploy]
+    environment:
+      name: production
+      url: ${{ steps.up.outputs.url }}
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - name: health-check
+        run: |
+          docker compose version
+
+      - uses: actions/checkout@v4
+        with:
+          clean: false
+
+      - name: fetch-game
+        run: |
+          rm -rf build/WebGL/game
+          mkdir -p build/WebGL
+          mv "$DIR.game" build/WebGL/game
+
+      - name: stop-previous
+        run: |
+          if [ -f "$DIR/compose.yaml" ]; then
+            COMPOSE_FILE="$DIR/compose.yaml" docker compose down --remove-orphans
+          fi
+
+      - name: copy-code
+        run: |
+          rm -rf "$DIR.new"
+          cp -a web "$DIR.new"
+          rm -rf "$DIR.new/backend/sveltekit/static/public/game"
+          cp -a build/WebGL/game "$DIR.new/backend/sveltekit/static/public/game"
+          rm -rf "$DIR"
+          mv "$DIR.new" "$DIR"
+
+      - name: init-env
+        run: |
+          . "$HOME/.prod/env"
+          cat > "$DIR/.env" <<EOF
+          POSTGRES_HOST=db
+          POSTGRES_PORT=5432
+          POSTGRES_USER=transcendence
+          POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+          POSTGRES_DB=transcendence
+          ORIGIN=https://$PROD_HOST
+          PROD_HOST=$PROD_HOST
+          EOF
+
+      - name: run
+        run: docker compose up -d --no-build
+
+      - name: wait-until-up
+        id: up
+        run: |
+          host="$PROD_HOST"
+          curl -kfsS -o /dev/null --retry 30 --retry-delay 5 --retry-all-errors --resolve "$host:443:127.0.0.1" "https://$host/"
+          curl -kfsS -o /dev/null --resolve "$host:443:127.0.0.1" "https://$host/public/game/Build/game.loader.js"
+          echo "url=https://$host" >> "$GITHUB_OUTPUT"
+          echo "### Preview is up: https://$host" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: logs-on-failure
+        if: failure()
+        run: docker compose logs --tail 256

@@ -191,6 +191,7 @@ export type ChatMessage = {
 };
 
 // A row of /chat: the other player, their latest message (null if none yet) and the unread badge (0: hidden).
+// TODO: Need to clarify if we still want to implemant the unread counter to show the number of message unread (https://website/chat.html)
 export type Conversation = {
     peer: UserSummary;
     lastMessage: ChatMessage | null;

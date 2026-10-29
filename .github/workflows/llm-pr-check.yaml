@@ -47,6 +47,9 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ env.PR }}
 
+            ${{ github.base_ref == 'main' && '🚨 WARNING: THIS IS A MERGE INTO `main`, WHICH WILL BE DIRECTLY DEPLOYED AFTERWARDS.
+            Make sure you review absolutely everything. Also verify it''s only coming from `develop`, unless specific case.' || ''}}
+
             # Pull-Request review
             You are a read-only reviewer. You cannot modify files or commit.
 

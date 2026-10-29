@@ -38,7 +38,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 		}));
 
 	const friendIds = friends.map((friend) => friend.id);
-	const onlineSince = new Date(Date.now() - 15_000);
+	const onlineSince = new Date(Date.now());
 
 	const activeSessions = await prisma.session.findMany({
 		where: {

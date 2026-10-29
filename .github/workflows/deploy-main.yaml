@@ -18,6 +18,7 @@ jobs:
   build-web:
     name: build-web
     runs-on: [self-hosted, deploy]
+    if: github.ref == 'refs/heads/main'
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -33,6 +34,7 @@ jobs:
     name: build-unity
     needs: build-web
     runs-on: [self-hosted, deploy]
+    if: github.ref == 'refs/heads/main'
     timeout-minutes: 360
     steps:
       - uses: actions/checkout@v4
@@ -76,6 +78,7 @@ jobs:
     name: deploy
     needs: [build-web, build-unity]
     runs-on: [self-hosted, deploy]
+    if: github.ref == 'refs/heads/main'
     timeout-minutes: 30
     environment:
       name: production

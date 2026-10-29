@@ -15,7 +15,7 @@ export const POST: RequestHandler = async ({ locals, cookies }) => {
 			userId: locals.user.id,
 			expiresAt: { gt: new Date() }
 		},
-		data: { lastOnline: new Date(Date.now() - 5000) } // Set lastOnline to 5 seconds ago to ensure the user is considered online
+		data: { lastOnline: new Date() }
 	});
 
 	if (updated.count === 0) {

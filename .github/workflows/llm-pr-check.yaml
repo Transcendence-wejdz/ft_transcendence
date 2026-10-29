@@ -56,7 +56,7 @@ jobs:
             - Any change that will break the build and preview CI/CD workflows.
 
             Be concise. Use inline comments for specific issues, then post one summary comment with `gh pr comment`.
-            The summary must be a bullet list starting with an appropriate emoji for each issue, with a short paragraph at the end.
+            The summary must be a bullet list starting with an appropriate emoji for each issue, with a short paragraph at the end, and the last commit id it knows of.
             If nothing is wrong, post a comment with a green-check. To illustrate:
             ```
             ## Review summary
@@ -67,6 +67,7 @@ jobs:
             - 🚨 Critical issue
 
             Bla bla bla.
+            Triggered by commit <hash>.
             ```
 
             # Re-review

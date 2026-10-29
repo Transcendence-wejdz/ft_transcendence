@@ -2,8 +2,13 @@ import { json } from '@sveltejs/kit';
 import { prisma } from '$lib/server/db.js';
 import type { RequestHandler } from './$types';
 
+const isUuid = (value: string) => /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(value);
+
 export const PATCH: RequestHandler = async ({ locals, params, request }) => {
 	if (!locals.user) return json({ success: false, error: 'Not authenticated' }, { status: 401 });
+	if (!isUuid(params.relationshipId)) {
+		return json({ success: false, error: 'Request not found or cannot be accepted' }, { status: 404 });
+	}
 	let body: unknown;
 	try {
 		body = await request.json();
@@ -56,6 +61,9 @@ export const PATCH: RequestHandler = async ({ locals, params, request }) => {
 export const DELETE: RequestHandler = async ({ locals, params }) => {
     if (!locals.user) {
         return json({ success: false, error: 'Not authenticated' }, { status: 401 });
+    }
+    if (!isUuid(params.relationshipId)) {
+        return json({ success: false, error: 'Relationship not found or cannot be removed' }, { status: 404 });
     }
 
     const result = await prisma.friendship.deleteMany({

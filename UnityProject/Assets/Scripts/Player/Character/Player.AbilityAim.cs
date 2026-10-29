@@ -56,10 +56,12 @@ public partial class Player
     // Placed distance of an action currently aimed in Hold Free, -1 (the kit's FX distance) otherwise.
     private float AimedDistance(AbilityType ability) => aimingAbility == ability && IsFreeAim(ability) ? aimDistance : -1f;
 
-    // Special and Ultimate only start when they could be cast right now, so the preview never promises a cast that release would refuse; the Attack keeps its preview between autofire shots.
+    // Special and Ultimate only start when castable now; the Attack preview never replaces a Special/Ultimate aim in progress (it keeps autofiring without one).
     private void BeginAim(AbilityType ability)
     {
         if (!CanFight)
+            return;
+        if (ability == AbilityType.Attack && aimingAbility is AbilityType.Special or AbilityType.Ultimate)
             return;
         if (ability == AbilityType.Special && (Time.time < specialReadyTime || CurrentMana < activeKit.SpecialManaCost))
             return;
@@ -77,7 +79,7 @@ public partial class Player
         aimTarget = FxOffset(ability, AimDirection, aimDistance);
     }
 
-    // Casts the aimed Special or Ultimate on release; the Attack just stops showing its preview.
+    // Casts the aimed Special or Ultimate on release, then brings back the Attack preview if Attack is still held; the Attack just stops showing its preview.
     private void ReleaseAim(AbilityType ability)
     {
         if (aimingAbility != ability)
@@ -89,6 +91,9 @@ public partial class Player
             CastSpecial(distance);
         else if (ability == AbilityType.Ultimate)
             CastUltimate(distance);
+
+        if (ability != AbilityType.Attack && isAttackHeld && IsHoldAim(AbilityType.Attack))
+            BeginAim(AbilityType.Attack);
     }
 
     // A gamepad zone leaves the stick aim where the zone pointed, so the aim does not snap back after the cast.

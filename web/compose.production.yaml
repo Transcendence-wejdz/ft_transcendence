@@ -8,6 +8,8 @@ services:
       - traefik.enable=true
       - traefik.http.routers.prod.rule=Host(`${PROD_HOST}`)
       - traefik.http.routers.prod.entrypoints=websecure
+      - traefik.http.routers.prod.tls=true
+      - traefik.http.routers.prod.tls.certresolver=le
       - traefik.http.services.prod.loadbalancer.server.port=4443
       - traefik.http.services.prod.loadbalancer.server.scheme=https
 

@@ -50,7 +50,7 @@ jobs:
 
       - name: remove-stale-unity-locks
         run: |
-          ids=$(docker ps --format '{{.ID}} {{.Image}}' | awk '$2 ~ /^unityci\/editor/ {print $1}')
+          ids=$(docker ps --filter volume="$GITHUB_WORKSPACE" --format '{{.ID}} {{.Image}}' | awk '$2 ~ /^unityci\/editor/ {print $1}')
           [ -z "$ids" ] || docker rm -f $ids
           rm -rf UnityProject/Temp
 

@@ -3,13 +3,16 @@ name: deploy-main
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: deploy-main
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   DIR: /srv/app
+  COMPOSE_PROJECT_NAME: tr-prod
+  COMPOSE_FILE: /srv/app/compose.yaml:/srv/app/compose.production.yaml
 
 jobs:
   build-web:
@@ -42,7 +45,7 @@ jobs:
 
       - name: load-unity-license
         run: |
-          set -a; . "$HOME/.unity/credentials"; set +a
+          . "$HOME/.unity/credentials"
           echo "::add-mask::$UNITY_PASSWORD"
           echo "UNITY_EMAIL=$UNITY_EMAIL" >> "$GITHUB_ENV"
           echo "UNITY_PASSWORD=$UNITY_PASSWORD" >> "$GITHUB_ENV"
@@ -73,6 +76,7 @@ jobs:
     name: deploy
     needs: [build-web, build-unity]
     runs-on: [self-hosted, deploy]
+    timeout-minutes: 30
     environment:
       name: production
       url: ${{ steps.up.outputs.url }}
@@ -112,6 +116,9 @@ jobs:
       - name: init-env
         run: |
           . "$HOME/.prod/env"
+          test -n "$PROD_HOST" || { echo "::error::PROD_HOST missing in ~/.prod/env"; exit 1; }
+          test -n "$POSTGRES_PASSWORD" || { echo "::error::POSTGRES_PASSWORD missing in ~/.prod/env"; exit 1; }
+          echo "PROD_HOST=$PROD_HOST" >> "$GITHUB_ENV"
           cat > "$DIR/.env" <<EOF
           POSTGRES_HOST=db
           POSTGRES_PORT=5432
@@ -121,6 +128,7 @@ jobs:
           ORIGIN=https://$PROD_HOST
           PROD_HOST=$PROD_HOST
           EOF
+          chmod 600 "$DIR/.env"
 
       - name: run
         run: docker compose up -d --no-build
@@ -132,7 +140,7 @@ jobs:
           curl -kfsS -o /dev/null --retry 30 --retry-delay 5 --retry-all-errors --resolve "$host:443:127.0.0.1" "https://$host/"
           curl -kfsS -o /dev/null --resolve "$host:443:127.0.0.1" "https://$host/public/game/Build/game.loader.js"
           echo "url=https://$host" >> "$GITHUB_OUTPUT"
-          echo "### Preview is up: https://$host" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Production is up: https://$host" >> "$GITHUB_STEP_SUMMARY"
 
       - name: logs-on-failure
         if: failure()

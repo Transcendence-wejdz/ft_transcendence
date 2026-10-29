@@ -33,7 +33,7 @@ jobs:
     name: build-unity
     needs: build-web
     runs-on: [self-hosted, deploy]
-    timeout-minutes: 90
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v4
         with:

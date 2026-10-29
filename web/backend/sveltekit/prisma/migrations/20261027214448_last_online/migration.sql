@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "sessions" ADD COLUMN     "last_online" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP;

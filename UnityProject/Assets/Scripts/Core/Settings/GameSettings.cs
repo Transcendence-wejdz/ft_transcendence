@@ -13,6 +13,14 @@ public static class GameSettings
     private const string StickDeadzoneKey = "Settings.StickDeadzone";
     private const string CameraDistanceKey = "Settings.CameraDistance";
     private const string CursorSizeKey = "Settings.CursorSize";
+    private const string RelayRegionKey = "Settings.RelayRegion";
+    private const string MouseSensitivityKey = "Settings.MouseSensitivity";
+    private const string GamepadAimSpeedKey = "Settings.GamepadAimSpeed";
+    private const string AimAssistKey = "Settings.AimAssist";
+    private const string AimDeadzoneKey = "Settings.AimDeadzone";
+    private const string ShowAttackPreviewKey = "Settings.ShowAttackPreview";
+    private const string ShowSpecialPreviewKey = "Settings.ShowSpecialPreview";
+    private const string ShowUltimatePreviewKey = "Settings.ShowUltimatePreview";
 
     public const float StickDeadzoneMin = 0.05f;
     public const float StickDeadzoneMax = 0.5f;
@@ -23,6 +31,15 @@ public static class GameSettings
     public const float CursorSizeMin = 0.5f;
     public const float CursorSizeMax = 2f;
     public const float CursorSizeStep = 0.1f;
+    public const float MouseSensitivityMin = 0.25f;
+    public const float MouseSensitivityMax = 3f;
+    public const float MouseSensitivityStep = 0.05f;
+    public const float AimDeadzoneMin = 0.05f;
+    public const float AimDeadzoneMax = 0.9f;
+    public const float AimDeadzoneStep = 0.05f;
+    public const float GamepadAimSpeedMin = 0.25f;
+    public const float GamepadAimSpeedMax = 3f;
+    public const float GamepadAimSpeedStep = 0.05f;
 
     public static readonly string[] GraphicsQualityNames = { "Low", "Medium", "High", "Ultra" };
 
@@ -137,6 +154,107 @@ public static class GameSettings
         set
         {
             PlayerPrefs.SetFloat(CursorSizeKey, Mathf.Clamp(value, CursorSizeMin, CursorSizeMax));
+            PlayerPrefs.Save();
+            OnChanged?.Invoke();
+        }
+    }
+
+    public static bool ShowAttackPreview
+    {
+        get => PlayerPrefs.GetInt(ShowAttackPreviewKey, 1) != 0;
+        set
+        {
+            PlayerPrefs.SetInt(ShowAttackPreviewKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            OnChanged?.Invoke();
+        }
+    }
+
+    public static bool ShowSpecialPreview
+    {
+        get => PlayerPrefs.GetInt(ShowSpecialPreviewKey, 1) != 0;
+        set
+        {
+            PlayerPrefs.SetInt(ShowSpecialPreviewKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            OnChanged?.Invoke();
+        }
+    }
+
+    public static bool ShowUltimatePreview
+    {
+        get => PlayerPrefs.GetInt(ShowUltimatePreviewKey, 1) != 0;
+        set
+        {
+            PlayerPrefs.SetInt(ShowUltimatePreviewKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            OnChanged?.Invoke();
+        }
+    }
+
+    // Whether the hold-aim preview of an action is drawn; the hold-to-cast behaviour stays either way.
+    public static bool ShowAimPreview(AbilityType ability) => ability switch
+    {
+        AbilityType.Special => ShowSpecialPreview,
+        AbilityType.Ultimate => ShowUltimatePreview,
+        _ => ShowAttackPreview,
+    };
+
+    // In-game cursor speed multiplier; at 1 the OS cursor is used as is, otherwise a virtual cursor takes over outside menus (see CursorManager).
+    public static float MouseSensitivity
+    {
+        get => Mathf.Clamp(PlayerPrefs.GetFloat(MouseSensitivityKey, 1f), MouseSensitivityMin, MouseSensitivityMax);
+        set
+        {
+            PlayerPrefs.SetFloat(MouseSensitivityKey, Mathf.Clamp(value, MouseSensitivityMin, MouseSensitivityMax));
+            PlayerPrefs.Save();
+            OnChanged?.Invoke();
+        }
+    }
+
+    // Right stick tilt needed before the aim turns; below it the aim keeps its last direction. Stacks on top of the stick deadzone.
+    public static float AimDeadzone
+    {
+        get => Mathf.Clamp(PlayerPrefs.GetFloat(AimDeadzoneKey, 0.4f), AimDeadzoneMin, AimDeadzoneMax);
+        set
+        {
+            PlayerPrefs.SetFloat(AimDeadzoneKey, Mathf.Clamp(value, AimDeadzoneMin, AimDeadzoneMax));
+            PlayerPrefs.Save();
+            OnChanged?.Invoke();
+        }
+    }
+
+    // Gamepad only: Attacks bend toward the nearest target close to the aim.
+    public static bool AimAssist
+    {
+        get => PlayerPrefs.GetInt(AimAssistKey, 1) != 0;
+        set
+        {
+            PlayerPrefs.SetInt(AimAssistKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            OnChanged?.Invoke();
+        }
+    }
+
+    // Multiplier on how fast the right stick moves a free-aimed ability zone.
+    public static float GamepadAimSpeed
+    {
+        get => Mathf.Clamp(PlayerPrefs.GetFloat(GamepadAimSpeedKey, 1f), GamepadAimSpeedMin, GamepadAimSpeedMax);
+        set
+        {
+            PlayerPrefs.SetFloat(GamepadAimSpeedKey, Mathf.Clamp(value, GamepadAimSpeedMin, GamepadAimSpeedMax));
+            PlayerPrefs.Save();
+            OnChanged?.Invoke();
+        }
+    }
+
+    // Relay region used when hosting; empty means Auto (Relay picks the lowest-latency one).
+    public static string RelayRegion
+    {
+        get => PlayerPrefs.GetString(RelayRegionKey, string.Empty);
+        set
+        {
+            PlayerPrefs.SetString(RelayRegionKey, value ?? string.Empty);
             PlayerPrefs.Save();
             OnChanged?.Invoke();
         }

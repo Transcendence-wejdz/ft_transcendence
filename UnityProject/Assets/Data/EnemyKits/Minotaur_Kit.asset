@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a66c09d7042c9ffa9f15490369cf586, type: 3}
+  m_Name: Minotaur_Kit
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyKit
+  tier: 4
+  maxHealth: 320
+  xpReward: 45
+  scoreReward: 450
+  moveSpeed: 1.6
+  attackShape: 1
+  attackRange: 2.5
+  attackAngle: 90
+  attackWidth: 1.6
+  attackOrigin: {x: 0.4, y: 0}
+  damage: 30
+  attackCooldown: 2.2
+  attackHitDelay: 0.8
+  attackAnimationDuration: 1.2
+  attackMoveSpeedMultiplier: 0
+  hitRangeTolerance: 1.25
+  isRanged: 0
+  projectilePrefab: {fileID: 0}
+  projectileSpeed: 12
+  projectileMaxDistance: 8
+  projectileArcHeight: 0.8
+  retargetInterval: 0.25
+  steerInterval: 0.1
+  directChaseRange: 8
+  lineOfSightInterval: 0.3
+  maxDistanceFromPlayers: 40
+  leashCheckInterval: 2
+  enemyPrefab: {fileID: 8046858570631607442, guid: 31339f8bc36a1641399f3e701080c2d2, type: 3}
+  idleStateName: Idle
+  runStateName: Walk
+  attackStateName: Attack

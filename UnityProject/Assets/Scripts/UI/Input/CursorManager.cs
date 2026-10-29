@@ -26,6 +26,20 @@ public class CursorManager : MonoBehaviour
     private Coroutine activeAnimation;
     private bool isHoveringClickable;
     private readonly List<RaycastResult> raycastResults = new List<RaycastResult>();
+    private static CursorManager instance;
+    private Vector2 virtualPosition;
+    private bool virtualActive;
+
+    // Where the game treats the cursor as pointing: the virtual cursor while it runs, the OS one otherwise.
+    public static Vector2 PointerPosition
+    {
+        get
+        {
+            if (instance != null && instance.virtualActive)
+                return instance.virtualPosition;
+            return Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
+        }
+    }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap()
@@ -46,6 +60,7 @@ public class CursorManager : MonoBehaviour
             return;
         }
 
+        instance = this;
         Cursor.visible = false;
 
         var canvasGO = new GameObject("CursorCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
@@ -94,6 +109,8 @@ public class CursorManager : MonoBehaviour
     private void OnDestroy()
     {
         GameSettings.OnChanged -= ApplyCurrentSprite;
+        if (virtualActive)
+            Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
 
@@ -102,10 +119,14 @@ public class CursorManager : MonoBehaviour
         if (cursorRect == null || Mouse.current == null)
             return;
 
-        Vector2 mouseScreenPosition = Mouse.current.position.ReadValue();
-        bool insideWindow = Application.isFocused
-            && mouseScreenPosition.x >= 0f && mouseScreenPosition.x <= Screen.width
-            && mouseScreenPosition.y >= 0f && mouseScreenPosition.y <= Screen.height;
+        Vector2 osPosition = Mouse.current.position.ReadValue();
+        bool osInsideWindow = Application.isFocused
+            && osPosition.x >= 0f && osPosition.x <= Screen.width
+            && osPosition.y >= 0f && osPosition.y <= Screen.height;
+        UpdateVirtualCursor(osInsideWindow);
+
+        Vector2 mouseScreenPosition = PointerPosition;
+        bool insideWindow = virtualActive || osInsideWindow;
         Cursor.visible = !insideWindow;
         cursorImage.enabled = insideWindow && !InputModeTracker.UsingGamepad;
         if (!cursorImage.enabled)
@@ -130,6 +151,35 @@ public class CursorManager : MonoBehaviour
                 StopCoroutine(activeAnimation);
             activeAnimation = StartCoroutine(AnimateClick());
         }
+    }
+
+    // Outside menus with a non default mouse sensitivity, locks the OS cursor and moves a virtual one by mouse delta x sensitivity; menus get the OS cursor back where the virtual one was.
+    private void UpdateVirtualCursor(bool osInsideWindow)
+    {
+        bool wanted = !Mathf.Approximately(GameSettings.MouseSensitivity, 1f)
+            && !PauseManager.IsPaused && !InputModeTracker.UsingGamepad && Application.isFocused
+            && (virtualActive || osInsideWindow);
+
+        if (wanted && !virtualActive)
+        {
+            virtualPosition = Mouse.current.position.ReadValue();
+            Cursor.lockState = CursorLockMode.Locked;
+            virtualActive = true;
+            return;
+        }
+        if (!wanted && virtualActive)
+        {
+            virtualActive = false;
+            Cursor.lockState = CursorLockMode.None;
+            Mouse.current.WarpCursorPosition(virtualPosition);
+            return;
+        }
+        if (!virtualActive)
+            return;
+
+        virtualPosition += Mouse.current.delta.ReadValue() * GameSettings.MouseSensitivity;
+        virtualPosition.x = Mathf.Clamp(virtualPosition.x, 0f, Screen.width);
+        virtualPosition.y = Mathf.Clamp(virtualPosition.y, 0f, Screen.height);
     }
 
     private bool IsPointerOverClickable(Vector2 screenPosition)

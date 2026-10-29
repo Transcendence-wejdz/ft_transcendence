@@ -134,7 +134,7 @@ public partial class Player
         if (ApplyKnockbackMovement() || ApplyDodgeMovement())
             return;
 
-        Vector2 aimDir = IsDead ? GetMovementFacingDirection() : InputModeTracker.UsingGamepad ? GetStickAimDirection() : GetMouseAimDirection();
+        Vector2 aimDir = IsDead ? GetMovementFacingDirection() : InputModeTracker.UsingGamepad ? (TryGetZoneAimDirection(out Vector2 zoneAim) ? zoneAim : GetStickAimDirection()) : GetMouseAimDirection();
         aimAngle.Value = Mathf.Atan2(aimDir.y, aimDir.x) * Mathf.Rad2Deg;
 
         if (Time.time >= moveLockEndTime)
@@ -240,28 +240,47 @@ public partial class Player
     // Mouse-to-world aim, evaluated every frame.
     private Vector2 GetMouseAimDirection()
     {
-        if (cam == null)
-            cam = Camera.main;
-        if (cam == null || Mouse.current == null)
+        if (!TryGetMouseWorld(out Vector2 mouseWorld))
             return facing;
 
-        Vector3 mouseScreen = Mouse.current.position.ReadValue();
-        mouseScreen.z = -cam.transform.position.z;
-        Vector3 mouseWorld = cam.ScreenToWorldPoint(mouseScreen);
-
-        Vector2 dir = (Vector2)mouseWorld - (Vector2)transform.position;
+        Vector2 dir = mouseWorld - (Vector2)transform.position;
         return dir.sqrMagnitude > 0.0001f ? dir.normalized : facing;
     }
 
-    // Aim action (right stick, deadzone from GameSettings); falls back to the move direction, then keeps the last aim, once released.
-    private Vector2 GetStickAimDirection()
+    // Cursor position on the world plane (virtual cursor when the mouse sensitivity is set); false without a camera or a mouse.
+    private bool TryGetMouseWorld(out Vector2 world)
+    {
+        world = Vector2.zero;
+        if (cam == null)
+            cam = Camera.main;
+        if (cam == null || Mouse.current == null)
+            return false;
+
+        Vector3 mouseScreen = CursorManager.PointerPosition;
+        mouseScreen.z = -cam.transform.position.z;
+        world = cam.ScreenToWorldPoint(mouseScreen);
+        return true;
+    }
+
+    // Right stick after the stickDeadzone processor (already zero inside the deadzone, rescaled to 0-1 past it), used to move free-aimed ability zones.
+    private Vector2 AimStickVector()
     {
         if (aimAction == null && playerInput != null)
             aimAction = playerInput.actions.FindAction("Aim");
+        return aimAction != null ? aimAction.ReadValue<Vector2>() : Vector2.zero;
+    }
 
-        Vector2 stick = aimAction != null ? aimAction.ReadValue<Vector2>() : Vector2.zero;
-        if (stick.sqrMagnitude > 0.0001f)
+    // Physical tilt from a stickDeadzone-processed magnitude, which is rescaled from the deadzone min..max range to 0..1.
+    private static float RawStickTilt(float processed) => Mathf.Lerp(InputSystem.settings.defaultDeadzoneMin, InputSystem.settings.defaultDeadzoneMax, processed);
+
+    // Aim action (right stick, stick deadzone then aim deadzone from GameSettings); falls back to the move direction, then keeps the last aim, once released.
+    private Vector2 GetStickAimDirection()
+    {
+        Vector2 stick = AimStickVector();
+        if (stick.sqrMagnitude > 0.0001f && RawStickTilt(stick.magnitude) >= GameSettings.AimDeadzone)
             stickAim = stick.normalized;
+        else if (stick.sqrMagnitude > 0.0001f)
+            return stickAim;
         else if (moveInput.sqrMagnitude > 0.0001f)
             stickAim = moveInput.normalized;
         return stickAim;

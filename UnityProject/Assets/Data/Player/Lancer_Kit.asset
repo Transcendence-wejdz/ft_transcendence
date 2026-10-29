@@ -15,9 +15,9 @@ MonoBehaviour:
   maxHealth: 110
   healthRegenPerSecond: 1.2
   maxMana: 60
-  manaRegenPerSecond: 10
+  manaRegenPerSecond: 1.6
   dodgeCharges: 2
-  dodgeRechargeSeconds: 3
+  dodgeRechargeSeconds: 6
   dodgeDistance: 2.5
   dodgeDuration: 0.2
   attackCooldown: 0.65
@@ -25,6 +25,8 @@ MonoBehaviour:
   attackFxDistance: 2.75
   attackFxOrigin: {x: 0, y: -0.4}
   attackFxFromAimIndicator: 1
+  attackAimMode: 1
+  attackMaxRange: 6
   attackDamage: 20
   attackMoveLockDuration: 0.45
   attackMoveSpeedMultiplier: 0.2
@@ -45,6 +47,8 @@ MonoBehaviour:
   specialFxDistance: 3.34
   specialFxOrigin: {x: 0, y: 0}
   specialFxFromAimIndicator: 1
+  specialAimMode: 1
+  specialMaxRange: 6
   specialDamage: 50
   specialMoveLockDuration: 0.3
   specialMoveSpeedMultiplier: 0.35
@@ -61,6 +65,8 @@ MonoBehaviour:
   ultimateFxDistance: 1
   ultimateFxOrigin: {x: 0, y: 0}
   ultimateFxFromAimIndicator: 0
+  ultimateAimMode: 0
+  ultimateMaxRange: 6
   ultimateDamage: 15
   ultimateMoveLockDuration: 0.3
   ultimateMoveSpeedMultiplier: 0.35

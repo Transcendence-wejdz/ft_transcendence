@@ -57,22 +57,30 @@ public partial class Player
         activeKit = kit != null ? kit : defaultKit;
     }
 
-    // Held down: keeps firing on its own once each cooldown ends, instead of requiring repeated clicks.
+    // Held down: keeps firing on its own once each cooldown ends, instead of requiring repeated clicks; hold kits also preview each shot.
     public void Attack(InputAction.CallbackContext ctx)
     {
         if (!this.IsLocallyControlled())
             return;
 
         if (ctx.canceled)
+        {
             isAttackHeld = false;
+            ReleaseAim(AbilityType.Attack);
+        }
         else if (ctx.performed)
+        {
             isAttackHeld = true;
+            if (IsHoldAim(AbilityType.Attack))
+                BeginAim(AbilityType.Attack);
+        }
     }
 
     private void UpdateActions()
     {
         if (isAttackHeld && this.IsLocallyControlled() && CanFight && Time.time >= attackReadyTime)
             FireAttack();
+        UpdateAim();
     }
 
     private void FireAttack()
@@ -84,12 +92,32 @@ public partial class Player
         moveLockEndTime = Time.time + activeKit.AttackMoveLockDuration;
         moveLockSpeedMultiplier = ApplyAttackMobilityBonus(activeKit.AttackMoveSpeedMultiplier);
         OnAbilityUsed?.Invoke(AbilityType.Attack, cooldown);
-        SpawnAbilityFx(AbilityType.Attack);
+        SpawnAbilityFx(AbilityType.Attack, AimedDistance(AbilityType.Attack));
     }
 
+    // Instant kits cast on press; hold kits preview on press and cast on release (see Player.AbilityAim).
     public void Special(InputAction.CallbackContext ctx)
     {
-        if (!this.IsLocallyControlled() || !ctx.performed || !CanFight || Time.time < specialReadyTime)
+        if (!this.IsLocallyControlled())
+            return;
+
+        if (IsHoldAim(AbilityType.Special))
+        {
+            if (ctx.performed)
+                BeginAim(AbilityType.Special);
+            else if (ctx.canceled)
+                ReleaseAim(AbilityType.Special);
+            return;
+        }
+
+        if (ctx.performed)
+            CastSpecial(-1f);
+    }
+
+    // A placed distance of -1 keeps the kit's FX distance.
+    private void CastSpecial(float distance)
+    {
+        if (!CanFight || Time.time < specialReadyTime)
             return;
         if (!TrySpendMana(activeKit.SpecialManaCost))
             return;
@@ -101,7 +129,7 @@ public partial class Player
         moveLockEndTime = Time.time + activeKit.SpecialMoveLockDuration;
         moveLockSpeedMultiplier = ApplyAttackMobilityBonus(activeKit.SpecialMoveSpeedMultiplier);
         OnAbilityUsed?.Invoke(AbilityType.Special, cooldown);
-        SpawnAbilityFx(AbilityType.Special);
+        SpawnAbilityFx(AbilityType.Special, distance);
     }
 
     public void Ultimate(InputAction.CallbackContext ctx)
@@ -112,7 +140,26 @@ public partial class Player
             return;
         }
 
-        if (!this.IsLocallyControlled() || !ctx.performed || !CanFight || Time.time < ultimateReadyTime)
+        if (!this.IsLocallyControlled())
+            return;
+
+        if (IsHoldAim(AbilityType.Ultimate))
+        {
+            if (ctx.performed)
+                BeginAim(AbilityType.Ultimate);
+            else if (ctx.canceled)
+                ReleaseAim(AbilityType.Ultimate);
+            return;
+        }
+
+        if (ctx.performed)
+            CastUltimate(-1f);
+    }
+
+    // A placed distance of -1 keeps the kit's FX distance.
+    private void CastUltimate(float distance)
+    {
+        if (!CanFight || Time.time < ultimateReadyTime)
             return;
         if (!TrySpendMana(activeKit.UltimateManaCost))
             return;
@@ -123,7 +170,7 @@ public partial class Player
         moveLockEndTime = Time.time + activeKit.UltimateMoveLockDuration;
         moveLockSpeedMultiplier = ApplyAttackMobilityBonus(activeKit.UltimateMoveSpeedMultiplier);
         OnAbilityUsed?.Invoke(AbilityType.Ultimate, activeKit.UltimateCooldown);
-        SpawnAbilityFx(AbilityType.Ultimate);
+        SpawnAbilityFx(AbilityType.Ultimate, distance);
     }
 
     // Offset of this player's aim indicator ring from its feet, read once since the ring only rotates.
@@ -141,7 +188,7 @@ public partial class Player
     }
 
     // Where this player's FX for an action spawns, relative to its feet (see ClassKit.FxOffset).
-    public Vector2 FxOffset(AbilityType ability, Vector2 aim) => activeKit != null ? activeKit.FxOffset(ability, aim, AimIndicatorCenter) : Vector2.zero;
+    public Vector2 FxOffset(AbilityType ability, Vector2 aim, float distance = -1f) => activeKit != null ? activeKit.FxOffset(ability, aim, AimIndicatorCenter, distance) : Vector2.zero;
 
     private GameObject GetFxPrefab(AbilityType ability) => ability switch
     {
@@ -164,47 +211,54 @@ public partial class Player
         _ => activeKit.AttackIgnoreAimRotation,
     };
 
-    private void SpawnAbilityFx(AbilityType ability)
+    private void SpawnAbilityFx(AbilityType ability, float distance = -1f)
     {
         if (GetFxPrefab(ability) == null)
             return;
 
-        float angle = AimAngleDegrees;
-        SpawnLocalFx(angle, hasHitbox: true, ability);
+        float angle = AssistedAimAngle(ability);
+        SpawnLocalFx(angle, hasHitbox: true, ability, distance);
 
         if (NetworkObject.IsSpawned)
-            SpawnAbilityFxServerRpc(angle, ability);
+            SpawnAbilityFxServerRpc(angle, ability, distance);
     }
 
     [ServerRpc]
-    private void SpawnAbilityFxServerRpc(float angle, AbilityType ability)
+    private void SpawnAbilityFxServerRpc(float angle, AbilityType ability, float distance)
     {
-        SpawnAbilityFxClientRpc(angle, OwnerClientId, ability);
+        SpawnAbilityFxClientRpc(angle, OwnerClientId, ability, distance);
     }
 
     // Mirrors the FX on the other clients only, the attacker already spawned its own (with the hitbox) instantly.
     [ClientRpc]
-    private void SpawnAbilityFxClientRpc(float angle, ulong attackerClientId, AbilityType ability)
+    private void SpawnAbilityFxClientRpc(float angle, ulong attackerClientId, AbilityType ability, float distance)
     {
         if (NetworkManager.Singleton.LocalClientId == attackerClientId)
             return;
 
-        SpawnLocalFx(angle, hasHitbox: false, ability);
+        SpawnLocalFx(angle, hasHitbox: false, ability, distance);
     }
 
     // Position is computed locally from the attacker's current transform, not sent over RPC - round-trip latency would otherwise bake a stale offset into the spawn point.
-    private void SpawnLocalFx(float angle, bool hasHitbox, AbilityType ability)
+    private void SpawnLocalFx(float angle, bool hasHitbox, AbilityType ability, float distance)
     {
         GameObject prefab = GetFxPrefab(ability);
         if (prefab == null)
             return;
 
-        Vector2 dir = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
-        Vector3 spawnPos = transform.position + (Vector3)FxOffset(ability, dir);
-        Quaternion rotation = GetIgnoreAimRotation(ability) ? Quaternion.identity : Quaternion.Euler(0f, 0f, angle);
-
+        FxPose(ability, angle, distance, out Vector3 spawnPos, out Quaternion rotation);
         GameObject fx = Instantiate(prefab, spawnPos, rotation);
-        fx.transform.localScale *= GetSize(ability) * SizeBonusMultiplier;
+        fx.transform.localScale *= FxScaleMultiplier(ability);
         fx.GetComponent<IAttackFX>()?.Init(gameObject, hasHitbox, activeKit, ability, DamageMultiplier);
     }
+
+    // Spawn position and rotation of an action's FX, shared by the real spawn and the aim preview.
+    private void FxPose(AbilityType ability, float angle, float distance, out Vector3 position, out Quaternion rotation)
+    {
+        Vector2 dir = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
+        position = transform.position + (Vector3)FxOffset(ability, dir, distance);
+        rotation = GetIgnoreAimRotation(ability) ? Quaternion.identity : Quaternion.Euler(0f, 0f, angle);
+    }
+
+    private float FxScaleMultiplier(AbilityType ability) => GetSize(ability) * SizeBonusMultiplier;
 }

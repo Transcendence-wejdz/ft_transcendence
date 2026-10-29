@@ -67,7 +67,7 @@ public class EnemyProjectile : MonoBehaviour
             col.isTrigger = true;
     }
 
-    // Moves by Rigidbody2D velocity; the arc is only a visual offset on the child sprite, the hitbox flies straight.
+    // Moves by Rigidbody2D velocity; the arc is only a visual offset on the child sprite (never the root, which would pin the shot in place), the hitbox flies straight.
     void Update()
     {
         float traveled = Vector3.Distance(startPosition, transform.position);
@@ -77,7 +77,7 @@ public class EnemyProjectile : MonoBehaviour
             return;
         }
 
-        if (spriteRenderer != null && arcHeight > 0f)
+        if (spriteRenderer != null && arcHeight > 0f && spriteRenderer.transform != transform)
         {
             float fraction = Mathf.Clamp01(traveled / maxDistance);
             Vector3 offset = spriteBaseLocalPosition;

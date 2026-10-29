@@ -90,7 +90,7 @@ public class NetworkBootstrap : MonoBehaviour
             hostSpawnPosition = customization.position;
             hostSpawnRotation = customization.rotation;
 
-            SessionOptions options = new SessionOptions { MaxPlayers = maxPlayers }.WithRelayNetwork();
+            SessionOptions options = new SessionOptions { MaxPlayers = maxPlayers }.WithRelayNetwork(RelayRegions.Selected);
             IHostSession session = await MultiplayerService.Instance.CreateSessionAsync(options);
             await PublishCodeAsync(session);
             ActiveSession.Set(session);

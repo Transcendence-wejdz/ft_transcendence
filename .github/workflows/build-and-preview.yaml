@@ -48,6 +48,12 @@ jobs:
         run: |
           rm -rf build
 
+      - name: remove-stale-unity-locks
+        run: |
+          ids=$(docker ps --format '{{.ID}} {{.Image}}' | awk '$2 ~ /^unityci\/editor/ {print $1}')
+          [ -z "$ids" ] || docker rm -f $ids
+          rm -rf UnityProject/Temp
+
       - *generate-slug
 
       - name: load-unity-license

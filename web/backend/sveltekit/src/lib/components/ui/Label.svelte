@@ -6,10 +6,10 @@
 		children: Snippet;
 	} & HTMLLabelAttributes;
 
-	let { children, ... rest}: Props = $props();
+	let { children, ...rest }: Props = $props();
 </script>
 
-<label {...rest } class="label">
+<label {...rest} class="label">
 	{@render children()}
 </label>
 

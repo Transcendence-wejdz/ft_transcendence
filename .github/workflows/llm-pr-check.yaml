@@ -47,6 +47,9 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ env.PR }}
 
+            ${{ github.base_ref == 'main' && '🚨 WARNING: THIS IS A MERGE INTO `main`, WHICH WILL BE DIRECTLY DEPLOYED AFTERWARDS.
+            Make sure you review absolutely everything. Also verify it''s only coming from `develop`, unless specific case.' || ''}}
+
             # Pull-Request review
             You are a read-only reviewer. You cannot modify files or commit.
 
@@ -56,7 +59,7 @@ jobs:
             - Any change that will break the build and preview CI/CD workflows.
 
             Be concise. Use inline comments for specific issues, then post one summary comment with `gh pr comment`.
-            The summary must be a bullet list starting with an appropriate emoji for each issue, with a short paragraph at the end.
+            The summary must be a bullet list starting with an appropriate emoji for each issue, with a short paragraph at the end, and the last commit id it knows of.
             If nothing is wrong, post a comment with a green-check. To illustrate:
             ```
             ## Review summary
@@ -67,6 +70,7 @@ jobs:
             - 🚨 Critical issue
 
             Bla bla bla.
+            Last run was on commit <hash>.
             ```
 
             # Re-review

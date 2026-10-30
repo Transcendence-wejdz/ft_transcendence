@@ -6,9 +6,10 @@
 
 ## Scope
 
-- [ ] `web/`
-- [ ] `UnityProject/`
-- [ ] Vault / docs / repo config
+<!-- KEEP ONLY WHAT GETS AFFECTED BY YOUR PR -->
+- `web/`
+- `UnityProject/`
+- Vault / docs / repo config
 
 ## How was this tested?
 
@@ -17,8 +18,15 @@
 ## Checklist
 
 - [ ] Targets `develop` (only `develop` → `main` for a release)
+- [ ] You have assigned yourself on this PR
 - [ ] CI is green
-- [ ] Tested in Google Chrome, no errors in the browser console
+- [ ] Tested in Google Chrome, if applicable
 - [ ] No secrets/credentials committed
-- [ ] Reviewed by at least two other human teammates
+- [ ] Reviewed by at least two humans, three is recommended
 - [ ] LLM checks passed
+
+## What to preview/test
+
+<!-- A list of what to test/review, so reviewers quickly know what to test. -->
+
+Everything must be written in English! PR's description, comments, etc...

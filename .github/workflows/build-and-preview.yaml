@@ -2,7 +2,8 @@ name: build-and-preview
 
 on:
   push:
-    branches: ['**']
+    branches: ['**', '!main']
+  workflow_dispatch:
 
 concurrency:
   group: preview-${{github.ref_name}}
@@ -47,11 +48,17 @@ jobs:
         run: |
           rm -rf build
 
+      - name: remove-stale-unity-locks
+        run: |
+          ids=$(docker ps --filter volume="$GITHUB_WORKSPACE" --format '{{.ID}} {{.Image}}' | awk '$2 ~ /^unityci\/editor/ {print $1}')
+          [ -z "$ids" ] || docker rm -f $ids
+          rm -rf UnityProject/Temp
+
       - *generate-slug
 
       - name: load-unity-license
         run: |
-          set -a; . "$HOME/.unity/credentials"; set +a
+          . "$HOME/.unity/credentials"
           echo "::add-mask::$UNITY_PASSWORD"
           echo "UNITY_EMAIL=$UNITY_EMAIL" >> "$GITHUB_ENV"
           echo "UNITY_PASSWORD=$UNITY_PASSWORD" >> "$GITHUB_ENV"
@@ -123,7 +130,7 @@ jobs:
 
       - name: init-env
         run: |
-          set -a; . "$HOME/.preview/env"; set +a
+          . "$HOME/.preview/env"
           test -n "$PREVIEW_DOMAIN" || { echo "::error::PREVIEW_DOMAIN missing in ~/.preview/env"; exit 1; }
           echo "PREVIEW_DOMAIN=$PREVIEW_DOMAIN" >> "$GITHUB_ENV"
           cat > "$DIR/.env" <<EOF
@@ -136,6 +143,7 @@ jobs:
           PREVIEW_SLUG=$SLUG
           PREVIEW_DOMAIN=$PREVIEW_DOMAIN
           EOF
+          chmod 600 "$DIR/.env"
 
       - name: run
         run: docker compose up -d --no-build

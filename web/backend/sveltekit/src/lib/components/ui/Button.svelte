@@ -38,11 +38,11 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		gap: 10px;
-		min-height: 48px;
-		padding: 0 22px;
+		gap: var(--space-sm);
+		min-height: var(--control-md);
+		padding: 0 var(--space-lg);
 		font-family: var(--font-ui);
-		font-size: 19px;
+		font-size: var(--text-lg);
 		font-weight: 700;
 		border: var(--border-width) solid var(--color-outline);
 		border-radius: var(--radius);
@@ -51,9 +51,9 @@
 	}
 
 	.size-sm {
-		min-height: 44px;
-		padding: 0 16px;
-		font-size: 16px;
+		min-height: var(--control-sm);
+		padding: 0 var(--space-md);
+		font-size: var(--text-md);
 	}
 
 	.variant-primary {

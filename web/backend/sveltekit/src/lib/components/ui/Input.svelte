@@ -26,7 +26,7 @@
 		background: var(--color-input-bg);
 		border: var(--border-width) solid var(--color-outline);
 		border-radius: var(--radius);
-		box-shadow: inset 0 3px 0 var(--color-input-shadow);
+		box-shadow: inset 0 3px 0 var(--color-parchment-shadow);
 	}
 
 	.field::placeholder {

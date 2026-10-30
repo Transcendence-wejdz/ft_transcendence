@@ -6,6 +6,7 @@
 	--color-bg-raised: #34304a;
 	--color-bg-raised-hover: #403b5a;
 	--color-border-subtle: #3d3950;
+	--color-bg-card-shadow: #221f2b;
 
 	/* Parchment */
 	--color-parchment: #f3e6c6;
@@ -13,7 +14,7 @@
 	--color-parchment-text-muted: #5e4a33;
 	--color-input-bg: #fffaf0;
 	--color-input-placeholder: #7d6a50;
-	--color-input-shadow: #e2cf9f;
+	--color-parchment-shadow: #e2cf9f;
 
 	/* Text on dark */
 	--color-text: #f6efe0;

@@ -40,9 +40,9 @@
 	}
 
 	.size-sm {
-		min-height: 36px;
-		padding: 0 14px;
-		font-size: 15px;
+		min-height: 44px;
+		padding: 0 16px;
+		font-size: 16px;
 	}
 
 	.variant-primary {

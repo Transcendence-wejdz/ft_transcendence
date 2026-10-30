@@ -3,7 +3,7 @@ import { prisma } from '$lib/server/db.js';
 import { isUniqueViolation } from '$lib/server/validation.js';
 import type { RequestHandler } from './$types';
 
-const userSummary = { id: true, displayName: true, color: true } as const;
+const userSummary = { id: true, displayName: true, color: true, lastSeen: true } as const;
 
 export const GET: RequestHandler = async ({ locals }) => {
 	if (!locals.user) return json({ success: false, error: 'Not authenticated' }, { status: 401 });
@@ -50,12 +50,24 @@ export const GET: RequestHandler = async ({ locals }) => {
 	});
 
 	const onlineUserIds = new Set(activeSessions.map((session) => session.userId));
+	const latestActivity = await prisma.session.findMany({
+		where: { userId: { in: friendIds } },
+		select: { userId: true, lastOnline: true },
+		orderBy: { lastOnline: 'desc' }
+	});
+	const lastSeenByUser = new Map<string, Date>();
+	for (const session of latestActivity) {
+		if (!lastSeenByUser.has(session.userId)) lastSeenByUser.set(session.userId, session.lastOnline);
+	}
 	return json(
 		{
 			success: true,
 			friends: friends.map((friend) => ({
 				...friend,
-				online: onlineUserIds.has(friend.id)
+				online: onlineUserIds.has(friend.id),
+				lastSeen: (friend.lastSeen && (!lastSeenByUser.get(friend.id) || friend.lastSeen > lastSeenByUser.get(friend.id)!))
+					? friend.lastSeen.toISOString()
+					: lastSeenByUser.get(friend.id)?.toISOString() ?? null
 			})),
 			requests
 		},

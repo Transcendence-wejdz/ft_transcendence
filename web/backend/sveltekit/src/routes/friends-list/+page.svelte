@@ -6,6 +6,7 @@
         displayName: string;
         color: string;
         online: boolean;
+        lastSeen: string | null;
         relationshipId: string;
     };
 
@@ -29,6 +30,19 @@
     let friends = $state<Friend[]>([]);
     let requests = $state<FriendRequest[]>([]);
     let blockedPlayers = $state<BlockedPlayer[]>([]);
+
+    function formatLastSeen(value: string | null) {
+        if (!value) return 'Last seen: unknown';
+        const elapsed = Math.max(0, Date.now() - new Date(value).getTime());
+        const minutes = Math.floor(elapsed / 60_000);
+        if (minutes < 1) return 'Last seen just now';
+        if (minutes < 60) return `Last seen ${minutes}m ago`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `Last seen ${hours}h ago`;
+        const days = Math.floor(hours / 24);
+        if (days < 7) return `Last seen ${days}d ago`;
+        return `Last seen ${new Date(value).toLocaleDateString()}`;
+    }
 
     async function loadFriends() {
         const response = await fetch('/api/friends-list');
@@ -219,7 +233,7 @@
                             <span class="friend-name">{friend.displayName}</span>
                             <span class:online={friend.online} class="friend-status">
                                 <span class="status-dot"></span>
-                                {friend.online ? 'Online' : 'Offline'}
+                                {friend.online ? 'Online' : formatLastSeen(friend.lastSeen)}
                             </span>
                         </div>
 

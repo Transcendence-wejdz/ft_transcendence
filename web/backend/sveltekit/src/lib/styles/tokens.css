@@ -33,6 +33,7 @@
 	--color-online: #7cd65a;
 	--color-ribbon: #8a4f2a;
 	--color-focus: #2f6fd6;
+	--color-danger-text: #7a1b21;
 
 	/* Team colors */
 	--color-team-black: #171923;
@@ -54,6 +55,7 @@
 	/* Font sizes */
 	--text-md: 1rem;
 	--text-lg: 1.1875rem;
+	--text-sm: 0.875rem;
 
 	/* Spacing */
 	--space-sm: 0.625rem;

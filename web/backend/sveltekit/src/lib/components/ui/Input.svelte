@@ -1,12 +1,18 @@
 <script lang="ts">
 	import type { HTMLInputAttributes } from 'svelte/elements';
 
-	type Props = HTMLInputAttributes;
+	type Props = {
+		error?: string;
+	} & HTMLInputAttributes;
 
-	let { value = $bindable(), ...rest }: Props = $props();
+	let { value = $bindable(), error, ...rest }: Props = $props();
+	const id = $props.id();
 </script>
 
-<input bind:value {...rest} class="field"/>
+<input bind:value {...rest} aria-invalid={error ? true : undefined} aria-describedby={error ? `${id}-error` : undefined} class="field"/>
+{#if error}
+	<span id="{id}-error" class="error">{error}</span>
+{/if}
 
 <style>
 	.field {
@@ -31,4 +37,15 @@
 		outline: 3px solid var(--color-focus);
 		outline-offset: 2px;
 	}
+
+	.field[aria-invalid='true'] {
+		border-color: var(--color-danger);
+		box-shadow: 0 0 0 3px var(--color-danger);
+	}
+
+	.error {
+		color: var(--color-danger-text);
+		font-size: var(--text-sm);
+	}
+
 </style>

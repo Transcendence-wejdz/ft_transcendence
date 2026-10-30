@@ -1,8 +1,9 @@
 using Unity.Netcode;
 
-// True for the offline solo player or the owner of a spawned one.
+// Offline-aware authority checks for NetworkBehaviours.
 public static class NetworkBehaviourExtensions
 {
+    // True for the offline solo player or the owner of a spawned one.
     public static bool IsLocallyControlled(this NetworkBehaviour behaviour)
         => behaviour.NetworkObject != null && (!behaviour.NetworkObject.IsSpawned || behaviour.IsOwner);
 

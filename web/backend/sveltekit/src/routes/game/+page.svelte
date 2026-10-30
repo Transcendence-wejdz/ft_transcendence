@@ -1,14 +1,37 @@
-<script>
+<script lang="ts">
     import { onMount } from 'svelte';
 
-    let unityCanvas;
-    let loadingBar;
-    let progressBar;
-    let warningBanner;
-    let unityInstance = null;
+    type UnityInstance = {
+        Quit: () => void | Promise<void>;
+        SendMessage: (objectName: string, methodName: string, value: string) => void;
+    };
+
+    type UnityConfig = {
+        arguments: string[];
+        dataUrl: string;
+        frameworkUrl: string;
+        codeUrl: string;
+        streamingAssetsUrl: string;
+        companyName: string;
+        productName: string;
+        productVersion: string;
+        showBanner: (message: string, type: 'error' | 'warning') => void;
+    };
+
+    type UnityCreator = (
+        canvas: HTMLCanvasElement,
+        config: UnityConfig,
+        onProgress: (progress: number) => void
+    ) => Promise<UnityInstance>;
+
+    let unityCanvas: HTMLCanvasElement;
+    let loadingBar: HTMLDivElement;
+    let progressBar: HTMLDivElement;
+    let warningBanner: HTMLDivElement;
+    let unityInstance: UnityInstance | null = null;
     let errorMessage = $state('');
 
-    function unityShowBanner(msg, type) {
+    function unityShowBanner(msg: string, type: 'error' | 'warning') {
         if (!warningBanner) return;
 
         const div = document.createElement('div');
@@ -31,10 +54,10 @@
 
     onMount(() => {
         let disposed = false;
-        let unityStartup = null;
-        let unityQuit = null;
+        let unityStartup: Promise<UnityInstance> | null = null;
+        let unityQuit: Promise<void> | null = null;
         const profileRequest = new AbortController();
-        const stopUnity = (instance) => {
+        const stopUnity = (instance: UnityInstance): Promise<void> => {
             if (!unityQuit) unityQuit = Promise.resolve(instance.Quit());
             return unityQuit;
         };
@@ -61,13 +84,17 @@
         script.onload = () => {
             if (disposed) return;
 
-            unityStartup = createUnityInstance(
+            const createUnityInstance = (window as unknown as Window & { createUnityInstance: UnityCreator })
+                .createUnityInstance;
+            const startup = createUnityInstance(
                 unityCanvas,
                 config,
                 (progress) => {
                     if (!disposed) progressBar.style.width = `${progress * 100}%`;
                 }
-            )
+            );
+            unityStartup = startup;
+            void startup
                 .then(async (instance) => {
                     if (disposed) {
                         await stopUnity(instance);
@@ -90,14 +117,15 @@
 
                     const data = await res.json();
                     if (disposed) return;
-                    // const displayName = data.user.display_name;
 
                     const profile = JSON.stringify({
                         userId: data.user.id,
                         displayName: data.user.display_name,
                         playerClass: data.user.class,
                         color: data.user.color,
-                        settingsJson: data.user.game_settings ? JSON.stringify(data.user.game_settings) : ''
+                        settingsJson: data.user.game_settings ? JSON.stringify(data.user.game_settings) : '',
+                        gold: data.user.gold ?? 0,
+                        upgradesJson: JSON.stringify(data.user.upgrades ?? {})
                     });
 
                     unityInstance.SendMessage(
@@ -106,8 +134,9 @@
                         profile
                     );
                 })
-                .catch((message) => {
+                .catch((error: unknown) => {
                     if (disposed) return;
+                    const message = error instanceof Error ? error.message : String(error);
                     errorMessage = message;
                     loadingBar.style.display = 'none';
                     unityShowBanner(message, 'error');

@@ -1,0 +1,135 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa1c7e9d9ada04ea5891383d865f09d7, type: 3}
+  m_Name: CharacterCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterCatalog
+  kitsByClass:
+  - {fileID: 11400000, guid: 590f376c4c7a40e0aa6b4132f95723bd, type: 2}
+  - {fileID: 11400000, guid: a38b611367056637c94bebaeecc70c3f, type: 2}
+  - {fileID: 11400000, guid: 0d86892a8195ecf7ab8b93be4efed0c1, type: 2}
+  - {fileID: 11400000, guid: 49574ade77c849a3abac3cee811ce363, type: 2}
+  - {fileID: 11400000, guid: 00237731cda6cbfddb916172676af3c1, type: 2}
+  colorVariants:
+  - controllersByClass:
+    - {fileID: 9100000, guid: f49f01a915ff21ff79b6f0948e6b3357, type: 2}
+    - {fileID: 9100000, guid: 64cbacfe809b6541aac1e6ab3431d4e3, type: 2}
+    - {fileID: 9100000, guid: 09d06c99bc0eb3be8bb31107edbb0fdb, type: 2}
+    - {fileID: 9100000, guid: cb07dd3e7fc9e4b119f2ef2b28c0ce66, type: 2}
+    - {fileID: 9100000, guid: 2cc6ee1f6d7ea024caf461ddba515486, type: 2}
+    worldSpritesByClass:
+    - {fileID: 7257567913506708742, guid: 20e09ab91a2370dbe97f3823bd978142, type: 3}
+    - {fileID: 4723107735738678597, guid: 9ef03e222520d4c28b987887de7f8025, type: 3}
+    - {fileID: -594197781322936934, guid: 6a522e40b9c459efab139c45716aa050, type: 3}
+    - {fileID: -5948806968594788206, guid: 1981cb6fb344b837d96c94344f0a9c39, type: 3}
+    - {fileID: 7384290322352760091, guid: b7e81bfcfe9fa578c808c9dfb1714a76, type: 3}
+    portraitSpritesByClass:
+    - {fileID: 21300000, guid: a7ddf97c30db44d2581c9d2b9ec8d39d, type: 3}
+    - {fileID: 21300000, guid: 6d8cf840041c44fe49e9ac63926aada6, type: 3}
+    - {fileID: 21300000, guid: 2004f7c51a7c744a0a1bddeec0aa3b68, type: 3}
+    - {fileID: 21300000, guid: f1df8963cdffa435d8eb848683b327c3, type: 3}
+    - {fileID: 21300000, guid: edde319c37ce048b6bf0462d4f8bd56d, type: 3}
+  - controllersByClass:
+    - {fileID: 22100000, guid: 6d70b13b939a154a18710b10ba0dca1a, type: 2}
+    - {fileID: 22100000, guid: 5798ad94b476e830abd99149ca06fe71, type: 2}
+    - {fileID: 22100000, guid: 14df8ebbe9e3e8c28b8cf3da67f2a405, type: 2}
+    - {fileID: 22100000, guid: 3bbf02092600e9029ae1b98ce5e9993b, type: 2}
+    - {fileID: 22100000, guid: c2f164a49889e6515bc169d920b3fa78, type: 2}
+    worldSpritesByClass:
+    - {fileID: 7257567913506708742, guid: 72c22f22ea5e4488390ba536cd5ab98d, type: 3}
+    - {fileID: 4723107735738678597, guid: 7ba4178767e424c47b91888898a1fdc4, type: 3}
+    - {fileID: -594197781322936934, guid: 2307ce0d618cb4ea2be2cb2a4148cbde, type: 3}
+    - {fileID: -5948806968594788206, guid: 4c87a6310f87c47f1b785669e6191f00, type: 3}
+    - {fileID: 7384290322352760091, guid: 63555c658eb534f48acbb1ba682fbec3, type: 3}
+    portraitSpritesByClass:
+    - {fileID: 21300000, guid: 8fd2d0449599e4f7a9a1f1f170b6a2b0, type: 3}
+    - {fileID: 21300000, guid: f846c6072ceb0445bbcb59c41b57a5cb, type: 3}
+    - {fileID: 21300000, guid: 1ae77def86fe54f889da24e43f32ae32, type: 3}
+    - {fileID: 21300000, guid: 3eccc0fa0d72e4392b563e6bbf6005c8, type: 3}
+    - {fileID: 21300000, guid: 2334fa2b3b6b3492281b0993c123cfac, type: 3}
+  - controllersByClass:
+    - {fileID: 22100000, guid: f4fda1d491178d7d6a171e25211bbdb3, type: 2}
+    - {fileID: 22100000, guid: f4f8f0c5169682b62b184d38a31f4b2a, type: 2}
+    - {fileID: 22100000, guid: 8cb2bee7bdb67a6a783f136b9841a1bf, type: 2}
+    - {fileID: 22100000, guid: 840aaa9d2cf76cf9cb988b4e3773ac15, type: 2}
+    - {fileID: 22100000, guid: 3d63040dcb0e563708daa5fcb2d56d85, type: 2}
+    worldSpritesByClass:
+    - {fileID: 7257567913506708742, guid: abc79d95ca2994e20b019ba42fccbcb9, type: 3}
+    - {fileID: 4723107735738678597, guid: fe0068d0659704ab6a796ee3d8b72476, type: 3}
+    - {fileID: -594197781322936934, guid: d91f841009e3f4ad1a644257d8ecde00, type: 3}
+    - {fileID: -5948806968594788206, guid: 422c36b1ad215469382a665e4c38d854, type: 3}
+    - {fileID: 7384290322352760091, guid: 0505cf46dcd784e559fa26016d355ac0, type: 3}
+    portraitSpritesByClass:
+    - {fileID: 21300000, guid: a6c42e62b565e4e8897470b254de1f9c, type: 3}
+    - {fileID: 21300000, guid: 7557544a270d14006afcede942e38074, type: 3}
+    - {fileID: 21300000, guid: 36f90a3edc7ff4f419d50edf8a179aa3, type: 3}
+    - {fileID: 21300000, guid: d71d4e77dfe1d4474acad9d613932ec8, type: 3}
+    - {fileID: 21300000, guid: d79309ce9b85f47f5bfffa6659e02bfd, type: 3}
+  - controllersByClass:
+    - {fileID: 22100000, guid: 353ce2f6136e2fa7ca7bdc646b41ca0c, type: 2}
+    - {fileID: 22100000, guid: 0ae02cbf9086bd0fdbd2eef5a14ca728, type: 2}
+    - {fileID: 22100000, guid: 4fc7b97df34e9c85191d1e1422aaf523, type: 2}
+    - {fileID: 22100000, guid: 783c6cf6166159a0ab89a271d1ef80f6, type: 2}
+    - {fileID: 22100000, guid: b95f856e9e2a50b3e9bbffc31bba960c, type: 2}
+    worldSpritesByClass:
+    - {fileID: 7257567913506708742, guid: 277a50fd24135436398811e3293b2aa2, type: 3}
+    - {fileID: 4723107735738678597, guid: 088c72b8c44664ef7ba139bf42990072, type: 3}
+    - {fileID: -594197781322936934, guid: fba04cf817a7246ec99f9c85cf9ef600, type: 3}
+    - {fileID: -5948806968594788206, guid: 765cca1a0021749bb9646e4062ec7824, type: 3}
+    - {fileID: 7384290322352760091, guid: f9330e5de94a14c6ba6583d83d65ef08, type: 3}
+    portraitSpritesByClass:
+    - {fileID: 21300000, guid: 3eefea2eeee3641309f611ab73be3307, type: 3}
+    - {fileID: 21300000, guid: 775bad7863ac5431e894540037985e03, type: 3}
+    - {fileID: 21300000, guid: 46fe4a83a5f9d46b8852dad0d6ddf0c4, type: 3}
+    - {fileID: 21300000, guid: 2adf134bf181b462381328428b219753, type: 3}
+    - {fileID: 21300000, guid: edeeaf011ec784a42bbc766e3e983972, type: 3}
+  - controllersByClass:
+    - {fileID: 22100000, guid: 71e12a5137cbc56beab2e140788b2e35, type: 2}
+    - {fileID: 22100000, guid: fdf07601025080868b8947309726351b, type: 2}
+    - {fileID: 22100000, guid: 3ae59a9a4eaa1c0c6918dd376d23bf54, type: 2}
+    - {fileID: 22100000, guid: 3564a834c2222c46ba7fa2596b0bd252, type: 2}
+    - {fileID: 22100000, guid: db1ae8b1ac1c1eb14963b048adaeff44, type: 2}
+    worldSpritesByClass:
+    - {fileID: 7257567913506708742, guid: ea299bf4e13104b7baac745f77dd10c8, type: 3}
+    - {fileID: 4723107735738678597, guid: d69e3be544b764174a6deb465428148d, type: 3}
+    - {fileID: -594197781322936934, guid: 402bdd4018d3a420c98a285607e2b06d, type: 3}
+    - {fileID: -5948806968594788206, guid: 8b6a23df7f30944529516d97c0a97158, type: 3}
+    - {fileID: 7384290322352760091, guid: 639a4e0b939ac41caa76f0c03204883c, type: 3}
+    portraitSpritesByClass:
+    - {fileID: 21300000, guid: 50d984ed102d3422a869cd614752957f, type: 3}
+    - {fileID: 21300000, guid: 20bbae1856695438ea730a5a14e87865, type: 3}
+    - {fileID: 21300000, guid: 2a287585274c74b87b098f1980d2f044, type: 3}
+    - {fileID: 21300000, guid: 3a087737446f74834a85253bfbabd726, type: 3}
+    - {fileID: 21300000, guid: ee6b934f068f644c1a3b9333862df010, type: 3}
+  backgroundSpritesByColor:
+  - {fileID: 21300000, guid: 74a66a846172e4d119069672ed4aa825, type: 3}
+  - {fileID: 21300000, guid: cb3b3a3fb40d24321a5c52c979672d33, type: 3}
+  - {fileID: 21300000, guid: ea52b89b9810e4968a3469259847eb2e, type: 3}
+  - {fileID: 21300000, guid: 35c505eaaaff643fe930fee0bae3d49a, type: 3}
+  - {fileID: 21300000, guid: 793e8df8c7f754aa6a01497c873f7310, type: 3}
+  accentColorsByColor:
+  - {r: 0.75, g: 0.75, b: 0.75, a: 1}
+  - {r: 0.45, g: 0.65, b: 1, a: 1}
+  - {r: 0.8, g: 0.55, b: 1, a: 1}
+  - {r: 1, g: 0.45, b: 0.42, a: 1}
+  - {r: 1, g: 0.86, b: 0.35, a: 1}
+  fxColorsByColor:
+  - {r: 0.3, g: 0.3, b: 0.35, a: 1}
+  - {r: 0.24, g: 0.47, b: 1, a: 1}
+  - {r: 0.65, g: 0.3, b: 1, a: 1}
+  - {r: 1, g: 0.23, b: 0.19, a: 1}
+  - {r: 1, g: 0.8, b: 0.1, a: 1}
+  fxLightColorsByColor:
+  - {r: 1, g: 1, b: 1, a: 1}
+  - {r: 0.24, g: 0.47, b: 1, a: 1}
+  - {r: 0.65, g: 0.3, b: 1, a: 1}
+  - {r: 1, g: 0.23, b: 0.19, a: 1}
+  - {r: 1, g: 0.8, b: 0.1, a: 1}

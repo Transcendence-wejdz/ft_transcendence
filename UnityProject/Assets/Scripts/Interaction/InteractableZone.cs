@@ -9,7 +9,6 @@ public class InteractableZone : MonoBehaviour
     [SerializeField] private InteractPromptUI promptUI;
     [SerializeField] private UnityEvent onInteract;
 
-    public string PromptText => promptText;
     public Vector3 Position => transform.position;
 
     private void Start()

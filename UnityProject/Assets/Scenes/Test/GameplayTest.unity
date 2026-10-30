@@ -630,23 +630,12 @@ PrefabInstance:
     - target: {fileID: 8721834567668247845, guid: 5fda365811d318ac48b80a52c2a6040c, type: 3}
       propertyPath: onInteract.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1150330885}
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 5fda365811d318ac48b80a52c2a6040c, type: 3}
---- !u!114 &1150330885 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 84094477791331848, guid: 6c4e26c7d68940637b4ac5f3dfda573a, type: 3}
-  m_PrefabInstance: {fileID: 8059895085660573669}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7088c3b66f471fd469ad9336f9121576, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MenuPanel
 --- !u!1001 &8059895085660573669
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -657,36 +646,16 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 589217036104897390, guid: 6c4e26c7d68940637b4ac5f3dfda573a, type: 3}
       propertyPath: m_Name
-      value: UI
+      value: UI_Coop
       objectReference: {fileID: 0}
     - target: {fileID: 806493255735249813, guid: 6c4e26c7d68940637b4ac5f3dfda573a, type: 3}
       propertyPath: m_AdditionalShaderChannelsFlag
       value: 25
       objectReference: {fileID: 0}
-    - target: {fileID: 1463972439916247901, guid: 6c4e26c7d68940637b4ac5f3dfda573a, type: 3}
-      propertyPath: m_sharedMaterial
-      value: 
-      objectReference: {fileID: 772891792533613119, guid: c4bd213f5ffca3709985146d0af26b5c, type: 2}
-    - target: {fileID: 3191399807049263265, guid: 6c4e26c7d68940637b4ac5f3dfda573a, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3302347315360888540, guid: 6c4e26c7d68940637b4ac5f3dfda573a, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -7.2
-      objectReference: {fileID: 0}
     - target: {fileID: 4583725353713995139, guid: 6c4e26c7d68940637b4ac5f3dfda573a, type: 3}
       propertyPath: m_AdditionalShaderChannelsFlag
       value: 25
       objectReference: {fileID: 0}
-    - target: {fileID: 5024724419936861103, guid: 6c4e26c7d68940637b4ac5f3dfda573a, type: 3}
-      propertyPath: m_sharedMaterial
-      value: 
-      objectReference: {fileID: -8743282723004961706, guid: d0de5c54d8cc2dc57a1343559a17ed30, type: 2}
-    - target: {fileID: 5389824322626554147, guid: 6c4e26c7d68940637b4ac5f3dfda573a, type: 3}
-      propertyPath: m_sharedMaterial
-      value: 
-      objectReference: {fileID: -8743282723004961706, guid: d0de5c54d8cc2dc57a1343559a17ed30, type: 2}
     - target: {fileID: 5496894637120827747, guid: 6c4e26c7d68940637b4ac5f3dfda573a, type: 3}
       propertyPath: m_Sprite
       value: 
@@ -695,14 +664,6 @@ PrefabInstance:
       propertyPath: m_Color.a
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6965499460480370452, guid: 6c4e26c7d68940637b4ac5f3dfda573a, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8379061326760006282, guid: 6c4e26c7d68940637b4ac5f3dfda573a, type: 3}
-      propertyPath: m_sharedMaterial
-      value: 
-      objectReference: {fileID: 4013812617392462940, guid: ef344888509892f60b728aca5a53791e, type: 2}
     - target: {fileID: 8664170753771352480, guid: 6c4e26c7d68940637b4ac5f3dfda573a, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0

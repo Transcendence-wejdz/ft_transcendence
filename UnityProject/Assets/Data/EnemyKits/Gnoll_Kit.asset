@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a66c09d7042c9ffa9f15490369cf586, type: 3}
+  m_Name: Gnoll_Kit
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyKit
+  tier: 2
+  maxHealth: 45
+  xpReward: 18
+  scoreReward: 180
+  moveSpeed: 2.4
+  attackShape: 0
+  attackRange: 6
+  attackAngle: 20
+  attackWidth: 0.8
+  attackOrigin: {x: 0, y: 0}
+  damage: 14
+  attackCooldown: 2
+  attackHitDelay: 0.5
+  attackAnimationDuration: 0.8
+  attackMoveSpeedMultiplier: 0
+  hitRangeTolerance: 1.1
+  isRanged: 1
+  projectilePrefab: {fileID: 7623626265396232753, guid: a6d55eedbc2e0c534b104ae3e4392d2a, type: 3}
+  projectileSpeed: 7
+  projectileMaxDistance: 12
+  projectileArcHeight: 1
+  retargetInterval: 0.25
+  steerInterval: 0.1
+  directChaseRange: 8
+  lineOfSightInterval: 0.3
+  maxDistanceFromPlayers: 40
+  leashCheckInterval: 2
+  enemyPrefab: {fileID: 6884631229968775644, guid: 624305def66fbe8d79d891f61e1052c4, type: 3}
+  idleStateName: Idle
+  runStateName: Walk
+  attackStateName: Throw

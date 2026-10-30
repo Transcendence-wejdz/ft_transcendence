@@ -1,12 +1,15 @@
 using System.Collections;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 // Per-NPC world-space "press E" prompt at a fixed local position.
 public class InteractPromptUI : MonoBehaviour
 {
     [SerializeField] private RectTransform promptRoot;
     [SerializeField] private TextMeshProUGUI keyLabel;
+    [SerializeField] private Image keyIcon;
+    [SerializeField] private Image keyBackground;
     [SerializeField] private TextMeshProUGUI actionLabel;
     [SerializeField] private string keyGlyph = "E";
     [SerializeField] private float animationDuration = 0.15f;
@@ -22,8 +25,16 @@ public class InteractPromptUI : MonoBehaviour
     private Coroutine activeAnimation;
     private Coroutine blinkAnimation;
 
+    // Cancels any mirroring inherited from the host (e.g. an NPC flipped with scale.x = -1) so the text never reads backwards.
     private void Awake()
     {
+        if (transform.lossyScale.x < 0f)
+        {
+            Vector3 scale = transform.localScale;
+            scale.x = -scale.x;
+            transform.localScale = scale;
+        }
+
         RefreshKeyLabel();
 
         if (promptRoot != null)
@@ -53,6 +64,22 @@ public class InteractPromptUI : MonoBehaviour
                 promptRoot.gameObject.SetActive(false);
             }
         }
+    }
+
+    private void OnEnable()
+    {
+        InputModeTracker.OnModeChanged += HandleInputModeChanged;
+        RefreshKeyLabel();
+    }
+
+    private void OnDisable()
+    {
+        InputModeTracker.OnModeChanged -= HandleInputModeChanged;
+    }
+
+    private void HandleInputModeChanged(bool usingGamepad)
+    {
+        RefreshKeyLabel();
     }
 
     // Sets the action text without showing the prompt, for labels that stay visible out of range.
@@ -88,11 +115,22 @@ public class InteractPromptUI : MonoBehaviour
             blinkAnimation = StartCoroutine(BlinkKeyCap());
     }
 
-    // Reflects the player's current Interact keybind, including rebinds; falls back to keyGlyph if unresolved.
+    // Shows the pad button icon while a gamepad is in use, else the current keyboard key (rebinds included, keyGlyph if unresolved).
     private void RefreshKeyLabel()
     {
+        Sprite padIcon = InputModeTracker.UsingGamepad ? GamepadIcons.ForPath(KeybindOverrides.GetGamepadPath("Interact")) : null;
+        if (keyIcon != null)
+        {
+            keyIcon.sprite = padIcon;
+            keyIcon.enabled = padIcon != null;
+        }
+        if (keyBackground != null)
+            keyBackground.enabled = padIcon == null;
         if (keyLabel != null)
+        {
+            keyLabel.enabled = padIcon == null;
             keyLabel.text = KeybindOverrides.GetKeyboardDisplay("Interact") ?? keyGlyph;
+        }
     }
 
     // activeInHierarchy, not activeSelf: a deactivated parent leaves this object's own flag true while StartCoroutine below would still fail.

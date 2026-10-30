@@ -8,15 +8,24 @@ using UnityEngine.UI;
 
 public class PauseManager : MonoBehaviour
 {
-    private const float ButtonSpacing = 45f;
-
     [SerializeField] private GameObject pausePanel;
     [SerializeField] private GameObject settingsPanel;
     [SerializeField] private string lobbySceneName = "Lobby";
     [SerializeField] private Button leaveButton;
     [SerializeField] private Button quitButton;
 
-    public static bool IsPaused { get; private set; }
+    // Pause menu and NPC menus (SetExternalPause) block input independently, so closing one never unblocks the other.
+    public static bool IsPaused => menuPaused || externalPaused;
+
+    // True while the pause menu or its settings page is up (not while closing); it owns the close input over any other open menu.
+    public static bool IsMenuOpen => current != null && (IsPanelOpen(current.pausePanel) || IsPanelOpen(current.settingsPanel));
+
+    private static bool menuPaused;
+    private static bool externalPaused;
+    private static PauseManager current;
+
+    private bool frozeTime;
+    private bool buttonsShownOnline;
 
     private static bool IsOnline => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
@@ -27,7 +36,9 @@ public class PauseManager : MonoBehaviour
 
     void Awake()
     {
-        IsPaused = false;
+        menuPaused = false;
+        externalPaused = false;
+        current = this;
     }
 
     public void Pause(InputAction.CallbackContext ctx)
@@ -35,50 +46,45 @@ public class PauseManager : MonoBehaviour
         if (!ctx.performed || GameOverUI.IsShowing || LevelUpUI.IsShowing)
             return;
 
+        if (IsMenuOpen)
+        {
+            Resume();
+            return;
+        }
+
         if (MenuPanel.CurrentOpen != null)
         {
             MenuPanel.CurrentOpen.Close();
             return;
         }
 
-        if (IsPaused)
-            Resume();
-        else
-            SetPaused(true);
+        SetPaused(true);
     }
 
     public void Resume()
     {
-        if (settingsPanel != null)
-            settingsPanel.SetActive(false);
-
+        SetPanelVisible(settingsPanel, false);
         SetPaused(false);
     }
 
     public void OpenSettings()
     {
-        if (pausePanel != null)
-            pausePanel.SetActive(false);
-
-        if (settingsPanel != null)
-            settingsPanel.SetActive(true);
+        SetPanelVisible(pausePanel, false);
+        SetPanelVisible(settingsPanel, true);
     }
 
     public void CloseSettings()
     {
-        if (settingsPanel != null)
-            settingsPanel.SetActive(false);
-
-        if (pausePanel != null)
-            pausePanel.SetActive(true);
+        SetPanelVisible(settingsPanel, false);
+        SetPanelVisible(pausePanel, true);
     }
 
     // Gamepad B: Settings goes back to Pause, Pause resumes.
     public void Back()
     {
-        if (settingsPanel != null && settingsPanel.activeSelf)
+        if (IsPanelOpen(settingsPanel))
             CloseSettings();
-        else if (IsPaused)
+        else if (menuPaused)
             Resume();
     }
 
@@ -108,7 +114,7 @@ public class PauseManager : MonoBehaviour
     // Used by NPC menu panels: blocks input via IsPaused but leaves Time.timeScale running.
     public static void SetExternalPause(bool paused)
     {
-        IsPaused = paused;
+        externalPaused = paused;
     }
 
     private async Task LeaveSessionThenLoadLobbyAsync()
@@ -122,6 +128,7 @@ public class PauseManager : MonoBehaviour
     // Shows the leave button when there is somewhere to go; hides Quit on WebGL.
     private void RefreshButtons()
     {
+        buttonsShownOnline = IsOnline;
         bool showLeave = !InLobby || IsOnline;
         bool showQuit = Application.platform != RuntimePlatform.WebGLPlayer;
 
@@ -134,27 +141,73 @@ public class PauseManager : MonoBehaviour
         }
 
         if (quitButton != null)
-        {
             quitButton.gameObject.SetActive(showQuit);
-            RectTransform rect = (RectTransform)quitButton.transform;
-            float y = showLeave ? -2f * ButtonSpacing : -ButtonSpacing;
-            rect.anchoredPosition = new Vector2(rect.anchoredPosition.x, y);
-        }
     }
 
-    // Multiplayer pause only blocks input; freezing timeScale would desync.
+    // A scene change while paused solo would otherwise carry timeScale 0 into the next scene.
+    private void OnDestroy()
+    {
+        if (current == this)
+            current = null;
+        if (frozeTime)
+            SetFrozen(false);
+    }
+
+    // A session started while paused solo (someone joined, or we hosted to invite) must not stay frozen; buttons follow the new online state.
+    private void Update()
+    {
+        if (frozeTime && IsOnline)
+            SetFrozen(false);
+
+        if (IsPaused && IsOnline != buttonsShownOnline)
+            RefreshButtons();
+    }
+
+    // Pause only blocks input in the Lobby and in multiplayer; freezing timeScale is for solo mode scenes (would desync online).
     private void SetPaused(bool paused)
     {
-        IsPaused = paused;
+        menuPaused = paused;
 
-        bool isMultiplayerSession = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
-        if (!isMultiplayerSession)
-            Time.timeScale = paused ? 0f : 1f;
+        if (paused && !IsOnline && !InLobby)
+            SetFrozen(true);
+        else if (!paused && frozeTime)
+            SetFrozen(false);
 
         if (paused)
             RefreshButtons();
 
-        if (pausePanel != null)
-            pausePanel.SetActive(paused);
+        SetPanelVisible(pausePanel, paused);
+    }
+
+    // Only undoes a freeze this manager made, so it never unfreezes someone else's (e.g. level-up).
+    private void SetFrozen(bool frozen)
+    {
+        frozeTime = frozen;
+        Time.timeScale = frozen ? 0f : 1f;
+    }
+
+    // Animated when the panel has a PanelSlideIn, instant otherwise.
+    private static void SetPanelVisible(GameObject panel, bool show)
+    {
+        if (panel == null)
+            return;
+
+        PanelSlideIn slide = panel.GetComponent<PanelSlideIn>();
+        if (slide == null)
+            panel.SetActive(show);
+        else if (show)
+            slide.Show();
+        else
+            slide.Hide();
+    }
+
+    // A panel still playing its close animation counts as closed.
+    private static bool IsPanelOpen(GameObject panel)
+    {
+        if (panel == null || !panel.activeSelf)
+            return false;
+
+        PanelSlideIn slide = panel.GetComponent<PanelSlideIn>();
+        return slide == null || slide.IsOpen;
     }
 }

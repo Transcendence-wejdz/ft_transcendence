@@ -1,0 +1,21 @@
+services:
+  nginx:
+    ports: !reset []
+    networks: [default, proxy]
+    volumes:
+      - ./nginx/nginx.production.conf:/etc/nginx/conf.d/production.conf:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.prod.rule=Host(`${PROD_HOST}`)
+      - traefik.http.routers.prod.entrypoints=websecure
+      - traefik.http.routers.prod.tls=true
+      - traefik.http.routers.prod.tls.certresolver=le
+      - traefik.http.services.prod.loadbalancer.server.port=4443
+      - traefik.http.services.prod.loadbalancer.server.scheme=https
+
+  adminer:
+    profiles: [disabled]
+
+networks:
+  proxy:
+    external: true

@@ -85,6 +85,7 @@ GameObject:
   - component: {fileID: 8432815810805812705}
   - component: {fileID: 756691935088348759}
   - component: {fileID: 403920407802534383}
+  - component: {fileID: 7570624033142469235}
   m_Layer: 0
   m_Name: XPManager
   m_TagString: Untagged
@@ -151,6 +152,21 @@ MonoBehaviour:
   xpPerLevelIncrement: 100
   xpGainDelay: 0.25
   grantXP: 1
+--- !u!114 &7570624033142469235
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 446113791828117760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 22d43113902b33b35bc2473ba0e3b1f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScoreManager
+  ShowTopMostFoldoutHeaderGroup: 1
+  pointsPerWave: 100
+  bossOnly: 0
 --- !u!1 &1644447958649403761
 GameObject:
   m_ObjectHideFlags: 0
@@ -198,6 +214,7 @@ GameObject:
   - component: {fileID: 5927942744404691021}
   - component: {fileID: 270056449459605352}
   - component: {fileID: 227354742320272167}
+  - component: {fileID: 1370110714148172171}
   m_Layer: 0
   m_Name: WaveSpawner
   m_TagString: Untagged
@@ -267,6 +284,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: bbd9cf17077cc906186e5fbc9d196fd8, type: 2}
   - {fileID: 11400000, guid: 90aed8d23b834eb35b59e6e8f5f1035c, type: 2}
   - {fileID: 11400000, guid: e706735619f8e55b7b1d010bb3c17d11, type: 2}
+  - {fileID: 11400000, guid: fecc91b142e8d9d3c86bc7614106a470, type: 2}
+  - {fileID: 11400000, guid: 18c0f386ff4597d44801e4641c226b32, type: 2}
+  - {fileID: 11400000, guid: ddaf2804d33a58788b85c1b9340c7f28, type: 2}
+  - {fileID: 11400000, guid: 6c2a56a18079fbd06a29e166b539e15c, type: 2}
   tierUnlockWave: 0100000004000000070000000a000000
   baseEnemiesPerWave: 5
   extraEnemiesPerWave: 5
@@ -277,8 +298,7 @@ MonoBehaviour:
   maxSpawnPointAttempts: 10
   spawnClearance: 1
   spawnWaves: 1
-  bossSceneName: Boss
-  bossSceneSeconds: 600
+  startsRun: 1
 --- !u!114 &227354742320272167
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -292,6 +312,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapSeedSync
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &1370110714148172171
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5377253627517246972}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5a736b463d826ee2983cff81643f7e5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossSceneTransition
+  bossSceneName: Boss
+  bossSceneSeconds: 600
 --- !u!1 &6366737301997334087
 GameObject:
   m_ObjectHideFlags: 0

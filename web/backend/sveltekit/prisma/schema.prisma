@@ -16,8 +16,17 @@ model User {
   class        String    @default("Warrior")
   avatarUrl    String?   @map("avatar_url")
   gameSettings Json?     @map("game_settings")
+  gold         Int       @default(0)
+  upgrades     Json      @default("{}")
   createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   sessions     Session[]
+  gameRuns     GameRun[]
+  requestFriendships Friendship[] @relation("FriendshipRequest")
+  lowFriendships     Friendship[] @relation("FriendshipLowRequest")
+  highFriendships    Friendship[] @relation("FriendshipHighRequest")
+
+  blocksMade       Block[] @relation("Blocker")
+  blocksReceived   Block[] @relation("Blocked")
 
   @@map("users")
 }
@@ -26,8 +35,65 @@ model Session {
   id        String   @id
   userId    String   @map("user_id") @db.Uuid
   expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  lastOnline  DateTime @default(now()) @map("last_online") @db.Timestamptz(6)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId], map: "sessions_user_id_idx")
   @@map("sessions")
+}
+
+model GameRun {
+  id         String    @id @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  mode       String
+  startedAt  DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz(6)
+  runId      Int?      @map("run_id")
+  score      Int?
+  wave       Int?
+  seconds    Int?
+  kills      Int?
+  victory    Boolean?
+  gold       Int?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startedAt], map: "game_runs_user_id_started_at_idx")
+  @@map("game_runs")
+}
+enum Status {
+  PENDING
+  ACCEPTED
+}
+
+model Friendship {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  
+  requesterId   String  @map("requester_id") @db.Uuid
+  requester   User   @relation("FriendshipRequest", fields: [requesterId], references: [id])
+
+  userLowId String  @map("user_Low_id") @db.Uuid
+  userLow   User   @relation("FriendshipLowRequest", fields: [userLowId], references: [id])
+
+  userHighId String  @map("user_High_id") @db.Uuid
+  userHigh   User   @relation("FriendshipHighRequest", fields: [userHighId], references: [id])
+
+  relationStatus Status @default(PENDING)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("friendship")
+  @@unique([userLowId, userHighId])
+}
+
+model Block {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  blockerId String @map("blocker_id") @db.Uuid
+  blockedId String @map("blocked_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  blocker User @relation("Blocker", fields: [blockerId], references: [id], onDelete:Cascade)
+  blocked User @relation("Blocked", fields: [blockedId], references: [id], onDelete:Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+  @@map("blocks")
 }

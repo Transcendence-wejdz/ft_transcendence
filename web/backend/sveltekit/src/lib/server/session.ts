@@ -5,7 +5,7 @@ import { prisma } from '$lib/server/db.js';
 export const SESSION_COOKIE = 'session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-const hashToken = (token: string) =>
+export const hashToken = (token: string) =>
     createHash('sha256').update(token).digest('hex');
 
 export async function createSession(userId: string, cookies: Cookies) {
@@ -29,7 +29,7 @@ export async function validateSession(token: string) {
     const session = await prisma.session.findFirst({
         where: { id: hashToken(token), expiresAt: { gt: new Date() } },
         select: {
-            user: { select: { id: true, email: true, displayName: true, color: true, class: true, avatarUrl: true, gameSettings: true } }
+            user: { select: { id: true, email: true, displayName: true, color: true, class: true, avatarUrl: true, gameSettings: true, gold: true, upgrades: true } }
         }
     });
     return session ? {
@@ -39,7 +39,9 @@ export async function validateSession(token: string) {
         color: session.user.color,
         class: session.user.class,
         avatar_url: session.user.avatarUrl,
-        game_settings: session.user.gameSettings
+        game_settings: session.user.gameSettings,
+        gold: session.user.gold,
+        upgrades: session.user.upgrades
     } : null;
 }
 

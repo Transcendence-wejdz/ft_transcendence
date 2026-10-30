@@ -7,9 +7,10 @@
 		size?: 'md' | 'sm';
 		href?: string;
 		children: Snippet;
+		busy?: boolean;
 	} & HTMLButtonAttributes & HTMLAnchorAttributes;
 
-	let { variant = 'primary', size = 'md', href, type = 'button', children, ...rest }: Props = $props();
+	let { variant = 'primary', size = 'md', href, type = 'button', disabled, busy = false, children, ...rest }: Props = $props();
 </script>
 
 {#if href}
@@ -17,7 +18,17 @@
 		{@render children()}
 	</a>
 {:else}
-	<button {type} {...rest} class="btn variant-{variant} size-{size}">
+	<button
+		{type}
+		{...rest}
+		disabled={disabled || busy}
+		aria-busy={busy}
+		class="btn variant-{variant} size-{size}"
+		class:busy
+	>
+		{#if busy}
+			<span class="spinner"></span>
+		{/if}
 		{@render children()}
 	</button>
 {/if}
@@ -91,8 +102,28 @@
 		cursor: not-allowed;
 	}
 
+	.busy:disabled {
+		opacity: 1;
+		cursor: wait;
+	}
+
 	.btn:focus-visible {
 		outline: 3px solid var(--color-focus);
 		outline-offset: 3px;
+	}
+
+	.spinner {
+		width: 16px;
+		height: 16px;
+		border: 3px solid currentColor;
+		border-right-color: transparent;
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
 	}
 </style>

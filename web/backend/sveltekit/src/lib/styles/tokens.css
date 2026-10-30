@@ -49,6 +49,19 @@
 	--radius-pill: 999px;
 	--shadow-drop: 0 4px 0 var(--color-drop);
 
+	/* Font sizes */
+	--text-md: 1rem;
+	--text-lg: 1.1875rem;
+
+	/* Spacing */
+	--space-sm: 0.625rem;
+	--space-md: 1rem;
+	--space-lg: 1.375rem;
+
+	/* Control heights */
+	--control-sm: 2.75rem;
+	--control-md: 3rem;
+
 	/* Fonts */
 	--font-title: "Pirata One", serif;
 	--font-ui: "Pixelify Sans", monospace;

@@ -284,6 +284,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: bbd9cf17077cc906186e5fbc9d196fd8, type: 2}
   - {fileID: 11400000, guid: 90aed8d23b834eb35b59e6e8f5f1035c, type: 2}
   - {fileID: 11400000, guid: e706735619f8e55b7b1d010bb3c17d11, type: 2}
+  - {fileID: 11400000, guid: fecc91b142e8d9d3c86bc7614106a470, type: 2}
+  - {fileID: 11400000, guid: 18c0f386ff4597d44801e4641c226b32, type: 2}
+  - {fileID: 11400000, guid: ddaf2804d33a58788b85c1b9340c7f28, type: 2}
+  - {fileID: 11400000, guid: 6c2a56a18079fbd06a29e166b539e15c, type: 2}
   tierUnlockWave: 0100000004000000070000000a000000
   baseEnemiesPerWave: 5
   extraEnemiesPerWave: 5

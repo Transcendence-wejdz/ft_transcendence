@@ -40,6 +40,16 @@ public class ClassKit : ScriptableObject
     [SerializeField] private Vector2 attackFxOrigin;
     [Tooltip("Uses the center of the aim indicator ring as the FX origin instead of FX Origin.")]
     [SerializeField] private bool attackFxFromAimIndicator;
+    [Tooltip("Instant fires on press. Hold Fixed also previews the hitbox at FX Distance while held (autofire keeps going). Hold Free lets the player place each shot within Max Range (mouse distance, or right stick tilt).")]
+    [SerializeField] private AbilityAimMode attackAimMode;
+    [Range(0.5f, 20f)]
+    [Tooltip("Farthest a Hold Free attack can be placed from its FX origin.")]
+    [SerializeField] private float attackMaxRange = 6f;
+    [Tooltip("Gamepad only, when the player's Aim Assist setting is on: bends each shot toward the target closest to the aim within Aim Assist Angle.")]
+    [SerializeField] private bool attackAimAssist = true;
+    [Range(0f, 60f)]
+    [Tooltip("Widest angle, in degrees either side of the aim, a target can be pulled from.")]
+    [SerializeField] private float attackAimAssistAngle = 10f;
     [FormerlySerializedAs("damage")]
     [PowerRange(0f, 300f, 2f)]
     [Tooltip("Damage per hit.")]
@@ -91,6 +101,11 @@ public class ClassKit : ScriptableObject
     [SerializeField] private Vector2 specialFxOrigin;
     [Tooltip("Uses the center of the aim indicator ring as the FX origin instead of FX Origin.")]
     [SerializeField] private bool specialFxFromAimIndicator;
+    [Tooltip("Instant casts on press. Hold Fixed previews the hitbox at FX Distance and casts on release. Hold Free also lets the player place it within Max Range (mouse distance, or right stick tilt).")]
+    [SerializeField] private AbilityAimMode specialAimMode;
+    [Range(0.5f, 20f)]
+    [Tooltip("Farthest a Hold Free special can be placed from its FX origin.")]
+    [SerializeField] private float specialMaxRange = 6f;
     [PowerRange(0f, 300f, 2f)]
     [Tooltip("Damage per hit.")]
     [SerializeField] private float specialDamage = 15f;
@@ -131,6 +146,11 @@ public class ClassKit : ScriptableObject
     [SerializeField] private Vector2 ultimateFxOrigin;
     [Tooltip("Uses the center of the aim indicator ring as the FX origin instead of FX Origin.")]
     [SerializeField] private bool ultimateFxFromAimIndicator;
+    [Tooltip("Instant casts on press. Hold Fixed previews the hitbox at FX Distance and casts on release. Hold Free also lets the player place it within Max Range (mouse distance, or right stick tilt). Ignored with a shield.")]
+    [SerializeField] private AbilityAimMode ultimateAimMode;
+    [Range(0.5f, 20f)]
+    [Tooltip("Farthest a Hold Free ultimate can be placed from its FX origin.")]
+    [SerializeField] private float ultimateMaxRange = 6f;
     [PowerRange(0f, 300f, 2f)]
     [Tooltip("Damage per hit.")]
     [SerializeField] private float ultimateDamage = 15f;
@@ -189,6 +209,8 @@ public class ClassKit : ScriptableObject
     public float AttackFxDistance => attackFxDistance;
     public Vector2 AttackFxOrigin => attackFxOrigin;
     public bool AttackFxFromAimIndicator => attackFxFromAimIndicator;
+    public bool AttackAimAssist => attackAimAssist;
+    public float AttackAimAssistAngle => attackAimAssistAngle;
     public float AttackDamage => attackDamage;
     public float AttackMoveLockDuration => attackMoveLockDuration;
     public float AttackMoveSpeedMultiplier => attackMoveSpeedMultiplier;
@@ -238,8 +260,8 @@ public class ClassKit : ScriptableObject
     public float UltimateGlowSize => ultimateGlowSize;
     public float UltimateGlowDuration => ultimateGlowDuration;
 
-    // Where an action's FX spawns relative to the player's feet: its origin (the aim indicator center, or FX Origin with X mirrored when aiming left) plus its distance along the aim.
-    public Vector2 FxOffset(AbilityType ability, Vector2 aim, Vector2 aimIndicatorCenter)
+    // Where an action's FX spawns relative to the player's feet: its origin (the aim indicator center, or FX Origin with X mirrored when aiming left) plus its distance along the aim, unless a placed distance overrides it.
+    public Vector2 FxOffset(AbilityType ability, Vector2 aim, Vector2 aimIndicatorCenter, float distanceOverride = -1f)
     {
         (Vector2 origin, bool fromIndicator, float distance) = ability switch
         {
@@ -251,8 +273,23 @@ public class ClassKit : ScriptableObject
             origin = aimIndicatorCenter;
         else if (aim.x < -0.01f)
             origin.x = -origin.x;
-        return origin + aim * distance;
+        return origin + aim * (distanceOverride >= 0f ? distanceOverride : distance);
     }
+
+    // The shield ultimate has its own hold, so its aim mode is ignored.
+    public AbilityAimMode AimMode(AbilityType ability) => ability switch
+    {
+        AbilityType.Special => specialAimMode,
+        AbilityType.Ultimate => hasShield ? AbilityAimMode.Instant : ultimateAimMode,
+        _ => attackAimMode,
+    };
+
+    public float MaxRange(AbilityType ability) => ability switch
+    {
+        AbilityType.Special => specialMaxRange,
+        AbilityType.Ultimate => ultimateMaxRange,
+        _ => attackMaxRange,
+    };
 
     public bool HasShield => hasShield;
     public float ShieldHoldDuration => shieldHoldDuration;

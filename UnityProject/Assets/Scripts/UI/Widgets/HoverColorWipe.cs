@@ -24,7 +24,8 @@ public class HoverColorWipe : MonoBehaviour, IPointerEnterHandler, IPointerExitH
     private float scale;
     private bool painting;
 
-    private bool Hovered => (pointerInside || selected) && !pinned && (selectable == null || selectable.IsInteractable());
+    // Mouse clicks also select, so only gamepad focus counts as hover; otherwise a press dragged off the button stays lit.
+    private bool Hovered => (pointerInside || (selected && InputModeTracker.UsingGamepad)) && !pinned && (selectable == null || selectable.IsInteractable());
 
     public void OnPointerEnter(PointerEventData eventData) => pointerInside = true;
     public void OnPointerExit(PointerEventData eventData) => pointerInside = false;

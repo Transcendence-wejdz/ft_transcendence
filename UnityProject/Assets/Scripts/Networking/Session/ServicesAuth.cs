@@ -9,7 +9,7 @@ using UnityEngine;
 public static class ServicesAuth
 {
     private const float WebProfileTimeout = 5f;
-    private const int MaxPlayerNameLength = 50;
+    private const int MaxPlayerNameLength = 15;
 
     public static event Action<string> OnPlayerNameChanged;
 

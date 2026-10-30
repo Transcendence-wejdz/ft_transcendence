@@ -16,7 +16,7 @@ MonoBehaviour:
   healthRegenPerSecond: 1.5
   maxMana: 60
   manaRegenPerSecond: 0.5
-  dodgeCharges: 2
+  dodgeCharges: 1
   dodgeRechargeSeconds: 3
   dodgeDistance: 2.5
   dodgeDuration: 0.2
@@ -45,6 +45,8 @@ MonoBehaviour:
   specialFxDistance: 0
   specialFxOrigin: {x: 0, y: 0}
   specialFxFromAimIndicator: 1
+  specialAimMode: 0
+  specialMaxRange: 6
   specialDamage: 40
   specialMoveLockDuration: 0.3
   specialMoveSpeedMultiplier: 0.35

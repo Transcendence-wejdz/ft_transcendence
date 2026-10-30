@@ -14,11 +14,11 @@ public partial class ClassKitEditor : KitPreviewEditor
         new("GENERAL", "Health", "maxHealth", "healthRegenPerSecond"),
         new("GENERAL", "Mana", "maxMana", "manaRegenPerSecond"),
         new("GENERAL", "Dodge", "dodgeCharges", "dodgeRechargeSeconds", "dodgeDistance", "dodgeDuration"),
-        new("ACTIONS", "Attack", "attackCooldown", "attackFxPrefab", "attackFxDistance", "attackFxOrigin", "attackFxFromAimIndicator", "attackDamage", "attackMoveLockDuration", "attackMoveSpeedMultiplier",
+        new("ACTIONS", "Attack", "attackCooldown", "attackFxPrefab", "attackFxDistance", "attackFxOrigin", "attackFxFromAimIndicator", "attackAimMode", "attackMaxRange", "attackAimAssist", "attackAimAssistAngle", "attackDamage", "attackMoveLockDuration", "attackMoveSpeedMultiplier",
             "attackAnimSpeed", "attackSize", "attackIgnoreAimRotation", "attackFollowCaster", "attackGlowIntensity", "attackGlowSize", "attackGlowDuration", "hasProjectile", "projectileSpeed", "projectileMaxDistance", "pierceCount"),
-        new("ACTIONS", "Special", "specialCooldown", "specialManaCost", "specialFxPrefab", "specialFxDistance", "specialFxOrigin", "specialFxFromAimIndicator", "specialDamage", "specialMoveLockDuration",
+        new("ACTIONS", "Special", "specialCooldown", "specialManaCost", "specialFxPrefab", "specialFxDistance", "specialFxOrigin", "specialFxFromAimIndicator", "specialAimMode", "specialMaxRange", "specialDamage", "specialMoveLockDuration",
             "specialMoveSpeedMultiplier", "specialAnimSpeed", "specialSize", "specialIgnoreAimRotation", "specialFollowCaster", "specialGlowIntensity", "specialGlowSize", "specialGlowDuration"),
-        new("ACTIONS", "Ultimate", "ultimateCooldown", "ultimateManaCost", "ultimateFxPrefab", "ultimateFxDistance", "ultimateFxOrigin", "ultimateFxFromAimIndicator", "ultimateDamage", "ultimateMoveLockDuration",
+        new("ACTIONS", "Ultimate", "ultimateCooldown", "ultimateManaCost", "ultimateFxPrefab", "ultimateFxDistance", "ultimateFxOrigin", "ultimateFxFromAimIndicator", "ultimateAimMode", "ultimateMaxRange", "ultimateDamage", "ultimateMoveLockDuration",
             "ultimateMoveSpeedMultiplier", "ultimateAnimSpeed", "ultimateSize", "ultimateIgnoreAimRotation", "ultimateFollowCaster", "ultimateGlowIntensity", "ultimateGlowSize", "ultimateGlowDuration", "hasShield", "shieldHoldDuration",
             "shieldHealth", "shieldKnockbackForce", "shieldKnockbackDuration", "shieldPushInterval", "shieldTurnSpeed", "shieldHoldAnimation"),
     };
@@ -66,6 +66,9 @@ public partial class ClassKitEditor : KitPreviewEditor
         InspectorSections.Draw(serializedObject, "ClassKitEditor.Section.", Sections, name =>
             (!hasProjectile && System.Array.IndexOf(ProjectileOnlyFields, name) >= 0)
             || (!hasShield && System.Array.IndexOf(ShieldOnlyFields, name) >= 0)
+            || (hasShield && (name == "ultimateAimMode" || name == "ultimateMaxRange"))
+            || (name == "attackAimAssistAngle" && !serializedObject.FindProperty("attackAimAssist").boolValue)
+            || (name.EndsWith("MaxRange") && serializedObject.FindProperty(name.Replace("MaxRange", "AimMode")).enumValueIndex != (int)AbilityAimMode.HoldFree)
             || (name.EndsWith("FxOrigin") && serializedObject.FindProperty(name.Replace("FxOrigin", "FxFromAimIndicator")).boolValue),
             section =>
             {

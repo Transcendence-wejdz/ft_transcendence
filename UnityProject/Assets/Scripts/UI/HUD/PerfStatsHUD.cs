@@ -71,7 +71,7 @@ public class PerfStatsHUD : MonoBehaviour
     }
 
     // -1 offline/host-only, where RTT to a server has no meaning.
-    private static int CurrentPingMs()
+    public static int CurrentPingMs()
     {
         NetworkManager manager = NetworkManager.Singleton;
         if (manager == null || !manager.IsClient || !manager.IsConnectedClient || manager.IsServer)

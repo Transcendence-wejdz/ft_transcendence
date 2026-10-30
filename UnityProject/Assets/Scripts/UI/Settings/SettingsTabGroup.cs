@@ -18,8 +18,10 @@ public class SettingsTabGroup : MonoBehaviour
     private Tab current;
     private GameObject lastSelected;
 
+    // LB/RB step through the tabs in sidebar order, whatever their order in the array.
     private void Awake()
     {
+        System.Array.Sort(tabs, (a, b) => a.tabButton.transform.GetSiblingIndex().CompareTo(b.tabButton.transform.GetSiblingIndex()));
         foreach (Tab tab in tabs)
         {
             Tab captured = tab;
@@ -55,7 +57,7 @@ public class SettingsTabGroup : MonoBehaviour
             Tab focused = TabOf(selected);
             if (focused != null && focused != current)
             {
-                if (TabOf(lastSelected) != null)
+                if (InSidebar(lastSelected))
                     Select(focused);
                 else
                     GamepadUINavigator.Focus(current.tabButton);
@@ -63,6 +65,9 @@ public class SettingsTabGroup : MonoBehaviour
         }
         lastSelected = EventSystem.current.currentSelectedGameObject;
     }
+
+    // Tabs and their neighbours (the Back button), so wrapping inside the sidebar is not taken for a return from the page.
+    private bool InSidebar(GameObject selected) => selected != null && selected.transform.IsChildOf(tabs[0].tabButton.transform.parent);
 
     private Tab TabOf(GameObject selected)
     {

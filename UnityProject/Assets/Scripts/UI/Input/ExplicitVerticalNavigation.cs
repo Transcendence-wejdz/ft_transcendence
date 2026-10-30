@@ -46,7 +46,7 @@ public class ExplicitVerticalNavigation : MonoBehaviour
 
     private static bool IsNavigable(Selectable s) => s.IsInteractable() && s.navigation.mode != Navigation.Mode.None;
 
-    // Row edges keep their automatic exits out of this object; sliders keep left/right free so they still change their value.
+    // Row edges keep their automatic exits out of this object; sliders too, since the gamepad only changes them in edit mode (see GamepadUINavigator).
     private void Build()
     {
         chain.Clear();
@@ -67,13 +67,7 @@ public class ExplicitVerticalNavigation : MonoBehaviour
 
         var exits = new Dictionary<Selectable, (Selectable left, Selectable right)>();
         foreach (Selectable s in chain)
-        {
-            Navigation automatic = s.navigation;
-            automatic.mode = Navigation.Mode.Automatic;
-            s.navigation = automatic;
-        }
-        foreach (Selectable s in chain)
-            exits[s] = s is Slider ? (null, null) : (OutsideChain(s.FindSelectableOnLeft()), OutsideChain(s.FindSelectableOnRight()));
+            exits[s] = (ExitToward(s, Vector3.left), ExitToward(s, Vector3.right));
 
         for (int r = 0; r < rows.Count; r++)
         {
@@ -81,14 +75,13 @@ public class ExplicitVerticalNavigation : MonoBehaviour
             for (int i = 0; i < row.Count; i++)
             {
                 Selectable s = row[i];
-                bool slider = s is Slider;
                 s.navigation = new Navigation
                 {
                     mode = Navigation.Mode.Explicit,
                     selectOnUp = r > 0 ? Nearest(rows[r - 1], s) : null,
                     selectOnDown = r < rows.Count - 1 ? Nearest(rows[r + 1], s) : null,
-                    selectOnLeft = slider ? null : i > 0 ? row[i - 1] : exits[s].left,
-                    selectOnRight = slider ? null : i < row.Count - 1 ? row[i + 1] : exits[s].right,
+                    selectOnLeft = i > 0 ? row[i - 1] : exits[s].left,
+                    selectOnRight = i < row.Count - 1 ? row[i + 1] : exits[s].right,
                 };
             }
         }
@@ -106,5 +99,33 @@ public class ExplicitVerticalNavigation : MonoBehaviour
         return best;
     }
 
-    private Selectable OutsideChain(Selectable target) => target != null && !chain.Contains(target) ? target : null;
+    // Unity's automatic pick (direction over squared distance) among controls outside this object on the same canvas, so a nearer control in here never hides the exit.
+    private Selectable ExitToward(Selectable from, Vector3 direction)
+    {
+        Canvas canvas = from.GetComponentInParent<Canvas>();
+        Canvas root = canvas != null ? canvas.rootCanvas : null;
+        Vector3 origin = from.transform.position;
+        Selectable best = null;
+        float bestScore = 0f;
+        foreach (Selectable s in Selectable.allSelectablesArray)
+        {
+            if (s == from || chain.Contains(s) || !IsNavigable(s))
+                continue;
+            Canvas other = s.GetComponentInParent<Canvas>();
+            if (other == null || other.rootCanvas != root)
+                continue;
+
+            Vector3 offset = s.transform.position - origin;
+            float dot = Vector3.Dot(direction, offset);
+            if (dot <= 0f)
+                continue;
+            float score = dot / offset.sqrMagnitude;
+            if (score > bestScore)
+            {
+                bestScore = score;
+                best = s;
+            }
+        }
+        return best;
+    }
 }

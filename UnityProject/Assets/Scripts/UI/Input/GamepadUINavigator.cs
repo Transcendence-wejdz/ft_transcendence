@@ -17,6 +17,7 @@ public class GamepadUINavigator : MonoBehaviour
     private const float StickKeepDirectionDeg = 60f;
     private const float StickRepeatDelay = 0.5f;
     private const float StickRepeatRate = 0.1f;
+    private const float EditingHandleScale = 1.35f;
 
     private static bool GamepadActive => InputModeTracker.UsingGamepad;
 
@@ -31,6 +32,9 @@ public class GamepadUINavigator : MonoBehaviour
     private Vector3 highlightedBaseScale;
     private GameObject suppressedHover;
     private GameObject lastScrolled;
+    private readonly Dictionary<Transform, Selectable> lastInColumn = new Dictionary<Transform, Selectable>();
+    private Slider editingSlider;
+    private Vector3 editingHandleBaseScale;
     private readonly List<RaycastResult> hoverHits = new List<RaycastResult>();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -79,10 +83,14 @@ public class GamepadUINavigator : MonoBehaviour
         EventSystem eventSystem = EventSystem.current;
         GameObject selected = eventSystem != null ? eventSystem.currentSelectedGameObject : null;
 
+        if (editingSlider != null && (!GamepadActive || !PauseManager.IsPaused || !editingSlider.isActiveAndEnabled))
+            StopSliderEdit();
+
         if (eventSystem != null && GamepadActive)
         {
-            if (PauseManager.IsPaused && !KeybindsPanelUI.IsBusy)
+            if (PauseManager.IsPaused && !KeybindsPanelUI.IsListening)
             {
+                UpdateSliderEditing(IsValidSelection(selected) ? selected : null);
                 UpdateStickNavigation(IsValidSelection(selected) ? selected : null);
                 selected = eventSystem.currentSelectedGameObject;
 
@@ -92,22 +100,28 @@ public class GamepadUINavigator : MonoBehaviour
                     selected = first != null ? first.gameObject : null;
                     eventSystem.SetSelectedGameObject(selected);
                 }
+                RememberInColumn(selected);
 
                 if (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame)
                 {
                     TMP_InputField field = selected != null ? selected.GetComponent<TMP_InputField>() : null;
                     if (field != null && field.isFocused)
                         field.DeactivateInputField();
+                    else if (editingSlider != null)
+                        StopSliderEdit();
                     else
                         Back();
                 }
             }
-            else if (selected != null && selected.GetComponent<TMP_InputField>() == null)
+            else if (!KeybindsPanelUI.IsListening && selected != null && selected.GetComponent<TMP_InputField>() == null)
             {
                 selected = null;
                 eventSystem.SetSelectedGameObject(null);
             }
         }
+
+        if (!PauseManager.IsPaused && lastInColumn.Count > 0)
+            lastInColumn.Clear();
 
         UpdateHighlight(GamepadActive ? selected : null);
         if (GamepadActive)
@@ -182,10 +196,10 @@ public class GamepadUINavigator : MonoBehaviour
             ExecuteEvents.Execute(t.gameObject, pointer, handler);
     }
 
-    // Left stick navigation with hysteresis: a direction holds within 60 degrees, so a diagonal push no longer alternates between two moves.
+    // Left stick and dpad navigation with hysteresis: a direction holds within 60 degrees, so a diagonal push no longer alternates between two moves.
     private void UpdateStickNavigation(GameObject selected)
     {
-        Vector2 stick = Gamepad.current != null ? Gamepad.current.leftStick.ReadValue() : Vector2.zero;
+        Vector2 stick = ReadGamepadNavigation();
         MoveDirection direction = StickDirection(stick);
         if (direction == MoveDirection.None)
         {
@@ -199,11 +213,172 @@ public class GamepadUINavigator : MonoBehaviour
 
         nextStickMoveTime = Time.unscaledTime + (repeat ? StickRepeatRate : StickRepeatDelay);
         stickDirection = direction;
-        if (selected == null)
+        if (selected == null || TryWrap(selected, direction) || TryMoveSlider(selected, direction) || TryCrossColumn(selected, direction))
             return;
 
         var data = new AxisEventData(EventSystem.current) { moveDir = direction, moveVector = stick };
         ExecuteEvents.Execute(selected, data, ExecuteEvents.moveHandler);
+    }
+
+    // A on a slider starts or ends adjusting it; moving off it ends it too.
+    private void UpdateSliderEditing(GameObject selected)
+    {
+        Slider slider = selected != null ? selected.GetComponent<Slider>() : null;
+        if (editingSlider != null && editingSlider != slider)
+            StopSliderEdit();
+        if (slider == null || Gamepad.current == null || !Gamepad.current.buttonSouth.wasPressedThisFrame)
+            return;
+
+        if (editingSlider == slider)
+        {
+            StopSliderEdit();
+            return;
+        }
+        editingSlider = slider;
+        if (slider.handleRect != null)
+        {
+            editingHandleBaseScale = slider.handleRect.localScale;
+            slider.handleRect.localScale = editingHandleBaseScale * EditingHandleScale;
+        }
+    }
+
+    private void StopSliderEdit()
+    {
+        if (editingSlider != null && editingSlider.handleRect != null)
+            editingSlider.handleRect.localScale = editingHandleBaseScale;
+        editingSlider = null;
+    }
+
+    // Left/right on a horizontal slider adjust it in edit mode, otherwise leave it like any other control.
+    private bool TryMoveSlider(GameObject selected, MoveDirection direction)
+    {
+        if (direction != MoveDirection.Left && direction != MoveDirection.Right)
+            return false;
+        Slider slider = selected.GetComponent<Slider>();
+        if (slider == null || (slider.direction != Slider.Direction.LeftToRight && slider.direction != Slider.Direction.RightToLeft))
+            return false;
+
+        if (slider == editingSlider)
+        {
+            float sign = (direction == MoveDirection.Right) == (slider.direction == Slider.Direction.LeftToRight) ? 1f : -1f;
+            slider.value += sign * (slider.wholeNumbers ? 1f : (slider.maxValue - slider.minValue) * 0.1f);
+            return true;
+        }
+
+        Selectable target = direction == MoveDirection.Left ? slider.FindSelectableOnLeft() : slider.FindSelectableOnRight();
+        Selectable remembered = RememberedIn(target, slider);
+        if (remembered != null)
+            target = remembered;
+        if (target != null && IsValidSelection(target.gameObject))
+            EventSystem.current.SetSelectedGameObject(target.gameObject);
+        return true;
+    }
+
+    private void RememberInColumn(GameObject selected)
+    {
+        Selectable selectable = selected != null ? selected.GetComponent<Selectable>() : null;
+        Transform column = selectable != null ? MenuColumn(selectable.transform) : null;
+        if (column != null)
+            lastInColumn[column] = selectable;
+    }
+
+    // Left/right into another column lands back on the control last focused there, instead of the nearest one.
+    private bool TryCrossColumn(GameObject selected, MoveDirection direction)
+    {
+        if (direction != MoveDirection.Left && direction != MoveDirection.Right)
+            return false;
+        Selectable current = selected.GetComponent<Selectable>();
+        if (current == null)
+            return false;
+
+        Selectable target = direction == MoveDirection.Left ? current.FindSelectableOnLeft() : current.FindSelectableOnRight();
+        Selectable remembered = RememberedIn(target, current);
+        if (remembered == null)
+            return false;
+        EventSystem.current.SetSelectedGameObject(remembered.gameObject);
+        return true;
+    }
+
+    private Selectable RememberedIn(Selectable target, Selectable from)
+    {
+        if (target == null)
+            return null;
+        Transform column = MenuColumn(target.transform);
+        if (column == null || column == MenuColumn(from.transform))
+            return null;
+        return lastInColumn.TryGetValue(column, out Selectable remembered) && remembered != null && remembered != target && IsValidSelection(remembered.gameObject) ? remembered : null;
+    }
+
+    private static Vector2 ReadGamepadNavigation()
+    {
+        Gamepad pad = Gamepad.current;
+        if (pad == null)
+            return Vector2.zero;
+        Vector2 dpad = pad.dpad.ReadValue();
+        return dpad.sqrMagnitude > 0f ? dpad : pad.leftStick.ReadValue();
+    }
+
+    // Up or down with nothing further that way inside the same column lands on the column's other end, nearest in x.
+    private bool TryWrap(GameObject selected, MoveDirection direction)
+    {
+        if (direction != MoveDirection.Up && direction != MoveDirection.Down)
+            return false;
+        Selectable current = selected.GetComponent<Selectable>();
+        Transform column = current != null ? MenuColumn(current.transform) : null;
+        if (column == null)
+            return false;
+
+        bool down = direction == MoveDirection.Down;
+        Selectable next = down ? current.FindSelectableOnDown() : current.FindSelectableOnUp();
+        if (next != null && IsValidSelection(next.gameObject) && next.transform.IsChildOf(column))
+            return false;
+
+        Selectable end = ColumnEnd(current, column, top: down);
+        if (end != null)
+            EventSystem.current.SetSelectedGameObject(end.gameObject);
+        return true;
+    }
+
+    // The child of the control's full-screen panel holding it (pause buttons, friends list, a sidebar, a page), so wrapping never leaves that column.
+    private static Transform MenuColumn(Transform control)
+    {
+        Canvas canvas = control.GetComponentInParent<Canvas>();
+        if (canvas == null)
+            return null;
+
+        Transform root = canvas.rootCanvas.transform;
+        Transform t = control;
+        while (t.parent != null && t.parent != root && t.parent.parent != root)
+            t = t.parent;
+        return t.parent != null ? t : null;
+    }
+
+    // Top-most (or bottom-most) row of the column, skipping the current row, then the control closest in x.
+    private Selectable ColumnEnd(Selectable from, Transform column, bool top)
+    {
+        int count = FillBuffer();
+        float tolerance = 8f * from.transform.lossyScale.y;
+        Vector3 origin = from.transform.position;
+        Selectable best = null;
+        for (int i = 0; i < count; i++)
+        {
+            Selectable s = buffer[i];
+            Vector3 p = s.transform.position;
+            if (s == from || Mathf.Abs(p.y - origin.y) <= tolerance || !s.transform.IsChildOf(column)
+                || s.navigation.mode == Navigation.Mode.None || !IsValidSelection(s.gameObject))
+                continue;
+            if (best == null)
+            {
+                best = s;
+                continue;
+            }
+
+            Vector3 b = best.transform.position;
+            float further = top ? p.y - b.y : b.y - p.y;
+            if (further > tolerance || (further >= -tolerance && Mathf.Abs(p.x - origin.x) < Mathf.Abs(b.x - origin.x)))
+                best = s;
+        }
+        return best;
     }
 
     private MoveDirection StickDirection(Vector2 stick)
@@ -231,7 +406,7 @@ public class GamepadUINavigator : MonoBehaviour
         }
     }
 
-    // The default UI Navigate is PassThrough: stick noise below the deadzone overwrites a held dpad, so it gets a Value action; sticks are handled above.
+    // The default UI Navigate is PassThrough and would also move on the gamepad, so it gets a keyboard-only Value action; the gamepad stick and dpad are handled above.
     private void PatchNavigateAction()
     {
         InputSystemUIInputModule module = EventSystem.current != null ? EventSystem.current.currentInputModule as InputSystemUIInputModule : null;
@@ -242,7 +417,6 @@ public class GamepadUINavigator : MonoBehaviour
         {
             InputActionAsset asset = ScriptableObject.CreateInstance<InputActionAsset>();
             navigateAction = asset.AddActionMap("UI").AddAction("Navigate", InputActionType.Value, expectedControlLayout: "Vector2");
-            navigateAction.AddBinding("<Gamepad>/dpad");
             navigateAction.AddBinding("<Joystick>/stick");
             navigateAction.AddCompositeBinding("2DVector")
                 .With("Up", "<Keyboard>/w").With("Up", "<Keyboard>/upArrow")
@@ -352,7 +526,9 @@ public class GamepadUINavigator : MonoBehaviour
     // The pause menu sits above every other menu, so it takes Back first; then the open NPC panel; level-up and game over have no back.
     private static void Back()
     {
-        if (LevelUpUI.IsShowing || GameOverUI.IsShowing || KeybindsPanelUI.IsBusy)
+        if (LevelUpUI.IsShowing || GameOverUI.IsShowing)
+            return;
+        if (KeybindsPanelUI.TryCancelSwap() || KeybindsPanelUI.IsBusy)
             return;
         if (SocialContextMenuUI.CloseOpen())
             return;

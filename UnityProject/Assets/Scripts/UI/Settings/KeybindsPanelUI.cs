@@ -44,6 +44,18 @@ public class KeybindsPanelUI : MonoBehaviour
     // True while waiting for a key or for the swap answer, so gamepad B is not taken as Back.
     public static bool IsBusy => openPanel != null && (openPanel.activeRebind != null || openPanel.pendingSwap != null);
 
+    // True only while waiting for a key, when every press belongs to the rebind rather than to menu navigation.
+    public static bool IsListening => openPanel != null && openPanel.activeRebind != null;
+
+    // Gamepad B on the swap prompt answers Cancel; false when no prompt is open.
+    public static bool TryCancelSwap()
+    {
+        if (openPanel == null || openPanel.pendingSwap == null)
+            return false;
+        openPanel.CancelSwap();
+        return true;
+    }
+
     private class PendingSwap
     {
         public InputAction action;

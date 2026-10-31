@@ -6,6 +6,7 @@ using Unity.Services.Leaderboards.Exceptions;
 using Unity.Services.Leaderboards.Models;
 using UnityEngine;
 
+// One leaderboard per game mode, in the order of LeaderboardClient's board ids.
 public enum LeaderboardMode
 {
     Solo,
@@ -31,9 +32,11 @@ public static class LeaderboardClient
     {
         try
         {
-            await ServicesAuth.EnsureSignedInAsync();
             AddPlayerScoreOptions options = new AddPlayerScoreOptions { Metadata = metadata };
-            LeaderboardEntry entry = await LeaderboardsService.Instance.AddPlayerScoreAsync(IdFor(mode), score, options);
+            LeaderboardEntry entry;
+
+            await ServicesAuth.EnsureSignedInAsync();
+            entry = await LeaderboardsService.Instance.AddPlayerScoreAsync(IdFor(mode), score, options);
             OnScoreSubmitted?.Invoke();
             return entry;
         }
@@ -48,9 +51,11 @@ public static class LeaderboardClient
     {
         try
         {
-            await ServicesAuth.EnsureSignedInAsync();
             GetScoresOptions options = new GetScoresOptions { Limit = limit, IncludeMetadata = true };
-            LeaderboardScoresPage page = await LeaderboardsService.Instance.GetScoresAsync(IdFor(mode), options);
+            LeaderboardScoresPage page;
+
+            await ServicesAuth.EnsureSignedInAsync();
+            page = await LeaderboardsService.Instance.GetScoresAsync(IdFor(mode), options);
             return page.Results ?? new List<LeaderboardEntry>();
         }
         catch (Exception e)
@@ -80,6 +85,7 @@ public static class LeaderboardClient
     }
 }
 
+// Run details stored as a leaderboard entry's metadata, so Coop scores group by team.
 [Serializable]
 public class CoopRunStats
 {
@@ -94,7 +100,9 @@ public class CoopRunStats
     // A Coop run played alone ranks on the Solo board.
     public LeaderboardMode Mode()
     {
-        return players <= 1 ? LeaderboardMode.Solo : LeaderboardMode.Coop;
+        if (players <= 1)
+            return LeaderboardMode.Solo;
+        return LeaderboardMode.Coop;
     }
 
     // Null for entries without metadata, e.g. scores submitted before team grouping existed.
@@ -102,7 +110,6 @@ public class CoopRunStats
     {
         if (string.IsNullOrEmpty(metadata))
             return null;
-
         try
         {
             return JsonUtility.FromJson<CoopRunStats>(metadata);

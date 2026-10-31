@@ -13,6 +13,7 @@ public class MapSeedSync : NetworkBehaviour
     void Start()
     {
         NetworkManager network = NetworkManager.Singleton;
+
         if (!IsSpawned && (network == null || !network.IsListening))
             Current = Random.Range(int.MinValue, int.MaxValue);
     }

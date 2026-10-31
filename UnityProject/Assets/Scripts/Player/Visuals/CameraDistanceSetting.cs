@@ -5,11 +5,37 @@ using UnityEngine;
 [RequireComponent(typeof(CinemachineCamera))]
 public class CameraDistanceSetting : MonoBehaviour
 {
+    private const float MinPunchDuration = 0.01f;
+
     private CinemachineCamera cinemachineCamera;
     private float baseSize;
     private float punchAmount;
     private float punchDuration;
     private float punchTime = -1f;
+
+    // Brief zoom-in kick (amount = fraction of the size) that eases back out, layered on top of the distance setting.
+    public void Punch(float amount, float duration)
+    {
+        punchAmount = Mathf.Max(punchAmount * PunchRemaining(), amount);
+        punchDuration = Mathf.Max(MinPunchDuration, duration);
+        punchTime = Time.unscaledTime;
+    }
+
+    private float PunchRemaining()
+    {
+        if (punchTime < 0f)
+            return 0f;
+        return 1f - Mathf.Clamp01((Time.unscaledTime - punchTime) / punchDuration);
+    }
+
+    private void Apply()
+    {
+        float remaining = PunchRemaining();
+        LensSettings lens = cinemachineCamera.Lens;
+
+        lens.OrthographicSize = baseSize * GameSettings.CameraDistance * (1f - punchAmount * remaining * remaining);
+        cinemachineCamera.Lens = lens;
+    }
 
     private void Awake()
     {
@@ -28,14 +54,6 @@ public class CameraDistanceSetting : MonoBehaviour
         GameSettings.OnChanged -= Apply;
     }
 
-    // Brief zoom-in kick (amount = fraction of the size) that eases back out, layered on top of the distance setting.
-    public void Punch(float amount, float duration)
-    {
-        punchAmount = Mathf.Max(punchAmount * PunchRemaining(), amount);
-        punchDuration = Mathf.Max(0.01f, duration);
-        punchTime = Time.unscaledTime;
-    }
-
     private void LateUpdate()
     {
         if (punchTime < 0f)
@@ -43,18 +61,5 @@ public class CameraDistanceSetting : MonoBehaviour
         if (PunchRemaining() <= 0f)
             punchTime = -1f;
         Apply();
-    }
-
-    private float PunchRemaining()
-    {
-        return punchTime < 0f ? 0f : 1f - Mathf.Clamp01((Time.unscaledTime - punchTime) / punchDuration);
-    }
-
-    private void Apply()
-    {
-        float remaining = PunchRemaining();
-        LensSettings lens = cinemachineCamera.Lens;
-        lens.OrthographicSize = baseSize * GameSettings.CameraDistance * (1f - punchAmount * remaining * remaining);
-        cinemachineCamera.Lens = lens;
     }
 }

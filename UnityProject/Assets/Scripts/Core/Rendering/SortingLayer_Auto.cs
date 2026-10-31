@@ -1,8 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// Y-sorts a sprite on the Player layer every frame from a configurable pivot.
 public class SortingLayer_Auto : MonoBehaviour
 {
+    private const float SortPrecision = -100f;
+
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private int sortingOffset = 0;
 
@@ -23,7 +26,10 @@ public class SortingLayer_Auto : MonoBehaviour
     public Vector3 SortPivotWorldPosition => transform.TransformPoint(sortPivotOffset);
 
     // Y-sort order for a world height, shared by everything sorted on the Player layer.
-    public static int OrderForY(float worldY) => Mathf.RoundToInt(worldY * -100);
+    public static int OrderForY(float worldY)
+    {
+        return Mathf.RoundToInt(worldY * SortPrecision);
+    }
 
     // Pure, not a cached field - safe to read from another object's LateUpdate regardless of execution order.
     public int CurrentSortingOrder => OrderForY(SortPivotWorldPosition.y) + sortingOffset;
@@ -36,9 +42,11 @@ public class SortingLayer_Auto : MonoBehaviour
     // Raises an FX order above every visible fxDrawsOver sprite its bounds overlap.
     public static int RaiseOverFxUnderlays(int order, Bounds fxBounds)
     {
+        SpriteRenderer underlayRenderer;
+
         foreach (SortingLayer_Auto underlay in FxUnderlays)
         {
-            SpriteRenderer underlayRenderer = underlay.spriteRenderer;
+            underlayRenderer = underlay.spriteRenderer;
             if (underlayRenderer.isVisible && underlayRenderer.bounds.Intersects(fxBounds))
                 order = Mathf.Max(order, underlay.CurrentSortingOrder + 1);
         }

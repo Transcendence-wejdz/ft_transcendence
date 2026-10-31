@@ -16,37 +16,14 @@ public class XPManager : NetworkBehaviour
     private int offlineXP;
     private bool subscribed;
 
-    public int TotalXP => IsSpawned ? totalXP.Value : offlineXP;
-
-    void Start()
+    public int TotalXP
     {
-        bool isNetworked = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
-        if (!isNetworked)
+        get
         {
-            offlineXP = RunCarryOver.IsForActiveScene ? RunCarryOver.TotalXP : 0;
-            Subscribe();
+            if (IsSpawned)
+                return totalXP.Value;
+            return offlineXP;
         }
-    }
-
-    public override void OnNetworkSpawn()
-    {
-        if (!IsServer)
-            return;
-
-        if (RunCarryOver.IsForActiveScene)
-            totalXP.Value = RunCarryOver.TotalXP;
-        Subscribe();
-    }
-
-    public override void OnNetworkDespawn()
-    {
-        Unsubscribe();
-    }
-
-    public override void OnDestroy()
-    {
-        Unsubscribe();
-        base.OnDestroy();
     }
 
     // Guarded so an early defensive OnNetworkDespawn (fires even offline, before Start() subscribes) can't wipe out the offline subscription.
@@ -88,27 +65,57 @@ public class XPManager : NetworkBehaviour
             offlineXP += xpAmount;
     }
 
+    private int XpRequiredForLevel(int level, int playerCount)
+    {
+        return (baseXpPerLevel + (level - 1) * xpPerLevelIncrement) * playerCount;
+    }
+
     // Walks the level curve fresh each call - cheap at these level counts, and stays correct if player count changed mid-run.
     public void GetProgress(out int level, out int xpIntoLevel, out int xpForLevel)
     {
         int playerCount = Mathf.Max(1, Player.AllActiveInstances.Count);
         int remaining = TotalXP;
+        int requirement;
 
         level = 1;
-        int requirement = XpRequiredForLevel(level, playerCount);
+        requirement = XpRequiredForLevel(level, playerCount);
         while (remaining >= requirement)
         {
             remaining -= requirement;
             level++;
             requirement = XpRequiredForLevel(level, playerCount);
         }
-
         xpIntoLevel = remaining;
         xpForLevel = requirement;
     }
 
-    private int XpRequiredForLevel(int level, int playerCount)
+    void Start()
     {
-        return (baseXpPerLevel + (level - 1) * xpPerLevelIncrement) * playerCount;
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            return;
+        offlineXP = 0;
+        if (RunCarryOver.IsForActiveScene)
+            offlineXP = RunCarryOver.TotalXP;
+        Subscribe();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        if (!IsServer)
+            return;
+        if (RunCarryOver.IsForActiveScene)
+            totalXP.Value = RunCarryOver.TotalXP;
+        Subscribe();
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        Unsubscribe();
+    }
+
+    public override void OnDestroy()
+    {
+        Unsubscribe();
+        base.OnDestroy();
     }
 }

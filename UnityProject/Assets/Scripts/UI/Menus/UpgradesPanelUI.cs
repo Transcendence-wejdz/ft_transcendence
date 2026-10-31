@@ -10,17 +10,39 @@ public class UpgradesPanelUI : MonoBehaviour
 
     private readonly List<UpgradeRowUI> rows = new List<UpgradeRowUI>();
 
+    private UpgradeRowUI CreateRow(LevelUpBonusType type)
+    {
+        UpgradeRowUI row = Instantiate(rowTemplate, rowTemplate.transform.parent);
+
+        row.gameObject.name = $"Row_{type}";
+        row.gameObject.SetActive(true);
+        row.Bind(type);
+        return row;
+    }
+
+    private void Refresh()
+    {
+        if (goldText != null)
+        {
+            if (GoldWallet.CanEarn)
+                goldText.text = GoldWallet.Balance.ToString();
+            else
+                goldText.text = "Sign in";
+        }
+        foreach (UpgradeRowUI row in rows)
+            row.Refresh();
+    }
+
+    private void HandleGoldChanged(int balance)
+    {
+        Refresh();
+    }
+
     void Awake()
     {
         rowTemplate.gameObject.SetActive(false);
         foreach (LevelUpBonusType type in PermanentUpgrades.Types)
-        {
-            UpgradeRowUI row = Instantiate(rowTemplate, rowTemplate.transform.parent);
-            row.gameObject.name = $"Row_{type}";
-            row.gameObject.SetActive(true);
-            row.Bind(type);
-            rows.Add(row);
-        }
+            rows.Add(CreateRow(type));
     }
 
     void OnEnable()
@@ -34,18 +56,5 @@ public class UpgradesPanelUI : MonoBehaviour
     {
         GoldWallet.OnChanged -= HandleGoldChanged;
         PermanentUpgrades.OnChanged -= Refresh;
-    }
-
-    private void HandleGoldChanged(int balance)
-    {
-        Refresh();
-    }
-
-    private void Refresh()
-    {
-        if (goldText != null)
-            goldText.text = GoldWallet.CanEarn ? GoldWallet.Balance.ToString() : "Sign in";
-        foreach (UpgradeRowUI row in rows)
-            row.Refresh();
     }
 }

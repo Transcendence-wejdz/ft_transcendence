@@ -41,7 +41,71 @@ public static class GoldWallet
 
     public static bool CanEarn => !UsesServer || WebProfileBridge.HasProfile;
 
-    public static int Balance => UsesServer ? serverBalance : LocalProgressStore.Gold;
+    public static int Balance
+    {
+        get
+        {
+            if (UsesServer)
+                return serverBalance;
+            return LocalProgressStore.Gold;
+        }
+    }
+
+    private static void Credit(int gold)
+    {
+        if (gold <= 0)
+            return;
+        if (UsesServer)
+            serverBalance += gold;
+        else
+            LocalProgressStore.Gold += gold;
+        OnChanged?.Invoke(Balance);
+    }
+
+    private static RunReport BuildReport(RunResult result)
+    {
+        return new RunReport
+        {
+            runToken = runToken,
+            runId = result.runId,
+            score = result.score.Total,
+            wave = result.wave,
+            seconds = result.seconds,
+            kills = result.score.kills,
+            victory = result.victory
+        };
+    }
+
+    private static void HandleRewardResponse(int status, int earned, Action<int> onDone)
+    {
+        bool accepted = status >= 200 && status < 300;
+
+        if (!accepted)
+        {
+            onDone?.Invoke(Refused);
+            return;
+        }
+        Credit(earned);
+        onDone?.Invoke(earned);
+    }
+
+    private static void ClaimLocal(RunResult result, Action<int> onDone)
+    {
+        int earned = GoldForScore(result.score.Total);
+
+        Credit(earned);
+        onDone?.Invoke(earned);
+    }
+
+    // The token is spent on the first claim, so a run can only be rewarded once.
+    private static void ClaimOnServer(RunResult result, Action<int> onDone)
+    {
+        RunReport report = BuildReport(result);
+        int earned = GoldForScore(report.score);
+
+        runToken = null;
+        WebBackend.Post("/api/game/reward", JsonUtility.ToJson(report), status => HandleRewardResponse(status, earned, onDone));
+    }
 
     public static int GoldForScore(int score)
     {
@@ -53,7 +117,6 @@ public static class GoldWallet
     {
         if (!UsesServer || !CanEarn)
             return;
-
         runToken = Guid.NewGuid().ToString();
         WebBackend.Post("/api/game/run/start", JsonUtility.ToJson(new RunStart { runToken = runToken, mode = mode }));
     }
@@ -63,9 +126,7 @@ public static class GoldWallet
     {
         if (!UsesServer)
         {
-            int localEarned = GoldForScore(result.score.Total);
-            Credit(localEarned);
-            onDone?.Invoke(localEarned);
+            ClaimLocal(result, onDone);
             return;
         }
         if (!CanEarn)
@@ -78,26 +139,7 @@ public static class GoldWallet
             onDone?.Invoke(Refused);
             return;
         }
-
-        RunReport report = new RunReport
-        {
-            runToken = runToken,
-            runId = result.runId,
-            score = result.score.Total,
-            wave = result.wave,
-            seconds = result.seconds,
-            kills = result.score.kills,
-            victory = result.victory
-        };
-        runToken = null;
-        int earned = GoldForScore(report.score);
-        WebBackend.Post("/api/game/reward", JsonUtility.ToJson(report), status =>
-        {
-            bool accepted = status >= 200 && status < 300;
-            if (accepted)
-                Credit(earned);
-            onDone?.Invoke(accepted ? earned : Refused);
-        });
+        ClaimOnServer(result, onDone);
     }
 
     // Called with the account's balance whenever the web page sends the profile; ignored outside the website.
@@ -105,7 +147,6 @@ public static class GoldWallet
     {
         if (!UsesServer)
             return;
-
         serverBalance = Mathf.Max(0, gold);
         OnChanged?.Invoke(serverBalance);
     }
@@ -115,7 +156,6 @@ public static class GoldWallet
     {
         if (UsesServer || cost < 0 || LocalProgressStore.Gold < cost)
             return false;
-
         LocalProgressStore.Gold -= cost;
         OnChanged?.Invoke(Balance);
         return true;
@@ -126,20 +166,7 @@ public static class GoldWallet
     {
         if (!UsesServer)
             return;
-
         serverBalance = Mathf.Max(0, serverBalance - cost);
         OnChanged?.Invoke(serverBalance);
-    }
-
-    private static void Credit(int gold)
-    {
-        if (gold <= 0)
-            return;
-
-        if (UsesServer)
-            serverBalance += gold;
-        else
-            LocalProgressStore.Gold += gold;
-        OnChanged?.Invoke(Balance);
     }
 }

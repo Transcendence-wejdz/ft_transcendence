@@ -24,7 +24,7 @@ public class PresenceActivity
 }
 
 // Static wrapper over Unity Friends with lazy init and an OnChanged event.
-public static class FriendsManager
+public static partial class FriendsManager
 {
     public static event Action OnChanged;
     public static event Action<FriendInvite> OnInviteReceived;
@@ -39,11 +39,58 @@ public static class FriendsManager
     public static string OwnName { get; private set; } = string.Empty;
 
     // Unity services player id (the id Friends and sessions use for us), empty until signed in.
-    public static string OwnId => IsReady && AuthenticationService.Instance.IsSignedIn ? AuthenticationService.Instance.PlayerId : string.Empty;
+    public static string OwnId
+    {
+        get
+        {
+            if (!IsReady || !AuthenticationService.Instance.IsSignedIn)
+                return string.Empty;
+            return AuthenticationService.Instance.PlayerId;
+        }
+    }
 
-    public static IReadOnlyList<Relationship> Friends => IsReady ? FriendsService.Instance.Friends : Empty;
-    public static IReadOnlyList<Relationship> Incoming => IsReady ? FriendsService.Instance.IncomingFriendRequests : Empty;
-    public static IReadOnlyList<Relationship> Outgoing => IsReady ? FriendsService.Instance.OutgoingFriendRequests : Empty;
+    public static IReadOnlyList<Relationship> Friends
+    {
+        get
+        {
+            if (!IsReady)
+                return Empty;
+            return FriendsService.Instance.Friends;
+        }
+    }
+
+    public static IReadOnlyList<Relationship> Incoming
+    {
+        get
+        {
+            if (!IsReady)
+                return Empty;
+            return FriendsService.Instance.IncomingFriendRequests;
+        }
+    }
+
+    public static IReadOnlyList<Relationship> Outgoing
+    {
+        get
+        {
+            if (!IsReady)
+                return Empty;
+            return FriendsService.Instance.OutgoingFriendRequests;
+        }
+    }
+
+    // Code of the session we are really in (see ActiveSession), or null when solo.
+    public static string CurrentSessionCode
+    {
+        get
+        {
+            ISession session = ActiveSession.Current;
+
+            if (session == null || string.IsNullOrEmpty(session.Code))
+                return null;
+            return session.Code;
+        }
+    }
 
     // Connects at boot in any scene so friends lists open already filled; failures are retried by the lists themselves.
     [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -64,7 +111,6 @@ public static class FriendsManager
     {
         if (IsReady)
             return Task.CompletedTask;
-
         if (initTask == null || initTask.IsFaulted || initTask.IsCanceled)
             initTask = InitializeInternalAsync();
         return initTask;
@@ -74,72 +120,25 @@ public static class FriendsManager
     {
         await ServicesAuth.EnsureSignedInAsync();
         await FriendsService.Instance.InitializeAsync();
-
         OwnName = await AuthenticationService.Instance.GetPlayerNameAsync();
-
-        ServicesAuth.OnPlayerNameChanged += name => { OwnName = name; OnChanged?.Invoke(); };
-        FriendsService.Instance.RelationshipAdded += HandleRelationshipAdded;
-        FriendsService.Instance.RelationshipDeleted += _ => OnChanged?.Invoke();
-        FriendsService.Instance.PresenceUpdated += _ => OnChanged?.Invoke();
-        FriendsService.Instance.MessageReceived += HandleMessage;
-
+        SubscribeToService();
         await FriendsService.Instance.SetPresenceAsync(Availability.Online, new PresenceActivity());
-
         IsReady = true;
-        OnChanged?.Invoke();
-    }
-
-    // The other member is the Source of an incoming request; our own sent requests also raise RelationshipAdded.
-    private static void HandleRelationshipAdded(IRelationshipAddedEvent added)
-    {
-        OnChanged?.Invoke();
-        Relationship relationship = added.Relationship;
-        if (relationship == null || relationship.Type != RelationshipType.FriendRequest || relationship.Member.Role != MemberRole.Source)
-            return;
-
-        OnFriendRequestReceived?.Invoke(relationship.Member.Id, ShortName(relationship.Member.Profile?.Name));
-    }
-
-    // Ignores anything that isn't a friend invite; a code-less invite is valid (its code follows in a second message).
-    private static void HandleMessage(IMessageReceivedEvent message)
-    {
-        FriendInvite invite;
-        try
-        {
-            invite = message.GetAs<FriendInvite>();
-        }
-        catch (Exception)
-        {
-            return;
-        }
-
-        if (invite == null || string.IsNullOrEmpty(invite.SenderName))
-            return;
-
-        invite.SenderId = message.UserId;
-        OnInviteReceived?.Invoke(invite);
-    }
-
-    // Code of the session we are really in (see ActiveSession), or null when solo.
-    public static string CurrentSessionCode
-    {
-        get
-        {
-            ISession session = ActiveSession.Current;
-            return session != null && !string.IsNullOrEmpty(session.Code) ? session.Code : null;
-        }
+        RaiseChanged();
     }
 
     // True if that friend is already a member of the session we are really in.
     public static bool IsMemberOfCurrentSession(string memberId)
     {
         ISession session = ActiveSession.Current;
+
         if (session == null)
             return false;
-
-        foreach (var player in session.Players)
+        foreach (IReadOnlyPlayer player in session.Players)
+        {
             if (player.Id == memberId)
                 return true;
+        }
         return false;
     }
 
@@ -147,11 +146,11 @@ public static class FriendsManager
     public static int SessionSignature()
     {
         ISession session = ActiveSession.Current;
+        int hash = 17;
+
         if (session == null)
             return 0;
-
-        int hash = 17;
-        foreach (var player in session.Players)
+        foreach (IReadOnlyPlayer player in session.Players)
             hash = hash * 31 + player.Id.GetHashCode();
         return hash;
     }
@@ -159,57 +158,14 @@ public static class FriendsManager
     // Name without the "#1234" suffix.
     public static string ShortName(string fullName)
     {
+        int hash;
+
         if (string.IsNullOrEmpty(fullName))
             return string.Empty;
-
-        int hash = fullName.IndexOf('#');
-        return hash > 0 ? fullName.Substring(0, hash) : fullName;
+        hash = fullName.IndexOf('#');
+        if (hash <= 0)
+            return fullName;
+        return fullName.Substring(0, hash);
     }
 
-    // Sends the session code to an online friend; followUp completes an earlier instant invite without reopening a dismissed popup.
-    public static Task InviteAsync(string memberId, bool followUp = false)
-    {
-        string code = CurrentSessionCode;
-        if (string.IsNullOrEmpty(code))
-            throw new InvalidOperationException("No active session to invite to.");
-
-        return FriendsService.Instance.MessageAsync(memberId, new FriendInvite { SessionCode = code, SenderName = OwnName, FollowUp = followUp });
-    }
-
-    // Instant heads-up before our session exists, so the friend sees the invite without waiting; InviteAsync sends the code once hosting is done.
-    public static Task SendPendingInviteAsync(string memberId)
-    {
-        return FriendsService.Instance.MessageAsync(memberId, new FriendInvite { SessionCode = string.Empty, SenderName = OwnName });
-    }
-
-    // Sends a friend request, or accepts one already received.
-    public static async Task AddByNameAsync(string playerName)
-    {
-        await FriendsService.Instance.AddFriendByNameAsync(playerName);
-        OnChanged?.Invoke();
-    }
-
-    public static async Task AcceptAsync(string memberId)
-    {
-        await FriendsService.Instance.AddFriendAsync(memberId);
-        OnChanged?.Invoke();
-    }
-
-    public static async Task DeclineAsync(string memberId)
-    {
-        await FriendsService.Instance.DeleteIncomingFriendRequestAsync(memberId);
-        OnChanged?.Invoke();
-    }
-
-    public static async Task CancelRequestAsync(string memberId)
-    {
-        await FriendsService.Instance.DeleteOutgoingFriendRequestAsync(memberId);
-        OnChanged?.Invoke();
-    }
-
-    public static async Task RemoveAsync(string memberId)
-    {
-        await FriendsService.Instance.DeleteFriendAsync(memberId);
-        OnChanged?.Invoke();
-    }
 }

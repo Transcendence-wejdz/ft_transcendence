@@ -13,7 +13,7 @@ public class SiblingRuleTile : RuleTile<SiblingRuleTile.Neighbor>
     }
 
     [Tooltip("Other tiles that count as connected neighbors (e.g. the other ground biomes).")]
-    public List<TileBase> siblingTiles = new();
+    public List<TileBase> siblingTiles = new List<TileBase>();
 
     public override bool RuleMatch(int neighbor, TileBase other)
     {
@@ -24,7 +24,6 @@ public class SiblingRuleTile : RuleTile<SiblingRuleTile.Neighbor>
             case Neighbor.NotSibling:
                 return other != this && !siblingTiles.Contains(other);
         }
-
         return base.RuleMatch(neighbor, other);
     }
 }

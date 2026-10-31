@@ -1,8 +1,10 @@
 using UnityEngine;
 
+// Dead players turn into a pig that can still walk (and be ridden to revive them) but not fight.
 public partial class Player
 {
     private const int StartupGraceFrames = 2;
+    private const float PigFacingDeadZone = 0.01f;
     private const float TransformFxLifetime = 1f;
 
     [Header("Pig Form")]
@@ -39,10 +41,11 @@ public partial class Player
     // Health reads 0 until stats initialise it a frame after spawn, so the first frames are ignored.
     private void UpdatePigForm()
     {
+        bool dead;
+
         if (pigPrefab == null || Time.frameCount < startFrame + StartupGraceFrames)
             return;
-
-        bool dead = IsDead;
+        dead = IsDead;
         if (dead != isPig)
         {
             SetPig(dead);
@@ -50,48 +53,56 @@ public partial class Player
                 PlayTransformFx();
         }
         hasCheckedState = true;
-
         if (isPig)
             UpdatePigVisuals();
+    }
+
+    private Vector3 BodyCenter()
+    {
+        if (bodyCollider == null)
+            return transform.position;
+        return bodyCollider.bounds.center;
     }
 
     // Smoke burst over the body; skipped for players already dead when first seen.
     private void PlayTransformFx()
     {
+        GameObject fx;
+        SpriteRenderer fxRenderer;
+
         if (transformFxPrefab == null)
             return;
-
-        Vector3 center = bodyCollider != null ? bodyCollider.bounds.center : transform.position;
-        GameObject fx = Instantiate(transformFxPrefab, center + (Vector3)transformFxOffset, Quaternion.identity);
-
-        SpriteRenderer fxRenderer = fx.GetComponent<SpriteRenderer>();
+        fx = Instantiate(transformFxPrefab, BodyCenter() + (Vector3)transformFxOffset, Quaternion.identity);
+        fxRenderer = fx.GetComponent<SpriteRenderer>();
         fxRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
         fxRenderer.sortingOrder = spriteRenderer.sortingOrder + 1;
-
         fx.GetComponent<Animator>().Play(ExplosionSpellHash, 0, 0f);
         Destroy(fx, TransformFxLifetime);
     }
 
     // Dead players walk through enemies instead of blocking or being shoved by them.
+    private void SetIgnoreEnemies(bool ignore)
+    {
+        if (rb == null)
+            return;
+        if (ignore)
+            rb.excludeLayers = rb.excludeLayers | enemyMask;
+        else
+            rb.excludeLayers = rb.excludeLayers & ~enemyMask;
+    }
+
     private void SetPig(bool active)
     {
         isPig = active;
-
         if (active && pig == null)
             CreatePig();
-
         if (spriteRenderer != null)
             spriteRenderer.enabled = !active;
-
         if (pig != null)
             pig.SetActive(active);
-
-        if (rb != null)
-            rb.excludeLayers = active ? rb.excludeLayers | enemyMask : rb.excludeLayers & ~enemyMask;
-
+        SetIgnoreEnemies(active);
         if (mountInteractRoot != null)
             mountInteractRoot.SetActive(active);
-
         currentAnimationHash = 0;
     }
 
@@ -102,30 +113,46 @@ public partial class Player
         pig.transform.localScale = Vector3.one * pigScale;
         pigRenderer = pig.GetComponent<SpriteRenderer>();
         pigAnimator = pig.GetComponent<Animator>();
-
-        Vector3 bodyCenter = bodyCollider != null ? bodyCollider.bounds.center : transform.position;
-        pig.transform.position += bodyCenter - pigRenderer.bounds.center;
+        pig.transform.position += BodyCenter() - pigRenderer.bounds.center;
     }
 
     // Reuses the body's own (NetworkAnimator-synced) params instead of a remote Transform, which can read as moving at rest.
+    private void UpdatePigFacing()
+    {
+        float lastInputX;
+
+        if (animator == null)
+            return;
+        lastInputX = animator.GetFloat(LastInputXHash);
+        if (Mathf.Abs(lastInputX) > PigFacingDeadZone)
+            pigRenderer.flipX = lastInputX < 0f;
+    }
+
+    private void UpdatePigAnimation()
+    {
+        int desired = IdleHash;
+
+        if (animator != null && animator.GetBool(IsWalkingHash))
+            desired = RunHash;
+        if (desired == currentAnimationHash)
+            return;
+        currentAnimationHash = desired;
+        pigAnimator.Play(desired, 0, 0f);
+    }
+
+    private void SortPig()
+    {
+        pigRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
+        if (sortingLayerAuto != null)
+            pigRenderer.sortingOrder = sortingLayerAuto.CurrentSortingOrder;
+        else
+            pigRenderer.sortingOrder = spriteRenderer.sortingOrder;
+    }
+
     private void UpdatePigVisuals()
     {
-        bool isMoving = animator != null && animator.GetBool(IsWalkingHash);
-        if (animator != null)
-        {
-            float lastInputX = animator.GetFloat(LastInputXHash);
-            if (Mathf.Abs(lastInputX) > 0.01f)
-                pigRenderer.flipX = lastInputX < 0f;
-        }
-
-        int desired = isMoving ? RunHash : IdleHash;
-        if (desired != currentAnimationHash)
-        {
-            currentAnimationHash = desired;
-            pigAnimator.Play(desired, 0, 0f);
-        }
-
-        pigRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
-        pigRenderer.sortingOrder = sortingLayerAuto != null ? sortingLayerAuto.CurrentSortingOrder : spriteRenderer.sortingOrder;
+        UpdatePigFacing();
+        UpdatePigAnimation();
+        SortPig();
     }
 }

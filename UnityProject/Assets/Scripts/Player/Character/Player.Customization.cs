@@ -4,13 +4,14 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
+// Replicated look and identity: class, color, name (deduplicated), team, readiness, Friends tag and services id.
 public partial class Player
 {
     private static readonly List<Player> ActiveInstances = new List<Player>();
 
-    public static IReadOnlyList<Player> AllActiveInstances => ActiveInstances;
-
     private static readonly Player[] OfflinePlayer = new Player[1];
+
+    public static IReadOnlyList<Player> AllActiveInstances => ActiveInstances;
 
     // Session players, or the offline solo player alone, since it never registers in AllActiveInstances; read it right away, the offline list is reused.
     public static IReadOnlyList<Player> ActivePlayers
@@ -20,7 +21,9 @@ public partial class Player
             if (ActiveInstances.Count > 0)
                 return ActiveInstances;
             OfflinePlayer[0] = LocalPlayer.GetPlayer();
-            return OfflinePlayer[0] != null ? OfflinePlayer : Array.Empty<Player>();
+            if (OfflinePlayer[0] == null)
+                return Array.Empty<Player>();
+            return OfflinePlayer;
         }
     }
 
@@ -69,36 +72,14 @@ public partial class Player
 
     private int layerBeforePreview;
 
-    // Toggled while the customization panel is open; the CharacterPreview layer isolates this player for the preview camera, the main camera still sees it.
-    public void SetPreviewCameraActive(bool active)
+    private void SaveProfile()
     {
-        if (previewCamera != null)
-            previewCamera.gameObject.SetActive(active);
-
-        if (active)
-        {
-            layerBeforePreview = gameObject.layer;
-            gameObject.layer = LayerMask.NameToLayer("CharacterPreview");
-        }
-        else
-        {
-            gameObject.layer = layerBeforePreview;
-        }
-    }
-
-    private void AwakeCustomization()
-    {
-        classIndex.OnValueChanged += (_, _) => { ApplyVisuals(); OnClassOrColorChanged?.Invoke(classIndex.Value, colorIndex.Value); };
-        colorIndex.OnValueChanged += (_, _) => { ApplyVisuals(); OnClassOrColorChanged?.Invoke(classIndex.Value, colorIndex.Value); };
-        playerName.OnValueChanged += (_, _) => RefreshAllDisplayNames();
-        teamIndex.OnValueChanged += (_, newValue) => OnTeamChanged?.Invoke(newValue);
-        isReady.OnValueChanged += (_, newValue) => OnReadyChanged?.Invoke(newValue);
+        PlayerProfileStore.Save(classIndex.Value, colorIndex.Value, PlayerName);
     }
 
     private void SpawnCustomization()
     {
-        ApplyVisuals();
-        OnClassOrColorChanged?.Invoke(classIndex.Value, colorIndex.Value);
+        RaiseClassOrColorChanged();
         ActiveInstances.Add(this);
         RefreshAllDisplayNames();
         if (IsOwner)
@@ -117,144 +98,83 @@ public partial class Player
         RefreshAllDisplayNames();
     }
 
-    // Only once spawned (never from Awake), and again when the friends name arrives or changes; also shares our services id.
-    private void PublishFriendsTag()
-    {
-        if (this == null || !IsOwner || !IsSpawned || !FriendsManager.IsReady)
-            return;
-        if (FriendsManager.OwnName != FriendsTag)
-            friendsTag.Value = FriendsManager.OwnName;
-        if (string.IsNullOrEmpty(ServicesId) && !string.IsNullOrEmpty(FriendsManager.OwnId))
-            ClaimServicesIdServerRpc(FriendsManager.OwnId);
-    }
-
-    // Write-once, and refused if another spawned player already holds that id.
-    [ServerRpc]
-    private void ClaimServicesIdServerRpc(FixedString64Bytes id)
-    {
-        string claimed = id.ToString();
-        if (!string.IsNullOrEmpty(ServicesId) || string.IsNullOrEmpty(claimed))
-            return;
-        foreach (Player other in ActiveInstances)
-            if (other != this && other.ServicesId == claimed)
-            {
-                Debug.LogWarning($"Player: client {OwnerClientId} tried to claim services id {claimed}, already held by client {other.OwnerClientId}");
-                return;
-            }
-        servicesId.Value = id;
-    }
-
-    private static void RefreshAllDisplayNames()
-    {
-        var groups = new Dictionary<string, List<Player>>();
-        foreach (Player instance in ActiveInstances)
-        {
-            string baseName = instance.playerName.Value.ToString();
-            if (!groups.TryGetValue(baseName, out List<Player> group))
-            {
-                group = new List<Player>();
-                groups[baseName] = group;
-            }
-            group.Add(instance);
-        }
-
-        foreach (List<Player> group in groups.Values)
-        {
-            group.Sort((a, b) => a.NetworkObjectId.CompareTo(b.NetworkObjectId));
-            for (int i = 0; i < group.Count; i++)
-            {
-                string baseName = group[i].playerName.Value.ToString();
-                group[i].ApplyName(group.Count > 1 ? $"{baseName} ({i + 1})" : baseName);
-            }
-        }
-    }
-
-    // Always re-applies visuals: a saved value equal to the default fires no OnValueChanged, leaving the prefab's Warrior sprites.
-    private void StartCustomization()
-    {
-        if (!this.IsLocallyControlled())
-            return;
-
-        if (!PlayerProfileStore.TryLoad(out int savedClassIndex, out int savedColorIndex, out string savedName))
-        {
-            ApplyVisuals();
-            return;
-        }
-
-        classIndex.Value = savedClassIndex;
-        colorIndex.Value = savedColorIndex;
-        if (!string.IsNullOrEmpty(savedName))
-            playerName.Value = savedName;
-        ApplyVisuals();
-
-        LocalCharacterLook.NotifyProfileLoaded(gameObject);
-    }
-
-    public void SetSelection(int newClassIndex, int newColorIndex)
-    {
-        if (!this.IsLocallyControlled())
-            return;
-
-        classIndex.Value = newClassIndex;
-        colorIndex.Value = newColorIndex;
-        PlayerProfileStore.Save(classIndex.Value, colorIndex.Value, playerName.Value.ToString());
-        WebProfileBridge.PushSelection(newClassIndex, newColorIndex);
-    }
-
-    public void SetTeam(int newTeamIndex)
-    {
-        if (!this.IsLocallyControlled())
-            return;
-
-        teamIndex.Value = newTeamIndex;
-    }
-
-    public void SetName(string newName)
-    {
-        if (!this.IsLocallyControlled())
-            return;
-
-        playerName.Value = newName;
-        PlayerProfileStore.Save(classIndex.Value, colorIndex.Value, playerName.Value.ToString());
-        WebProfileBridge.PushName(newName);
-    }
-
-    public void SetReady(bool ready)
-    {
-        if (!this.IsLocallyControlled())
-            return;
-
-        if (!NetworkObject.IsSpawned)
-            return;
-
-        SetReadyServerRpc(ready);
-    }
-
     [ServerRpc]
     private void SetReadyServerRpc(bool ready)
     {
         isReady.Value = ready;
     }
 
+    // Always re-applies visuals: a saved value equal to the default fires no OnValueChanged, leaving the prefab's Warrior sprites.
+    private void StartCustomization()
+    {
+        int savedClassIndex;
+        int savedColorIndex;
+        string savedName;
+
+        if (!this.IsLocallyControlled())
+            return;
+        if (!PlayerProfileStore.TryLoad(out savedClassIndex, out savedColorIndex, out savedName))
+        {
+            ApplyVisuals();
+            return;
+        }
+        classIndex.Value = savedClassIndex;
+        colorIndex.Value = savedColorIndex;
+        if (!string.IsNullOrEmpty(savedName))
+            playerName.Value = savedName;
+        ApplyVisuals();
+        LocalCharacterLook.NotifyProfileLoaded(gameObject);
+    }
+
+    // Toggled while the customization panel is open; the CharacterPreview layer isolates this player for the preview camera, the main camera still sees it.
+    public void SetPreviewCameraActive(bool active)
+    {
+        if (previewCamera != null)
+            previewCamera.gameObject.SetActive(active);
+        if (active)
+        {
+            layerBeforePreview = gameObject.layer;
+            gameObject.layer = LayerMask.NameToLayer("CharacterPreview");
+        }
+        else
+            gameObject.layer = layerBeforePreview;
+    }
+
+    public void SetSelection(int newClassIndex, int newColorIndex)
+    {
+        if (!this.IsLocallyControlled())
+            return;
+        classIndex.Value = newClassIndex;
+        colorIndex.Value = newColorIndex;
+        SaveProfile();
+        WebProfileBridge.PushSelection(newClassIndex, newColorIndex);
+    }
+
+    public void SetTeam(int newTeamIndex)
+    {
+        if (this.IsLocallyControlled())
+            teamIndex.Value = newTeamIndex;
+    }
+
+    public void SetName(string newName)
+    {
+        if (!this.IsLocallyControlled())
+            return;
+        playerName.Value = newName;
+        SaveProfile();
+        WebProfileBridge.PushName(newName);
+    }
+
+    public void SetReady(bool ready)
+    {
+        if (!this.IsLocallyControlled() || !NetworkObject.IsSpawned)
+            return;
+        SetReadyServerRpc(ready);
+    }
+
     public void ServerResetReady()
     {
-        if (!IsServer)
-            return;
-
-        isReady.Value = false;
-    }
-
-    private void ApplyVisuals()
-    {
-        if (CharacterCatalog.Instance != null)
-            CharacterCatalog.Instance.ApplyVisuals(gameObject, classIndex.Value, colorIndex.Value);
-    }
-
-    private void ApplyName(string value)
-    {
-        CurrentDisplayName = value;
-        if (nameTag != null)
-            nameTag.SetName(value);
-        OnDisplayNameChanged?.Invoke(value);
+        if (IsServer)
+            isReady.Value = false;
     }
 }

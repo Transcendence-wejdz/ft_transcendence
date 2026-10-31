@@ -21,11 +21,21 @@ public class DamageNumberPopup : MonoBehaviour
 
     private Vector3 baseScale;
 
-    // Allies' hits are smaller and tinted so the local player's own numbers stand out.
-    public void Show(float amount, bool own)
+    private static float EaseOut(float t)
     {
-        label.text = Mathf.RoundToInt(amount).ToString();
-        baseScale = transform.localScale;
+        return 1f - (1f - t) * (1f - t);
+    }
+
+    private float AlphaAt(float progress)
+    {
+        if (progress < fadeStart)
+            return 1f;
+        return 1f - (progress - fadeStart) / (1f - fadeStart);
+    }
+
+    // Allies' hits are smaller and tinted so the local player's own numbers stand out.
+    private void ApplyLook(float amount, bool own)
+    {
         if (!own)
         {
             baseScale *= allyScale;
@@ -36,8 +46,6 @@ public class DamageNumberPopup : MonoBehaviour
             baseScale *= bigHitScale;
             label.color = bigHitColor;
         }
-        transform.position += new Vector3(Random.Range(-randomXSpread, randomXSpread), 0f, 0f);
-        StartCoroutine(Animate());
     }
 
     private IEnumerator Animate()
@@ -45,17 +53,28 @@ public class DamageNumberPopup : MonoBehaviour
         Vector3 start = transform.position;
         Vector3 end = start + new Vector3(0f, riseDistance, 0f);
         float t = 0f;
+        float p;
+        float pop;
+
         while (t < duration)
         {
             t += Time.deltaTime;
-            float p = Mathf.Clamp01(t / duration);
-            float rise = 1f - (1f - p) * (1f - p);
-            transform.position = Vector3.Lerp(start, end, rise);
-            float pop = Mathf.Clamp01(t / popDuration);
-            transform.localScale = baseScale * Mathf.Lerp(popScale, 1f, 1f - (1f - pop) * (1f - pop));
-            canvasGroup.alpha = p < fadeStart ? 1f : 1f - (p - fadeStart) / (1f - fadeStart);
+            p = Mathf.Clamp01(t / duration);
+            pop = Mathf.Clamp01(t / popDuration);
+            transform.position = Vector3.Lerp(start, end, EaseOut(p));
+            transform.localScale = baseScale * Mathf.Lerp(popScale, 1f, EaseOut(pop));
+            canvasGroup.alpha = AlphaAt(p);
             yield return null;
         }
         Destroy(gameObject);
+    }
+
+    public void Show(float amount, bool own)
+    {
+        label.text = Mathf.RoundToInt(amount).ToString();
+        baseScale = transform.localScale;
+        ApplyLook(amount, own);
+        transform.position += new Vector3(Random.Range(-randomXSpread, randomXSpread), 0f, 0f);
+        StartCoroutine(Animate());
     }
 }

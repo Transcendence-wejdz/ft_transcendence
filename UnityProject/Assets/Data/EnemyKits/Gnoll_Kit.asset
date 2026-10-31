@@ -32,7 +32,15 @@ MonoBehaviour:
   projectilePrefab: {fileID: 7623626265396232753, guid: a6d55eedbc2e0c534b104ae3e4392d2a, type: 3}
   projectileSpeed: 7
   projectileMaxDistance: 12
-  projectileArcHeight: 1
+  projectileArcHeight: 0
+  behaviour: 1
+  keepAwayDistance: 3
+  retreatSpeedMultiplier: 0.8
+  encircleRadius: 4
+  encircleJoinDistance: 9
+  encircleSlotTolerance: 20
+  encircleMaxFlankTime: 2.5
+  encircleRegroupChance: 0.5
   retargetInterval: 0.25
   steerInterval: 0.1
   directChaseRange: 8

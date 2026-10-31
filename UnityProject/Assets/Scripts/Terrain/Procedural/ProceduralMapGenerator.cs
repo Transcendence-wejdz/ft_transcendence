@@ -76,8 +76,93 @@ public partial class ProceduralMapGenerator : MonoBehaviour
     private static readonly WaterSettings NoWater = new WaterSettings { threshold = 0f };
     private static readonly IslandSettings NoIsland = new IslandSettings();
 
-    private WaterSettings Water => activeBiome != null ? activeBiome.water : NoWater;
-    private IslandSettings Island => activeBiome != null ? activeBiome.island : NoIsland;
+    private WaterSettings Water
+    {
+        get
+        {
+            if (activeBiome == null)
+                return NoWater;
+            return activeBiome.water;
+        }
+    }
+
+    private IslandSettings Island
+    {
+        get
+        {
+            if (activeBiome == null)
+                return NoIsland;
+            return activeBiome.island;
+        }
+    }
+
+    // One biome per map, picked as seed modulo the biome count.
+    private Biome PickBiome()
+    {
+        if (biomes == null || biomes.Length == 0)
+            return null;
+        return biomes[((activeSeed % biomes.Length) + biomes.Length) % biomes.Length];
+    }
+
+    private void AllocateChunkBuffers()
+    {
+        int cellCount = chunkSize * chunkSize;
+
+        waterMask = new bool[chunkSize + 2, chunkSize + 2];
+        landTiles = new TileBase[cellCount];
+        waterTiles = new TileBase[cellCount];
+        waterBackgroundTiles = new TileBase[cellCount];
+        coastFoamTiles = new TileBase[cellCount];
+        clearTiles = new TileBase[cellCount];
+    }
+
+    private void InitCells()
+    {
+        Vector3Int cell = landTilemap.WorldToCell(SpawnAreaCenter());
+        Vector3Int center = landTilemap.WorldToCell(transform.position);
+
+        spawnCell = new Vector2Int(cell.x, cell.y);
+        islandCenter = new Vector2(center.x, center.y);
+    }
+
+    // Seeds noise offsets and allocates per-chunk buffers, shared by runtime and the editor preview.
+    private void Initialize()
+    {
+        System.Random rng;
+
+        activeSeed = ResolveSeed();
+        initialized = Application.isPlaying;
+        if (Application.isPlaying)
+            RuntimeSeed = activeSeed;
+        rng = new System.Random(activeSeed);
+        waterOffset = NextOffset(rng);
+        islandOffset = NextOffset(rng);
+        groundOffset = NextOffset(rng);
+        activeBiome = PickBiome();
+        InitDecorOffsets();
+        InitCells();
+        AllocateChunkBuffers();
+    }
+
+    // Same point on every peer (the scene's spawn altar, else the generator), so host and clients clear the same decor; the local player's position differs per machine.
+    private Vector3 SpawnAreaCenter()
+    {
+        PlayerSpawner spawner = FindAnyObjectByType<PlayerSpawner>();
+
+        if (spawner == null)
+            return transform.position;
+        return spawner.transform.position;
+    }
+
+    // Each client streams chunks around its own local character.
+    private Transform GetTrackedPlayer()
+    {
+        GameObject localPlayer = LocalPlayer.Get();
+
+        if (localPlayer == null)
+            return player;
+        return localPlayer.transform;
+    }
 
     void Awake()
     {
@@ -88,77 +173,5 @@ public partial class ProceduralMapGenerator : MonoBehaviour
     {
         if (Application.isPlaying)
             RuntimeSeed = null;
-    }
-
-    // A Random seed waits for MapSeedSync to spawn; a scene without one rolls its seed locally.
-    private bool TryInitialize()
-    {
-        if (!initialized && Application.isPlaying && seedSource == SeedSource.Random && !MapSeedSync.Current.HasValue)
-        {
-            if (FindAnyObjectByType<MapSeedSync>(FindObjectsInactive.Include) != null)
-                return false;
-            Debug.LogWarning($"{name}: Seed Source is Random but the scene has no MapSeedSync, rolling a local seed (peers will not share the map).", this);
-            localRandomSeed = Random.Range(int.MinValue, int.MaxValue);
-        }
-        if (!initialized)
-            Initialize();
-        return true;
-    }
-
-    // Seeds noise offsets and allocates per-chunk buffers, shared by runtime and the editor preview.
-    private void Initialize()
-    {
-        activeSeed = ResolveSeed();
-        initialized = Application.isPlaying;
-        if (Application.isPlaying)
-            RuntimeSeed = activeSeed;
-        System.Random rng = new(activeSeed);
-        waterOffset = NextOffset(rng);
-        islandOffset = NextOffset(rng);
-        groundOffset = NextOffset(rng);
-        activeBiome = biomes != null && biomes.Length > 0 ? biomes[((activeSeed % biomes.Length) + biomes.Length) % biomes.Length] : null;
-        InitDecorOffsets();
-
-        Vector3Int cell = landTilemap.WorldToCell(SpawnAreaCenter());
-        spawnCell = new Vector2Int(cell.x, cell.y);
-        Vector3Int center = landTilemap.WorldToCell(transform.position);
-        islandCenter = new Vector2(center.x, center.y);
-
-        int cellCount = chunkSize * chunkSize;
-        waterMask = new bool[chunkSize + 2, chunkSize + 2];
-        landTiles = new TileBase[cellCount];
-        waterTiles = new TileBase[cellCount];
-        waterBackgroundTiles = new TileBase[cellCount];
-        coastFoamTiles = new TileBase[cellCount];
-        clearTiles = new TileBase[cellCount];
-    }
-
-    // Every peer ran the same previous scene, so a Previous seed matches without network sync; the editor preview always uses the fixed seed.
-    private int ResolveSeed()
-    {
-        if (!Application.isPlaying)
-            return seed;
-        if (seedSource == SeedSource.Previous)
-            return previousSeed ?? seed;
-
-        int resolved = seedSource != SeedSource.Random ? seed
-            : MapSeedSync.Current.HasValue ? MapSeedSync.Current.Value
-            : localRandomSeed ?? seed;
-        previousSeed = resolved;
-        return resolved;
-    }
-
-    // Same point on every peer (the scene's spawn altar, else the generator), so host and clients clear the same decor; the local player's position differs per machine.
-    private Vector3 SpawnAreaCenter()
-    {
-        PlayerSpawner spawner = FindAnyObjectByType<PlayerSpawner>();
-        return spawner != null ? spawner.transform.position : transform.position;
-    }
-
-    // Each client streams chunks around its own local character.
-    private Transform GetTrackedPlayer()
-    {
-        GameObject localPlayer = LocalPlayer.Get();
-        return localPlayer != null ? localPlayer.transform : player;
     }
 }

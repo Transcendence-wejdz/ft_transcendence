@@ -13,6 +13,7 @@ public static class GamepadIcons
     public static string CurrentStyle()
     {
         Gamepad pad = Gamepad.current;
+
         if (pad == null)
             return "xbox";
         if (InputSystem.IsFirstLayoutBasedOnSecond(pad.layout, "DualShockGamepad"))
@@ -25,28 +26,43 @@ public static class GamepadIcons
     // Icon for a binding path like "<Gamepad>/buttonSouth" or "<Gamepad>/dpad/up", null when the sheet has none.
     public static Sprite ForPath(string bindingPath)
     {
+        string control = ControlName(bindingPath);
+        string style;
+        Sprite sprite;
+
+        if (control == null)
+            return null;
+        style = CurrentStyle();
+        if (Sheet(style).TryGetValue(style + "_" + control, out sprite))
+            return sprite;
+        return null;
+    }
+
+    // "buttonSouth" from "<Gamepad>/buttonSouth", "dpad" from "<Gamepad>/dpad/up"; null when there is no control part.
+    private static string ControlName(string bindingPath)
+    {
+        int slash;
+        string control;
+        int sub;
+
         if (string.IsNullOrEmpty(bindingPath))
             return null;
-
-        int slash = bindingPath.IndexOf('/');
+        slash = bindingPath.IndexOf('/');
         if (slash < 0)
             return null;
-        string control = bindingPath.Substring(slash + 1);
-        int sub = control.IndexOf('/');
+        control = bindingPath.Substring(slash + 1);
+        sub = control.IndexOf('/');
         if (sub >= 0)
             control = control.Substring(0, sub);
-
-        string style = CurrentStyle();
-        Sprite sprite;
-        return Sheet(style).TryGetValue(style + "_" + control, out sprite) ? sprite : null;
+        return control;
     }
 
     private static Dictionary<string, Sprite> Sheet(string style)
     {
         Dictionary<string, Sprite> sheet;
+
         if (sheets.TryGetValue(style, out sheet))
             return sheet;
-
         sheet = new Dictionary<string, Sprite>();
         foreach (Sprite sprite in Resources.LoadAll<Sprite>(SheetPath + style + "-2"))
             sheet[sprite.name] = sprite;

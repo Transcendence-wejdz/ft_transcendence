@@ -15,7 +15,7 @@ public struct RunResult : INetworkSerializeByMemcpy
 }
 
 // Detects a full wipe (or the boss's death, a victory) and lets the host (or solo player) restart the mode or return to the Lobby.
-public class GameOverCheck : NetworkBehaviour
+public partial class GameOverCheck : NetworkBehaviour
 {
     [SerializeField] private string lobbySceneName = "Lobby";
     [SerializeField] private string restartSceneName;
@@ -27,6 +27,8 @@ public class GameOverCheck : NetworkBehaviour
     private readonly NetworkVariable<RunResult> result = new OfflineSafeNetworkVariable<RunResult>(
         default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
+    private static GameOverCheck instance;
+
     private bool offlineGameOver;
     private RunResult offlineResult;
     private bool isLoading;
@@ -34,30 +36,32 @@ public class GameOverCheck : NetworkBehaviour
     private float readyTime;
     private bool bossEngaged;
 
-    public bool IsGameOver => IsSpawned ? gameOver.Value : offlineGameOver;
+    public bool IsGameOver
+    {
+        get
+        {
+            if (IsSpawned)
+                return gameOver.Value;
+            return offlineGameOver;
+        }
+    }
+
+    // True on every peer once the run ended (wipe or victory); spawning and enemies stop on it.
+    public static bool IsRunOver => instance != null && instance.IsGameOver;
 
     public bool CanChoose => this.HasServerAuthority();
 
-    public RunResult Result => IsSpawned ? result.Value : offlineResult;
+    public RunResult Result
+    {
+        get
+        {
+            if (IsSpawned)
+                return result.Value;
+            return offlineResult;
+        }
+    }
 
     public bool IsVictory => IsGameOver && Result.victory;
-
-    // Networked: waits for every client's scene load to finish before evaluating wipes, so stale health can't false-trigger it.
-    void Start()
-    {
-        bool isNetworked = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
-        if (isNetworked && NetworkManager.Singleton.SceneManager != null)
-            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += HandleLoadEventCompleted;
-        else
-            ArmReadiness();
-    }
-
-    public override void OnDestroy()
-    {
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
-            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= HandleLoadEventCompleted;
-        base.OnDestroy();
-    }
 
     private void HandleLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
@@ -71,59 +75,31 @@ public class GameOverCheck : NetworkBehaviour
         readyTime = Time.time + startupGracePeriod;
     }
 
-    void Update()
+    private bool CanEvaluate()
     {
-        if (!this.HasServerAuthority() || IsGameOver || !sceneReady || Time.time < readyTime)
-            return;
+        if (!this.HasServerAuthority() || IsGameOver)
+            return false;
+        return sceneReady && Time.time >= readyTime;
+    }
 
+    private static bool AllPlayersDead()
+    {
+        IReadOnlyList<Player> players = Player.ActivePlayers;
+
+        foreach (Player player in players)
+        {
+            if (player.CurrentHealth > 0f)
+                return false;
+        }
+        return players.Count > 0;
+    }
+
+    // The boss scene is won once a boss was seen and is gone.
+    private bool IsBossDefeated()
+    {
         if (Boss.Active != null)
             bossEngaged = true;
-
-        bool victory = bossEngaged && Boss.Active == null;
-        if (!victory && !AllPlayersDead())
-            return;
-
-        RunResult snapshot = CaptureResult(victory);
-        if (IsSpawned)
-        {
-            result.Value = snapshot;
-            gameOver.Value = true;
-        }
-        else
-        {
-            offlineResult = snapshot;
-            offlineGameOver = true;
-        }
-    }
-
-    // Snapshotted at the wipe itself, since the wave timer keeps running behind the Game Over screen; the score stops counting here.
-    private static RunResult CaptureResult(bool victory)
-    {
-        WaveSpawner spawner = FindAnyObjectByType<WaveSpawner>();
-        XPManager xp = FindAnyObjectByType<XPManager>();
-        ScoreManager score = FindAnyObjectByType<ScoreManager>();
-        float elapsed = spawner != null ? spawner.ElapsedSeconds : 0f;
-        score?.Freeze();
-
-        return new RunResult
-        {
-            runId = Random.Range(1, int.MaxValue),
-            wave = spawner != null ? spawner.CurrentWave : 0,
-            xp = xp != null ? xp.TotalXP : RunCarryOver.IsForActiveScene ? RunCarryOver.TotalXP : 0,
-            seconds = Mathf.FloorToInt(elapsed),
-            score = score != null ? score.Breakdown : RunCarryOver.IsForActiveScene ? RunCarryOver.Score : default,
-            victory = victory,
-        };
-    }
-
-    public void Restart()
-    {
-        LoadScene(string.IsNullOrEmpty(restartSceneName) ? SceneManager.GetActiveScene().name : restartSceneName);
-    }
-
-    public void ReturnToLobby()
-    {
-        LoadScene(lobbySceneName);
+        return bossEngaged && Boss.Active == null;
     }
 
     // Only the host or a solo player may change scene, and only once.
@@ -131,23 +107,58 @@ public class GameOverCheck : NetworkBehaviour
     {
         if (!CanChoose || isLoading)
             return;
-
         isLoading = true;
-
         if (sceneName == lobbySceneName)
             ModeReadyCheck.Instance?.CancelReadyCheck();
-
         GameModeLoader.LoadNow(sceneName);
     }
 
-    private bool AllPlayersDead()
+    public void Restart()
     {
-        IReadOnlyList<Player> players = Player.ActivePlayers;
-        foreach (Player player in players)
-        {
-            if (player.CurrentHealth > 0f)
-                return false;
-        }
-        return players.Count > 0;
+        if (string.IsNullOrEmpty(restartSceneName))
+            LoadScene(SceneManager.GetActiveScene().name);
+        else
+            LoadScene(restartSceneName);
+    }
+
+    public void ReturnToLobby()
+    {
+        LoadScene(lobbySceneName);
+    }
+
+    void Awake()
+    {
+        instance = this;
+    }
+
+    // Networked: waits for every client's scene load to finish before evaluating wipes, so stale health can't false-trigger it.
+    void Start()
+    {
+        NetworkManager network = NetworkManager.Singleton;
+
+        if (network != null && network.IsListening && network.SceneManager != null)
+            network.SceneManager.OnLoadEventCompleted += HandleLoadEventCompleted;
+        else
+            ArmReadiness();
+    }
+
+    void Update()
+    {
+        bool victory;
+
+        if (!CanEvaluate())
+            return;
+        victory = IsBossDefeated();
+        if (victory || AllPlayersDead())
+            EndRun(CaptureResult(victory));
+    }
+
+    public override void OnDestroy()
+    {
+        if (instance == this)
+            instance = null;
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
+            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= HandleLoadEventCompleted;
+        base.OnDestroy();
     }
 }

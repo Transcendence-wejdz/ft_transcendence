@@ -1,6 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 
+// Level-up bonus stacks and the choice for the current level-up round, owned by each player.
 public partial class Player
 {
     private readonly NetworkVariable<bool> hasChosenLevelUpBonus = new OfflineSafeNetworkVariable<bool>(
@@ -34,63 +35,42 @@ public partial class Player
         levelUpBonusStacks.Value.attackMobility * LevelUpBonusCatalog.AttackMobilityBonusPerStack;
 
     // Raises a move-lock speed fraction toward 1 (no slowdown), never past it.
-    private float ApplyAttackMobilityBonus(float baseMultiplier) => Mathf.Min(1f, baseMultiplier + AttackMobilityBonus);
-
-    // Offline only: re-applies the bonuses an offline solo player earned before a scene change (see RunCarryOver).
-    private void StartLevelUp()
+    private float ApplyAttackMobilityBonus(float baseMultiplier)
     {
-        if (NetworkObject.IsSpawned || !this.IsLocallyControlled() || !RunCarryOver.IsForActiveScene || !RunCarryOver.HasOfflineBonusStacks)
-            return;
-
-        levelUpBonusStacks.Value = RunCarryOver.OfflineBonusStacks;
-        ResetToFull();
+        return Mathf.Min(1f, baseMultiplier + AttackMobilityBonus);
     }
 
-    // Called on the local player when a fresh run starts: the run's stacks begin at the bought permanent upgrades, at full health and mana.
-    public void ApplyPermanentUpgrades()
+    private bool HasCarriedOfflineStacks()
     {
-        if (!this.IsLocallyControlled())
-            return;
-
-        levelUpBonusStacks.Value = PermanentUpgrades.StartingStacks();
-        ResetToFull();
+        if (NetworkObject.IsSpawned || !this.IsLocallyControlled())
+            return false;
+        return RunCarryOver.IsForActiveScene && RunCarryOver.HasOfflineBonusStacks;
     }
 
-    // Called by this player's own level-up UI.
-    public void ChooseLevelUpBonus(LevelUpBonusType type)
+    private ClientRpcParams OwnerOnlyParams()
     {
-        if (!this.IsLocallyControlled())
-            return;
-
-        ChooseLevelUpBonusLocal(type);
-    }
-
-    // Called by LevelUpManager (server) on a player that didn't pick before the timer ran out.
-    public void ForceLevelUpBonus(LevelUpBonusType type)
-    {
-        if (!NetworkObject.IsSpawned)
-        {
-            ChooseLevelUpBonusLocal(type);
-            return;
-        }
-        ForceLevelUpBonusClientRpc(type, new ClientRpcParams
+        return new ClientRpcParams
         {
             Send = new ClientRpcSendParams { TargetClientIds = new[] { OwnerClientId } }
-        });
+        };
     }
 
-    // Called by LevelUpManager (server) when a new level-up sequence starts.
-    public void ResetLevelUpChoice()
+    private void ChooseLevelUpBonusLocal(LevelUpBonusType type)
     {
-        if (!NetworkObject.IsSpawned)
-        {
-            ResetLevelUpChoiceLocal();
-            return;
-        }
-        ResetLevelUpChoiceClientRpc(new ClientRpcParams
-        {
-            Send = new ClientRpcSendParams { TargetClientIds = new[] { OwnerClientId } }
-        });
+        LevelUpBonusStacks stacks = levelUpBonusStacks.Value;
+
+        hasChosenLevelUpBonus.Value = true;
+        stacks.Increment(type);
+        levelUpBonusStacks.Value = stacks;
+        if (type == LevelUpBonusType.Health)
+            Heal(LevelUpBonusCatalog.HealthBonusPerStack);
+        else if (type == LevelUpBonusType.ManaMax)
+            RestoreMana(LevelUpBonusCatalog.ManaBonusPerStack);
+    }
+
+    private void ResetLevelUpChoiceLocal()
+    {
+        hasChosenLevelUpBonus.Value = false;
     }
 
     [ClientRpc]
@@ -105,20 +85,51 @@ public partial class Player
         ResetLevelUpChoiceLocal();
     }
 
-    private void ChooseLevelUpBonusLocal(LevelUpBonusType type)
+    // Offline only: re-applies the bonuses an offline solo player earned before a scene change (see RunCarryOver).
+    private void StartLevelUp()
     {
-        hasChosenLevelUpBonus.Value = true;
-        LevelUpBonusStacks stacks = levelUpBonusStacks.Value;
-        stacks.Increment(type);
-        levelUpBonusStacks.Value = stacks;
-        if (type == LevelUpBonusType.Health)
-            Heal(LevelUpBonusCatalog.HealthBonusPerStack);
-        else if (type == LevelUpBonusType.ManaMax)
-            RestoreMana(LevelUpBonusCatalog.ManaBonusPerStack);
+        if (!HasCarriedOfflineStacks())
+            return;
+        levelUpBonusStacks.Value = RunCarryOver.OfflineBonusStacks;
+        ResetToFull();
     }
 
-    private void ResetLevelUpChoiceLocal()
+    // Called on the local player when a fresh run starts: the run's stacks begin at the bought permanent upgrades, at full health and mana.
+    public void ApplyPermanentUpgrades()
     {
-        hasChosenLevelUpBonus.Value = false;
+        if (!this.IsLocallyControlled())
+            return;
+        levelUpBonusStacks.Value = PermanentUpgrades.StartingStacks();
+        ResetToFull();
+    }
+
+    // Called by this player's own level-up UI.
+    public void ChooseLevelUpBonus(LevelUpBonusType type)
+    {
+        if (!this.IsLocallyControlled())
+            return;
+        ChooseLevelUpBonusLocal(type);
+    }
+
+    // Called by LevelUpManager (server) on a player that didn't pick before the timer ran out.
+    public void ForceLevelUpBonus(LevelUpBonusType type)
+    {
+        if (!NetworkObject.IsSpawned)
+        {
+            ChooseLevelUpBonusLocal(type);
+            return;
+        }
+        ForceLevelUpBonusClientRpc(type, OwnerOnlyParams());
+    }
+
+    // Called by LevelUpManager (server) when a new level-up sequence starts.
+    public void ResetLevelUpChoice()
+    {
+        if (!NetworkObject.IsSpawned)
+        {
+            ResetLevelUpChoiceLocal();
+            return;
+        }
+        ResetLevelUpChoiceClientRpc(OwnerOnlyParams());
     }
 }

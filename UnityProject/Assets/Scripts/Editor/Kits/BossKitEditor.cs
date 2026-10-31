@@ -5,7 +5,11 @@ using UnityEngine;
 [CustomEditor(typeof(BossKit))]
 public partial class BossKitEditor : KitPreviewEditor
 {
+    private const string PrefsPrefix = "BossKitEditor.Section.";
+    private const string PrefabsFolder = "Assets/Prefabs";
+    private const string PatternsSection = "Patterns";
     private const float ContactMargin = 0.5f;
+    private const float FallbackBodyRadius = 0.5f;
 
     private static readonly InspectorSections.Section[] Sections =
     {
@@ -26,25 +30,37 @@ public partial class BossKitEditor : KitPreviewEditor
 
     private BossKit Kit => (BossKit)target;
 
-    protected override bool AdvancePreviews(float delta)
+    // Same lane width as Boss.ChargeHitWidth: never narrower than the body plus a contact margin.
+    private float ChargeHitWidth
     {
-        bool repaint = false;
-        for (int i = 0; i < previews.Length; i++)
-            repaint |= previews[i].Tick(delta, TimelineLength(BuildSteps((Preview)i)));
-        return repaint;
+        get
+        {
+            PreviewShapes.PrefabBody(BossPrefab(), FallbackBodyRadius, out _, out float radius);
+            return Mathf.Max(Kit.ChargeWidth, 2f * (radius + ContactMargin));
+        }
     }
 
-    public override void OnInspectorGUI()
+    private bool UsesThisKit(GameObject prefab)
     {
-        serializedObject.Update();
-        InspectorSections.Draw(serializedObject, "BossKitEditor.Section.", Sections, null, section =>
+        Boss boss;
+
+        if (prefab == null)
+            return false;
+        boss = prefab.GetComponent<Boss>();
+        return boss != null && boss.Kit == Kit;
+    }
+
+    private GameObject FindBossPrefab()
+    {
+        GameObject prefab;
+
+        foreach (string guid in AssetDatabase.FindAssets("t:Prefab", new[] { PrefabsFolder }))
         {
-            if (section == "Patterns")
-                DrawPreview(Preview.Combo);
-            else if (System.Enum.TryParse(section, out Preview preview))
-                DrawPreview(preview);
-        });
-        serializedObject.ApplyModifiedProperties();
+            prefab = AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(guid));
+            if (UsesThisKit(prefab))
+                return prefab;
+        }
+        return null;
     }
 
     // The prefab whose Boss component uses this kit, for the sprite, Animator and body collider.
@@ -53,27 +69,33 @@ public partial class BossKitEditor : KitPreviewEditor
         if (cachedKit == Kit && bossPrefab != null)
             return bossPrefab;
         cachedKit = Kit;
-        bossPrefab = null;
-        foreach (string guid in AssetDatabase.FindAssets("t:Prefab", new[] { "Assets/Prefabs" }))
-        {
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(guid));
-            Boss boss = prefab != null ? prefab.GetComponent<Boss>() : null;
-            if (boss != null && boss.Kit == Kit)
-            {
-                bossPrefab = prefab;
-                break;
-            }
-        }
+        bossPrefab = FindBossPrefab();
         return bossPrefab;
     }
 
-    // Same lane width as Boss.ChargeHitWidth: never narrower than the body plus a contact margin.
-    private float ChargeHitWidth
+    private void DrawAfterSection(string section)
     {
-        get
-        {
-            PreviewShapes.PrefabBody(BossPrefab(), 0.5f, out _, out float radius);
-            return Mathf.Max(Kit.ChargeWidth, 2f * (radius + ContactMargin));
-        }
+        Preview preview;
+
+        if (section == PatternsSection)
+            DrawPreview(Preview.Combo);
+        else if (System.Enum.TryParse(section, out preview))
+            DrawPreview(preview);
+    }
+
+    protected override bool AdvancePreviews(float delta)
+    {
+        bool repaint = false;
+
+        for (int i = 0; i < previews.Length; i++)
+            repaint |= previews[i].Tick(delta, TimelineLength(BuildSteps((Preview)i)));
+        return repaint;
+    }
+
+    public override void OnInspectorGUI()
+    {
+        serializedObject.Update();
+        InspectorSections.Draw(serializedObject, PrefsPrefix, Sections, null, DrawAfterSection);
+        serializedObject.ApplyModifiedProperties();
     }
 }

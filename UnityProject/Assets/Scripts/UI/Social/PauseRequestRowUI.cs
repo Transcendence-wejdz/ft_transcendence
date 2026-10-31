@@ -17,6 +17,14 @@ public class PauseRequestRowUI : MonoBehaviour, IPointerEnterHandler, IPointerEx
     [SerializeField] private Color backgroundColor = new Color(0.82f, 0.82f, 0.82f, 0.93f);
     [SerializeField] private Color hoverBackgroundColor = new Color(1f, 1f, 1f, 1f);
 
+    private static void Bind(Button button, Action action)
+    {
+        button.onClick.RemoveAllListeners();
+        button.gameObject.SetActive(action != null);
+        if (action != null)
+            button.onClick.AddListener(() => action());
+    }
+
     public void Setup(string displayName, string status, Color statusColor, Action onAccept, Action onRemove)
     {
         nameText.text = displayName;
@@ -35,14 +43,13 @@ public class PauseRequestRowUI : MonoBehaviour, IPointerEnterHandler, IPointerEx
         removeButton.interactable = interactable;
     }
 
-    public void OnPointerEnter(PointerEventData eventData) => background.color = hoverBackgroundColor;
-    public void OnPointerExit(PointerEventData eventData) => background.color = backgroundColor;
-
-    private static void Bind(Button button, Action action)
+    public void OnPointerEnter(PointerEventData eventData)
     {
-        button.onClick.RemoveAllListeners();
-        button.gameObject.SetActive(action != null);
-        if (action != null)
-            button.onClick.AddListener(() => action());
+        background.color = hoverBackgroundColor;
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        background.color = backgroundColor;
     }
 }

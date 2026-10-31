@@ -25,14 +25,23 @@ public class FocusBackground : MonoBehaviour, IFocusVisual
         background.color = idleColor;
     }
 
-    // Unscaled since the pause menu may freeze time; mouse clicks also select, so only gamepad focus counts.
+    // Mouse clicks also select, so only gamepad focus counts.
+    private bool IsGamepadFocused()
+    {
+        if (EventSystem.current == null || !InputModeTracker.UsingGamepad)
+            return false;
+        return EventSystem.current.currentSelectedGameObject == gameObject;
+    }
+
+    // Unscaled since the pause menu may freeze time.
     private void Update()
     {
-        GameObject selected = EventSystem.current != null && InputModeTracker.UsingGamepad ? EventSystem.current.currentSelectedGameObject : null;
-        float target = selected == gameObject ? 1f : 0f;
+        float target = 0f;
+
+        if (IsGamepadFocused())
+            target = 1f;
         if (highlight == target)
             return;
-
         highlight = Mathf.MoveTowards(highlight, target, Time.unscaledDeltaTime * fadeSpeed);
         background.color = Color.Lerp(idleColor, focusedColor, highlight);
     }

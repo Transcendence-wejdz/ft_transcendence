@@ -7,7 +7,15 @@ public static class ActiveSession
     private static ISession current;
 
     // Null when solo, even if a stale session object is still held.
-    public static ISession Current => current != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening ? current : null;
+    public static ISession Current
+    {
+        get
+        {
+            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+                return null;
+            return current;
+        }
+    }
 
     public static void Set(ISession session)
     {

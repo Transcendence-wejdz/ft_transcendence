@@ -13,7 +13,37 @@ public class MouseDirectionIndicator : MonoBehaviour
     [Range(0f, 1f)]
     [SerializeField] private float outlineAlpha = 0.55f;
 
+    private const float SpriteUpOffset = 90f;
+
     private Player player;
+
+    private void ApplyColor(int classIndex, int colorIndex)
+    {
+        Color color = Color.white;
+
+        if (CharacterCatalog.Instance != null)
+            color = CharacterCatalog.Instance.GetFxLightColor(colorIndex);
+        SetColor(ringRenderer, color, ringAlpha);
+        SetColor(tipRenderer, color, tipAlpha);
+        SetColor(outlineRenderer, Color.black, outlineAlpha);
+    }
+
+    private static void SetColor(SpriteRenderer target, Color color, float alpha)
+    {
+        if (target == null)
+            return;
+        color.a = alpha;
+        target.color = color;
+    }
+
+    private void SetVisible(bool visible)
+    {
+        ringRenderer.enabled = visible;
+        if (tipRenderer != null)
+            tipRenderer.enabled = visible;
+        if (outlineRenderer != null)
+            outlineRenderer.enabled = visible;
+    }
 
     void Awake()
     {
@@ -26,7 +56,6 @@ public class MouseDirectionIndicator : MonoBehaviour
     {
         if (player == null)
             return;
-
         player.OnClassOrColorChanged += ApplyColor;
         ApplyColor(player.ClassIndex, player.ColorIndex);
     }
@@ -37,38 +66,16 @@ public class MouseDirectionIndicator : MonoBehaviour
             player.OnClassOrColorChanged -= ApplyColor;
     }
 
-    private void ApplyColor(int classIndex, int colorIndex)
-    {
-        Color color = CharacterCatalog.Instance != null ? CharacterCatalog.Instance.GetFxLightColor(colorIndex) : Color.white;
-        SetColor(ringRenderer, color, ringAlpha);
-        SetColor(tipRenderer, color, tipAlpha);
-        SetColor(outlineRenderer, Color.black, outlineAlpha);
-    }
-
-    private static void SetColor(SpriteRenderer target, Color color, float alpha)
-    {
-        if (target == null)
-            return;
-
-        color.a = alpha;
-        target.color = color;
-    }
-
     // Hidden while the player is a pig (dead), since a downed player can't aim or fight; the aim angle itself doesn't change while paused.
     void Update()
     {
+        bool visible;
+
         if (player == null)
             return;
-
-        bool visible = !player.IsDead;
-        ringRenderer.enabled = visible;
-        if (tipRenderer != null)
-            tipRenderer.enabled = visible;
-        if (outlineRenderer != null)
-            outlineRenderer.enabled = visible;
-        if (!visible)
-            return;
-
-        transform.rotation = Quaternion.Euler(0f, 0f, player.AimAngleDegrees - 90f);
+        visible = !player.IsDead;
+        SetVisible(visible);
+        if (visible)
+            transform.rotation = Quaternion.Euler(0f, 0f, player.AimAngleDegrees - SpriteUpOffset);
     }
 }

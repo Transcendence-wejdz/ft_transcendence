@@ -18,17 +18,69 @@ public class ReadyCheckEntryUI : MonoBehaviour
     private Player boundPlayer;
     private string[] teamNames;
 
+    private void SetName(string value)
+    {
+        if (nameText != null)
+            nameText.text = value;
+    }
+
+    private void SetAvatar(int classIndex, int colorIndex)
+    {
+        Sprite portrait;
+
+        if (avatarImage == null || CharacterCatalog.Instance == null)
+            return;
+        portrait = CharacterCatalog.Instance.GetPortrait(classIndex, colorIndex);
+        if (portrait != null)
+            avatarImage.sprite = portrait;
+    }
+
+    private void SetReady(bool ready)
+    {
+        if (readyStatusText == null)
+            return;
+        if (ready)
+        {
+            readyStatusText.text = "Ready";
+            readyStatusText.color = readyTextColor;
+        }
+        else
+        {
+            readyStatusText.text = "Not Ready";
+            readyStatusText.color = notReadyTextColor;
+        }
+        if (readyStatusBackground == null)
+            return;
+        if (ready)
+            readyStatusBackground.color = readyColor;
+        else
+            readyStatusBackground.color = notReadyColor;
+    }
+
+    private void SetTeam(int index)
+    {
+        bool hasTeams = teamNames != null && teamNames.Length > 0;
+
+        if (teamText == null)
+            return;
+        teamText.gameObject.SetActive(hasTeams);
+        if (!hasTeams)
+            return;
+        if (index >= 0 && index < teamNames.Length)
+            teamText.text = teamNames[index];
+        else
+            teamText.text = string.Empty;
+    }
+
     public void Bind(Player player, string[] teamNames = null)
     {
         Unbind();
-
         this.teamNames = teamNames;
         boundPlayer = player;
         player.OnDisplayNameChanged += SetName;
         player.OnClassOrColorChanged += SetAvatar;
         player.OnReadyChanged += SetReady;
         player.OnTeamChanged += SetTeam;
-
         SetName(player.CurrentDisplayName);
         SetAvatar(player.ClassIndex, player.ColorIndex);
         SetReady(player.IsReady);
@@ -47,43 +99,8 @@ public class ReadyCheckEntryUI : MonoBehaviour
         boundPlayer = null;
     }
 
-    private void OnDestroy() => Unbind();
-
-    private void SetName(string value)
+    private void OnDestroy()
     {
-        if (nameText != null)
-            nameText.text = value;
-    }
-
-    private void SetAvatar(int classIndex, int colorIndex)
-    {
-        if (avatarImage == null || CharacterCatalog.Instance == null)
-            return;
-
-        Sprite portrait = CharacterCatalog.Instance.GetPortrait(classIndex, colorIndex);
-        if (portrait != null)
-            avatarImage.sprite = portrait;
-    }
-
-    private void SetReady(bool ready)
-    {
-        if (readyStatusText == null)
-            return;
-
-        readyStatusText.text = ready ? "Ready" : "Not Ready";
-        readyStatusText.color = ready ? readyTextColor : notReadyTextColor;
-        if (readyStatusBackground != null)
-            readyStatusBackground.color = ready ? readyColor : notReadyColor;
-    }
-
-    private void SetTeam(int index)
-    {
-        if (teamText == null)
-            return;
-
-        bool hasTeams = teamNames != null && teamNames.Length > 0;
-        teamText.gameObject.SetActive(hasTeams);
-        if (hasTeams)
-            teamText.text = index >= 0 && index < teamNames.Length ? teamNames[index] : string.Empty;
+        Unbind();
     }
 }

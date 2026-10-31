@@ -7,6 +7,14 @@ public class NightLighting : MonoBehaviour
     public static bool IsNight { get; private set; }
     public static event Action<bool> OnNightChanged;
 
+    private static void SetNight(bool night)
+    {
+        if (IsNight == night)
+            return;
+        IsNight = night;
+        OnNightChanged?.Invoke(night);
+    }
+
     void OnEnable()
     {
         SetNight(true);
@@ -15,14 +23,5 @@ public class NightLighting : MonoBehaviour
     void OnDisable()
     {
         SetNight(false);
-    }
-
-    private static void SetNight(bool night)
-    {
-        if (IsNight == night)
-            return;
-
-        IsNight = night;
-        OnNightChanged?.Invoke(night);
     }
 }

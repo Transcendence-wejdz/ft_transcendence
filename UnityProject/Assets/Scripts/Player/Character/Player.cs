@@ -15,11 +15,28 @@ public partial class Player : NetworkBehaviour, IDamageable
     private bool IsBlocked => PauseManager.IsPaused;
 
     // Collider centre, since pivots sit at different heights; used by enemy range and hit checks.
-    public Vector2 Center => bodyCollider != null ? (Vector2)bodyCollider.bounds.center : (Vector2)transform.position;
+    public Vector2 Center
+    {
+        get
+        {
+            if (bodyCollider == null)
+                return transform.position;
+            return bodyCollider.bounds.center;
+        }
+    }
 
     // False for stripped instances (e.g. the preview doll) - also checked in OnNetworkSpawn/Despawn, which ignore enabled.
     private bool isValidInstance;
     private bool hasStarted;
+
+    private void CacheComponents()
+    {
+        animator = GetComponent<Animator>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        bodyCollider = GetComponent<Collider2D>();
+        playerInput = GetComponent<PlayerInput>();
+        sortingLayerAuto = GetComponent<SortingLayer_Auto>();
+    }
 
     void Awake()
     {
@@ -30,13 +47,7 @@ public partial class Player : NetworkBehaviour, IDamageable
             enabled = false;
             return;
         }
-
-        animator = GetComponent<Animator>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
-        bodyCollider = GetComponent<Collider2D>();
-        playerInput = GetComponent<PlayerInput>();
-        sortingLayerAuto = GetComponent<SortingLayer_Auto>();
-
+        CacheComponents();
         AwakeStats();
         AwakeCustomization();
         AwakeFeedback();
@@ -73,7 +84,6 @@ public partial class Player : NetworkBehaviour, IDamageable
     {
         if (!isValidInstance)
             return;
-
         SpawnMovement();
         SpawnStats();
         SpawnCustomization();
@@ -83,7 +93,6 @@ public partial class Player : NetworkBehaviour, IDamageable
     {
         if (!isValidInstance)
             return;
-
         DespawnMovement();
         DespawnStats();
         DespawnCustomization();

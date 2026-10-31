@@ -29,35 +29,41 @@ public static class LevelUpBonusCatalog
     public const float SizeBonusPerStack = 0.1f;
     public const float AttackMobilityBonusPerStack = 0.1f;
 
-    public static string GetDisplayName(LevelUpBonusType type) => type switch
+    public static string GetDisplayName(LevelUpBonusType type)
     {
-        LevelUpBonusType.AttackSpeed => "Attack Speed",
-        LevelUpBonusType.SpecialCooldown => "Special Cooldown",
-        LevelUpBonusType.Damage => "Damage",
-        LevelUpBonusType.Health => "Health",
-        LevelUpBonusType.MoveSpeed => "Move Speed",
-        LevelUpBonusType.HealthRegen => "Health Regen",
-        LevelUpBonusType.ManaMax => "Max Mana",
-        LevelUpBonusType.ManaRegen => "Mana Regen",
-        LevelUpBonusType.Size => "Attack Size",
-        LevelUpBonusType.AttackMobility => "Attack Mobility",
-        _ => type.ToString(),
-    };
+        switch (type)
+        {
+            case LevelUpBonusType.AttackSpeed: return "Attack Speed";
+            case LevelUpBonusType.SpecialCooldown: return "Special Cooldown";
+            case LevelUpBonusType.Damage: return "Damage";
+            case LevelUpBonusType.Health: return "Health";
+            case LevelUpBonusType.MoveSpeed: return "Move Speed";
+            case LevelUpBonusType.HealthRegen: return "Health Regen";
+            case LevelUpBonusType.ManaMax: return "Max Mana";
+            case LevelUpBonusType.ManaRegen: return "Mana Regen";
+            case LevelUpBonusType.Size: return "Attack Size";
+            case LevelUpBonusType.AttackMobility: return "Attack Mobility";
+            default: return type.ToString();
+        }
+    }
 
-    public static string GetDescription(LevelUpBonusType type) => type switch
+    public static string GetDescription(LevelUpBonusType type)
     {
-        LevelUpBonusType.AttackSpeed => $"-{AttackCooldownReductionPerStack * 100f:0}% attack cooldown",
-        LevelUpBonusType.SpecialCooldown => $"-{SpecialCooldownReductionPerStack * 100f:0}% special cooldown",
-        LevelUpBonusType.Damage => $"+{DamageBonusPerStack * 100f:0}% damage",
-        LevelUpBonusType.Health => $"+{HealthBonusPerStack:0} max health",
-        LevelUpBonusType.MoveSpeed => $"+{MoveSpeedBonusPerStack * 100f:0}% move speed",
-        LevelUpBonusType.HealthRegen => $"+{HealthRegenBonusPerStack:0} health regen/s",
-        LevelUpBonusType.ManaMax => $"+{ManaBonusPerStack:0} max mana",
-        LevelUpBonusType.ManaRegen => $"+{ManaRegenBonusPerStack:0} mana regen/s",
-        LevelUpBonusType.Size => $"+{SizeBonusPerStack * 100f:0}% attack size",
-        LevelUpBonusType.AttackMobility => $"-{AttackMobilityBonusPerStack * 100f:0} pts attack slow",
-        _ => string.Empty,
-    };
+        switch (type)
+        {
+            case LevelUpBonusType.AttackSpeed: return $"-{AttackCooldownReductionPerStack * 100f:0}% attack cooldown";
+            case LevelUpBonusType.SpecialCooldown: return $"-{SpecialCooldownReductionPerStack * 100f:0}% special cooldown";
+            case LevelUpBonusType.Damage: return $"+{DamageBonusPerStack * 100f:0}% damage";
+            case LevelUpBonusType.Health: return $"+{HealthBonusPerStack:0} max health";
+            case LevelUpBonusType.MoveSpeed: return $"+{MoveSpeedBonusPerStack * 100f:0}% move speed";
+            case LevelUpBonusType.HealthRegen: return $"+{HealthRegenBonusPerStack:0} health regen/s";
+            case LevelUpBonusType.ManaMax: return $"+{ManaBonusPerStack:0} max mana";
+            case LevelUpBonusType.ManaRegen: return $"+{ManaRegenBonusPerStack:0} mana regen/s";
+            case LevelUpBonusType.Size: return $"+{SizeBonusPerStack * 100f:0}% attack size";
+            case LevelUpBonusType.AttackMobility: return $"-{AttackMobilityBonusPerStack * 100f:0} pts attack slow";
+            default: return string.Empty;
+        }
+    }
 }
 
 // Which 3 of the pool are on offer this level-up round; replicated so every client shows the same choices.
@@ -67,7 +73,14 @@ public struct OfferedBonusSet : INetworkSerializable
     public LevelUpBonusType second;
     public LevelUpBonusType third;
 
-    public LevelUpBonusType Get(int slot) => slot switch { 0 => first, 1 => second, _ => third };
+    public LevelUpBonusType Get(int slot)
+    {
+        if (slot == 0)
+            return first;
+        if (slot == 1)
+            return second;
+        return third;
+    }
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {

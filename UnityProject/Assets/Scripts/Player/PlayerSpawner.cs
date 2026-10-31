@@ -8,23 +8,21 @@ public class PlayerSpawner : MonoBehaviour
     [SerializeField] private GameObject playerPrefab;
     [SerializeField] private Transform[] glyphs;
 
-    private void Start()
+    // Player position that puts its feet on the glyph for this slot, wrapping past the glyph count.
+    private Transform GlyphFor(ulong slot)
     {
-        NetworkManager nm = NetworkManager.Singleton;
-        if (nm != null && nm.IsListening)
-            return;
-
-        if (GameObject.FindWithTag("Player") != null)
-            return;
-
-        Instantiate(playerPrefab, GetSpawnPosition(0), transform.rotation);
+        if (glyphs == null || glyphs.Length == 0)
+            return null;
+        return glyphs[(int)(slot % (ulong)glyphs.Length)];
     }
 
-    // Player position that puts its feet on the glyph for this slot, wrapping past the glyph count.
     public Vector3 GetSpawnPosition(ulong slot)
     {
-        Transform glyph = glyphs != null && glyphs.Length > 0 ? glyphs[(int)(slot % (ulong)glyphs.Length)] : null;
-        Vector3 target = glyph != null ? glyph.position : transform.position;
+        Transform glyph = GlyphFor(slot);
+        Vector3 target = transform.position;
+
+        if (glyph != null)
+            target = glyph.position;
         return target - (Vector3)FeetOffset();
     }
 
@@ -33,7 +31,6 @@ public class PlayerSpawner : MonoBehaviour
     {
         if (playerPrefab == null)
             return Vector2.zero;
-
         foreach (Collider2D col in playerPrefab.GetComponents<Collider2D>())
         {
             if (!col.isTrigger)
@@ -46,7 +43,22 @@ public class PlayerSpawner : MonoBehaviour
     public static bool TryGetSpawnPosition(ulong slot, out Vector3 position)
     {
         PlayerSpawner spawner = FindAnyObjectByType<PlayerSpawner>();
-        position = spawner != null ? spawner.GetSpawnPosition(slot) : Vector3.zero;
-        return spawner != null;
+
+        position = Vector3.zero;
+        if (spawner == null)
+            return false;
+        position = spawner.GetSpawnPosition(slot);
+        return true;
+    }
+
+    private void Start()
+    {
+        NetworkManager nm = NetworkManager.Singleton;
+
+        if (nm != null && nm.IsListening)
+            return;
+        if (GameObject.FindWithTag("Player") != null)
+            return;
+        Instantiate(playerPrefab, GetSpawnPosition(0), transform.rotation);
     }
 }

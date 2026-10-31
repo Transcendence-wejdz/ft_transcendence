@@ -20,15 +20,15 @@ public class DecorFlipbook : MonoBehaviour
 
     void Update()
     {
+        float frameDuration = 1f / frameRate;
+        int steps;
+
         if (frames.Length <= 1 || !spriteRenderer.isVisible)
             return;
-
         timer += Time.deltaTime;
-        float frameDuration = 1f / frameRate;
         if (timer < frameDuration)
             return;
-
-        int steps = (int)(timer / frameDuration);
+        steps = (int)(timer / frameDuration);
         timer -= steps * frameDuration;
         frameIndex = (frameIndex + steps) % frames.Length;
         spriteRenderer.sprite = frames[frameIndex];

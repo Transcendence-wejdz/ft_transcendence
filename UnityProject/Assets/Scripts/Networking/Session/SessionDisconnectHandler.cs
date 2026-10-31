@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Unity.Netcode;
 using Unity.Services.Multiplayer;
@@ -20,77 +19,30 @@ public class SessionDisconnectHandler : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap()
     {
-        var go = new GameObject("SessionDisconnectHandler");
+        GameObject go = new GameObject("SessionDisconnectHandler");
+
         DontDestroyOnLoad(go);
         go.AddComponent<SessionDisconnectHandler>();
     }
 
-    // Hosts delete the session; a failed call never blocks leaving. Stops are flagged so they aren't treated as drops.
-    public static async Task LeaveSessionsAsync()
+    private static List<ISession> ListedSessions()
     {
-        expectedStopUntil = Time.unscaledTime + ExpectedStopWindow;
-        ActiveSession.Clear();
+        return new List<ISession>(MultiplayerService.Instance.Sessions.Values);
+    }
 
-        foreach (ISession session in MultiplayerService.Instance.Sessions.Values.ToList())
+    private static async Task LeaveOneAsync(ISession session)
+    {
+        try
         {
-            try
-            {
-                if (session.IsHost)
-                    await session.AsHost().DeleteAsync();
-                else
-                    await session.LeaveAsync();
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"SessionDisconnectHandler: couldn't leave session cleanly - {e.Message}");
-            }
+            if (session.IsHost)
+                await session.AsHost().DeleteAsync();
+            else
+                await session.LeaveAsync();
         }
-
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-            NetworkManager.Singleton.Shutdown();
-    }
-
-    void Update()
-    {
-        if (subscribedManager == NetworkManager.Singleton)
-            return;
-
-        if (subscribedManager != null)
-            subscribedManager.OnClientStopped -= HandleClientStopped;
-
-        subscribedManager = NetworkManager.Singleton;
-        if (subscribedManager != null)
-            subscribedManager.OnClientStopped += HandleClientStopped;
-    }
-
-    void OnApplicationQuit()
-    {
-        quitting = true;
-    }
-
-    void OnDestroy()
-    {
-        if (subscribedManager != null)
-            subscribedManager.OnClientStopped -= HandleClientStopped;
-    }
-
-    private void HandleClientStopped(bool wasHost)
-    {
-        if (quitting || Time.unscaledTime < expectedStopUntil)
-            return;
-
-        StartCoroutine(ReturnToOfflineLobbyNextFrame());
-    }
-
-    // Deferred a frame so the scene load doesn't run inside Netcode's own shutdown callback; never waits on the network.
-    private IEnumerator ReturnToOfflineLobbyNextFrame()
-    {
-        yield return null;
-        Debug.Log("SessionDisconnectHandler: session ended under us, returning to the offline Lobby.");
-        ActiveSession.Clear();
-        List<ISession> stale = MultiplayerService.Instance.Sessions.Values.ToList();
-        LoadingScreenManager.LoadScene(LobbySceneName);
-        _ = ForgetSessionsAsync(stale);
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"SessionDisconnectHandler: couldn't leave session cleanly - {e.Message}");
+        }
     }
 
     // Best-effort cleanup of sessions the SDK still lists after the host is gone (calls can be slow to fail); never touches the NetworkManager, so a new session started meanwhile is safe.
@@ -107,5 +59,59 @@ public class SessionDisconnectHandler : MonoBehaviour
                 Debug.LogWarning($"SessionDisconnectHandler: stale session cleanup failed - {e.Message}");
             }
         }
+    }
+
+    // Deferred a frame so the scene load doesn't run inside Netcode's own shutdown callback; never waits on the network.
+    private IEnumerator ReturnToOfflineLobbyNextFrame()
+    {
+        List<ISession> stale;
+
+        yield return null;
+        Debug.Log("SessionDisconnectHandler: session ended under us, returning to the offline Lobby.");
+        ActiveSession.Clear();
+        stale = ListedSessions();
+        LoadingScreenManager.LoadScene(LobbySceneName);
+        _ = ForgetSessionsAsync(stale);
+    }
+
+    private void HandleClientStopped(bool wasHost)
+    {
+        if (quitting || Time.unscaledTime < expectedStopUntil)
+            return;
+        StartCoroutine(ReturnToOfflineLobbyNextFrame());
+    }
+
+    // Hosts delete the session; a failed call never blocks leaving. Stops are flagged so they aren't treated as drops.
+    public static async Task LeaveSessionsAsync()
+    {
+        expectedStopUntil = Time.unscaledTime + ExpectedStopWindow;
+        ActiveSession.Clear();
+        foreach (ISession session in ListedSessions())
+            await LeaveOneAsync(session);
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            NetworkManager.Singleton.Shutdown();
+    }
+
+    // Follows NetworkManager.Singleton, which can be replaced across scene loads.
+    void Update()
+    {
+        if (subscribedManager == NetworkManager.Singleton)
+            return;
+        if (subscribedManager != null)
+            subscribedManager.OnClientStopped -= HandleClientStopped;
+        subscribedManager = NetworkManager.Singleton;
+        if (subscribedManager != null)
+            subscribedManager.OnClientStopped += HandleClientStopped;
+    }
+
+    void OnApplicationQuit()
+    {
+        quitting = true;
+    }
+
+    void OnDestroy()
+    {
+        if (subscribedManager != null)
+            subscribedManager.OnClientStopped -= HandleClientStopped;
     }
 }

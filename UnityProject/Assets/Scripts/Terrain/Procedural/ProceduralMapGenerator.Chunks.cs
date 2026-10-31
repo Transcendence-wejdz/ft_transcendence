@@ -1,31 +1,146 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 // Chunk streaming around the local player, or a one-shot load of the whole island.
 public partial class ProceduralMapGenerator
 {
-    private readonly HashSet<Vector2Int> loadedChunks = new();
-    private readonly HashSet<Vector2Int> pendingChunks = new();
-    private readonly Queue<Vector2Int> pendingChunkQueue = new();
-    private readonly HashSet<Vector2Int> desiredChunks = new();
+    private const int NoCameraChunkMargin = 2;
+    private const float MinCameraDepth = 0.01f;
+
+    private readonly HashSet<Vector2Int> loadedChunks = new HashSet<Vector2Int>();
+    private readonly HashSet<Vector2Int> pendingChunks = new HashSet<Vector2Int>();
+    private readonly Queue<Vector2Int> pendingChunkQueue = new Queue<Vector2Int>();
+    private readonly HashSet<Vector2Int> desiredChunks = new HashSet<Vector2Int>();
     private Vector2Int lastPlayerChunk;
     private bool hasGeneratedOnce;
 
-    void Update()
+    private bool LoadsWholeIsland => loadWholeIsland && Island.radius > 0f;
+
+    // Fills one cell of each tile buffer: water or land, plus the shore background and foam on coastal ground.
+    private void FillCell(int index, int worldX, int worldY)
     {
-        if (!TryInitialize())
-            return;
+        bool isWater = MaskIsWater(worldX, worldY);
+        bool isCoastalGround = !isWater && MaskIsAdjacentToWater(worldX, worldY);
 
-        if (loadWholeIsland && Island.radius > 0f)
+        waterTiles[index] = null;
+        landTiles[index] = null;
+        waterBackgroundTiles[index] = null;
+        coastFoamTiles[index] = null;
+        if (isWater)
+            waterTiles[index] = Water.tile;
+        else
+            landTiles[index] = PickLandTile(worldX, worldY);
+        if (!isCoastalGround)
+            return;
+        waterBackgroundTiles[index] = Water.backgroundTile;
+        coastFoamTiles[index] = Water.coastFoamTile;
+    }
+
+    private void SetChunkTiles(BoundsInt bounds, TileBase[] land, TileBase[] water, TileBase[] background, TileBase[] foam)
+    {
+        landTilemap.SetTilesBlock(bounds, land);
+        waterTilemap.SetTilesBlock(bounds, water);
+        waterBackgroundTilemap.SetTilesBlock(bounds, background);
+        coastFoamTilemap.SetTilesBlock(bounds, foam);
+    }
+
+    private void GenerateChunk(Vector2Int chunk)
+    {
+        int originX = chunk.x * chunkSize;
+        int originY = chunk.y * chunkSize;
+
+        FillWaterMask(originX - 1, originY - 1);
+        for (int y = 0; y < chunkSize; y++)
         {
-            if (!hasGeneratedOnce)
-            {
-                hasGeneratedOnce = true;
-                GenerateWholeIsland();
-            }
-            return;
+            for (int x = 0; x < chunkSize; x++)
+                FillCell(x + y * chunkSize, originX + x, originY + y);
         }
+        SetChunkTiles(ChunkBounds(chunk), landTiles, waterTiles, waterBackgroundTiles, coastFoamTiles);
+        GenerateDecor(chunk, originX, originY);
+    }
 
+    private void UnloadChunk(Vector2Int chunk)
+    {
+        SetChunkTiles(ChunkBounds(chunk), clearTiles, clearTiles, clearTiles, clearTiles);
+        UnloadDecor(chunk);
+    }
+
+    private bool UnloadIfUndesired(Vector2Int chunk)
+    {
+        if (desiredChunks.Contains(chunk))
+            return false;
+        UnloadChunk(chunk);
+        return true;
+    }
+
+    private void CollectDesiredChunks(Vector2Int centerChunk, int radius)
+    {
+        desiredChunks.Clear();
+        for (int y = -radius; y <= radius; y++)
+        {
+            for (int x = -radius; x <= radius; x++)
+                desiredChunks.Add(centerChunk + new Vector2Int(x, y));
+        }
+    }
+
+    private void UpdateChunks(Vector2Int centerChunk)
+    {
+        CollectDesiredChunks(centerChunk, ComputeEffectiveViewDistance());
+        foreach (Vector2Int chunk in desiredChunks)
+        {
+            if (!loadedChunks.Contains(chunk) && pendingChunks.Add(chunk))
+                pendingChunkQueue.Enqueue(chunk);
+        }
+        loadedChunks.RemoveWhere(UnloadIfUndesired);
+    }
+
+    // One-shot load of every chunk the island (and the ocean the camera can see past its coast) can ever need.
+    private void GenerateWholeIsland()
+    {
+        int radius = IslandChunkRadius() + CameraChunkMargin();
+        Vector2Int center = WorldToChunk(transform.position);
+        Vector2Int chunk;
+
+        for (int y = -radius; y <= radius; y++)
+        {
+            for (int x = -radius; x <= radius; x++)
+            {
+                chunk = center + new Vector2Int(x, y);
+                if (loadedChunks.Add(chunk))
+                    GenerateChunk(chunk);
+            }
+        }
+    }
+
+    // Generates up to budget queued chunks, dropping ones no longer desired.
+    private void ProcessPendingChunks(int budget)
+    {
+        Vector2Int chunk;
+
+        while (budget > 0 && pendingChunkQueue.Count > 0)
+        {
+            chunk = pendingChunkQueue.Dequeue();
+            pendingChunks.Remove(chunk);
+            if (!desiredChunks.Contains(chunk))
+                continue;
+            GenerateChunk(chunk);
+            loadedChunks.Add(chunk);
+            budget--;
+        }
+    }
+
+    private void GenerateIslandOnce()
+    {
+        if (hasGeneratedOnce)
+            return;
+        hasGeneratedOnce = true;
+        GenerateWholeIsland();
+    }
+
+    // The very first pass loads everything at once; later ones spread new chunks across frames.
+    private void StreamAroundPlayer()
+    {
         Vector2Int playerChunk = WorldToChunk(GetTrackedPlayer().position);
         bool firstRun = !hasGeneratedOnce;
 
@@ -35,159 +150,19 @@ public partial class ProceduralMapGenerator
             hasGeneratedOnce = true;
             UpdateChunks(playerChunk);
         }
-
-        ProcessPendingChunks(firstRun ? int.MaxValue : maxChunkGenerationsPerFrame);
+        if (firstRun)
+            ProcessPendingChunks(int.MaxValue);
+        else
+            ProcessPendingChunks(maxChunkGenerationsPerFrame);
     }
 
-    private void UpdateChunks(Vector2Int centerChunk)
+    void Update()
     {
-        int radius = ComputeEffectiveViewDistance();
-
-        desiredChunks.Clear();
-        for (int y = -radius; y <= radius; y++)
-        {
-            for (int x = -radius; x <= radius; x++)
-                desiredChunks.Add(centerChunk + new Vector2Int(x, y));
-        }
-
-        foreach (Vector2Int chunk in desiredChunks)
-        {
-            if (!loadedChunks.Contains(chunk) && pendingChunks.Add(chunk))
-                pendingChunkQueue.Enqueue(chunk);
-        }
-
-        loadedChunks.RemoveWhere(chunk =>
-        {
-            if (desiredChunks.Contains(chunk))
-                return false;
-
-            UnloadChunk(chunk);
-            return true;
-        });
-    }
-
-    // One-shot load of every chunk the island (and the ocean the camera can see past its coast) can ever need.
-    private void GenerateWholeIsland()
-    {
-        int radius = IslandChunkRadius() + CameraChunkMargin();
-        Vector2Int center = WorldToChunk(transform.position);
-        for (int y = -radius; y <= radius; y++)
-        {
-            for (int x = -radius; x <= radius; x++)
-            {
-                Vector2Int chunk = center + new Vector2Int(x, y);
-                if (loadedChunks.Add(chunk))
-                    GenerateChunk(chunk);
-            }
-        }
-    }
-
-    // Chunks from the generator to the farthest possible coastline plus the decor coast offset.
-    private int IslandChunkRadius()
-    {
-        IslandSettings island = Island;
-        return Mathf.CeilToInt((island.radius * (1f + island.edgeVariation) + Mathf.Max(0f, island.decorCoastOffset)) / chunkSize) + 1;
-    }
-
-    // Half the camera view in chunks, so the ocean never ends on screen while standing on the coast.
-    private int CameraChunkMargin()
-    {
-        int withBuffer = ComputeEffectiveViewDistance();
-        return Camera.main != null ? Mathf.Max(1, withBuffer - viewDistanceInChunks) : 2;
-    }
-
-    // Generates up to budget queued chunks, dropping ones no longer desired.
-    private void ProcessPendingChunks(int budget)
-    {
-        while (budget > 0 && pendingChunkQueue.Count > 0)
-        {
-            Vector2Int chunk = pendingChunkQueue.Dequeue();
-            pendingChunks.Remove(chunk);
-
-            if (!desiredChunks.Contains(chunk))
-                continue;
-
-            GenerateChunk(chunk);
-            loadedChunks.Add(chunk);
-            budget--;
-        }
-    }
-
-    private void GenerateChunk(Vector2Int chunk)
-    {
-        int originX = chunk.x * chunkSize;
-        int originY = chunk.y * chunkSize;
-        FillWaterMask(originX - 1, originY - 1);
-
-        for (int y = 0; y < chunkSize; y++)
-        {
-            for (int x = 0; x < chunkSize; x++)
-            {
-                int worldX = originX + x;
-                int worldY = originY + y;
-                int index = x + y * chunkSize;
-                bool isWater = MaskIsWater(worldX, worldY);
-                bool isCoastalGround = !isWater && MaskIsAdjacentToWater(worldX, worldY);
-
-                waterTiles[index] = isWater ? Water.tile : null;
-                landTiles[index] = isWater ? null : PickLandTile(worldX, worldY);
-                waterBackgroundTiles[index] = isCoastalGround ? Water.backgroundTile : null;
-                coastFoamTiles[index] = isCoastalGround ? Water.coastFoamTile : null;
-            }
-        }
-
-        BoundsInt bounds = ChunkBounds(chunk);
-        landTilemap.SetTilesBlock(bounds, landTiles);
-        waterTilemap.SetTilesBlock(bounds, waterTiles);
-        waterBackgroundTilemap.SetTilesBlock(bounds, waterBackgroundTiles);
-        coastFoamTilemap.SetTilesBlock(bounds, coastFoamTiles);
-
-        GenerateDecor(chunk, originX, originY);
-    }
-
-    private void UnloadChunk(Vector2Int chunk)
-    {
-        BoundsInt bounds = ChunkBounds(chunk);
-        landTilemap.SetTilesBlock(bounds, clearTiles);
-        waterTilemap.SetTilesBlock(bounds, clearTiles);
-        waterBackgroundTilemap.SetTilesBlock(bounds, clearTiles);
-        coastFoamTilemap.SetTilesBlock(bounds, clearTiles);
-
-        UnloadDecor(chunk);
-    }
-
-    private BoundsInt ChunkBounds(Vector2Int chunk)
-    {
-        return new BoundsInt(chunk.x * chunkSize, chunk.y * chunkSize, 0, chunkSize, chunkSize, 1);
-    }
-
-    private Vector2Int WorldToChunk(Vector3 worldPosition)
-    {
-        Vector3Int cell = landTilemap.WorldToCell(worldPosition);
-        return new Vector2Int(
-            Mathf.FloorToInt(cell.x / (float)chunkSize),
-            Mathf.FloorToInt(cell.y / (float)chunkSize));
-    }
-
-    // Chunk radius covering the camera view plus a buffer.
-    private int ComputeEffectiveViewDistance()
-    {
-        Camera cam = Camera.main;
-        if (cam == null)
-            return viewDistanceInChunks;
-
-        Vector3 toPlane = landTilemap.transform.position - cam.transform.position;
-        float depth = Vector3.Dot(toPlane, cam.transform.forward);
-        if (depth <= 0.01f)
-            return viewDistanceInChunks;
-
-        Vector3 worldMin = cam.ViewportToWorldPoint(new Vector3(0f, 0f, depth));
-        Vector3 worldMax = cam.ViewportToWorldPoint(new Vector3(1f, 1f, depth));
-
-        float cellSize = landTilemap.cellSize.x > 0f ? landTilemap.cellSize.x : 1f;
-        float chunkWorldSize = chunkSize * cellSize;
-        float halfExtent = Mathf.Max(Mathf.Abs(worldMax.x - worldMin.x), Mathf.Abs(worldMax.y - worldMin.y)) * 0.5f;
-
-        return Mathf.CeilToInt(halfExtent / chunkWorldSize) + viewDistanceInChunks;
+        if (!TryInitialize())
+            return;
+        if (LoadsWholeIsland)
+            GenerateIslandOnce();
+        else
+            StreamAroundPlayer();
     }
 }

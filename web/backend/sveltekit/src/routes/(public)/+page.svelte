@@ -9,7 +9,7 @@
 		<p class="intro">Jump into the game, meet the team, and make this space your own.</p>
 		<div class="actions">
 			<button class="button" onclick={() => window.location.assign('/game')}>Play now <span aria-hidden="true">↗</span></button>
-			<button class="button button-outline" onclick={() => goto('/setting')}>Your settings</button>
+			<button class="button button-outline" onclick={() => goto('/settings')}>Your settings</button>
 		</div>
 		<div class="quick-links">
 			<button onclick={() => goto('/project')}>About the project <span>→</span></button>

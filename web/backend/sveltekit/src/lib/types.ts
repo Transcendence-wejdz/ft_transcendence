@@ -206,6 +206,10 @@ export type SendMessageBody = {
     text: string;
 };
 
+// Response of GET /api/players/[playerId]/messages?before=<cursor>: newest message first.
+// nextCursor null: the start of the conversation is reached, nothing older to load.
+export type MessagesPage = Page<ChatMessage>;
+
 
 // ---- Notifications ----
 

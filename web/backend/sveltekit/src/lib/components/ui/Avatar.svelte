@@ -1,10 +1,14 @@
+<script lang="ts" module>
+	export type Team = 'black' | 'blue' | 'purple' | 'red' | 'yellow';
+</script>
+
 <script lang="ts">
 	import type { HTMLAttributes } from 'svelte/elements';
 
 	type Props = {
 		name: string;
 		src?: string;
-		team?: 'black' | 'blue' | 'purple' | 'red' | 'yellow';
+		team?: Team;
 		size?: 'sm' | 'md' | 'lg';
 	} & HTMLAttributes<HTMLSpanElement>;
 

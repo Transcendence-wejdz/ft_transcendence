@@ -4,8 +4,11 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // Level-up choice screen: solo has no timer; multiplayer adds a countdown and a side ready list.
-public class LevelUpUI : MonoBehaviour
+public partial class LevelUpUI : MonoBehaviour
 {
+    private const float WarningMinAlpha = 0.35f;
+    private const float MinBeatSeconds = 0.01f;
+
     [SerializeField] private GameObject panel;
     [SerializeField] private TMP_Text levelText;
     [SerializeField] private Button[] bonusButtons;
@@ -32,6 +35,89 @@ public class LevelUpUI : MonoBehaviour
 
     public static bool IsShowing { get; private set; }
 
+    private void SetButtonsInteractable(bool interactable)
+    {
+        foreach (Button button in bonusButtons)
+            button.interactable = interactable;
+    }
+
+    // The name in the label font when one is set, else just bigger.
+    private string BonusTitle(LevelUpBonusType type)
+    {
+        string displayName = LevelUpBonusCatalog.GetDisplayName(type);
+
+        if (nameFont != null)
+            return $"<font=\"{nameFont.name}\"><size=150%>{displayName}</size></font>";
+        return $"<size=125%>{displayName}</size>";
+    }
+
+    private void LabelBonus(int slot)
+    {
+        LevelUpBonusType type = manager.GetOfferedBonusType(slot);
+
+        bonusLabels[slot].text = $"<color=#EDE6D6>{BonusTitle(type)}</color>\n<color=#9E9C94>{LevelUpBonusCatalog.GetDescription(type)}</color>";
+    }
+
+    private void BeginShow()
+    {
+        localChosen = false;
+        levelText.text = $"Level {manager.SequenceLevel}";
+        waitingText.gameObject.SetActive(false);
+        SetButtonsInteractable(true);
+        for (int i = 0; i < bonusLabels.Length; i++)
+        {
+            if (bonusLabels[i] != null)
+                LabelBonus(i);
+        }
+    }
+
+    private void ChooseBonus(int bonusIndex)
+    {
+        Player local;
+
+        if (localChosen)
+            return;
+        local = LocalPlayer.GetPlayer();
+        if (local == null)
+            return;
+        local.ChooseLevelUpBonus(manager.GetOfferedBonusType(bonusIndex));
+        localChosen = true;
+        SetButtonsInteractable(false);
+    }
+
+    private void SetShown(bool active)
+    {
+        shown = active;
+        IsShowing = active;
+        panel.SetActive(active);
+        PauseManager.SetExternalPause(active);
+        if (active)
+            BeginShow();
+    }
+
+    private void BindBonusButtons()
+    {
+        bonusLabels = new TMP_Text[bonusButtons.Length];
+        for (int i = 0; i < bonusButtons.Length; i++)
+        {
+            bonusLabels[i] = bonusButtons[i].GetComponentInChildren<TMP_Text>();
+            BindBonusButton(bonusButtons[i], i);
+        }
+    }
+
+    // Separate so each listener captures its own slot index.
+    private void BindBonusButton(Button button, int bonusIndex)
+    {
+        button.onClick.AddListener(() => ChooseBonus(bonusIndex));
+    }
+
+    private bool FindManager()
+    {
+        if (manager == null)
+            manager = FindAnyObjectByType<LevelUpManager>();
+        return manager != null;
+    }
+
     void Awake()
     {
         IsShowing = false;
@@ -39,14 +125,7 @@ public class LevelUpUI : MonoBehaviour
         if (nameFont != null)
             MaterialReferenceManager.AddFontAsset(nameFont);
         timerBaseColor = timerText.color;
-
-        bonusLabels = new TMP_Text[bonusButtons.Length];
-        for (int i = 0; i < bonusButtons.Length; i++)
-        {
-            int bonusIndex = i;
-            bonusLabels[i] = bonusButtons[i].GetComponentInChildren<TMP_Text>();
-            bonusButtons[i].onClick.AddListener(() => ChooseBonus(bonusIndex));
-        }
+        BindBonusButtons();
     }
 
     // Releases the input block too if the scene unloads while the choice is still open.
@@ -59,109 +138,16 @@ public class LevelUpUI : MonoBehaviour
 
     void Update()
     {
-        if (manager == null)
-        {
-            manager = FindAnyObjectByType<LevelUpManager>();
-            if (manager == null)
-                return;
-        }
+        bool active;
 
-        bool active = manager.SequenceActive;
+        if (!FindManager())
+            return;
+        active = manager.SequenceActive;
         if (active != shown)
-        {
-            shown = active;
-            IsShowing = active;
-            panel.SetActive(active);
-            PauseManager.SetExternalPause(active);
-            if (active)
-                BeginShow();
-        }
-
+            SetShown(active);
         if (!active)
             return;
-
-        bool multi = Player.AllActiveInstances.Count > 1;
-        timerGroup.SetActive(multi);
-        readyListGroup.SetActive(multi);
-
-        if (multi)
-        {
-            int second = Mathf.CeilToInt(manager.SecondsRemaining);
-            timerText.text = second.ToString();
-            PaintTimerWarning(second);
-            RefreshReadyList();
-        }
-
+        UpdateMultiplayerExtras();
         waitingText.gameObject.SetActive(localChosen);
-    }
-
-    // Last seconds: red heartbeat timed locally from each tick, since the server only replicates whole seconds.
-    private void PaintTimerWarning(int second)
-    {
-        if (second != lastTimerSecond)
-        {
-            lastTimerSecond = second;
-            lastTimerTickTime = Time.unscaledTime;
-        }
-
-        if (second > warningSeconds || second <= 0)
-        {
-            timerText.color = timerBaseColor;
-            timerText.rectTransform.localScale = Vector3.one;
-            return;
-        }
-
-        float sinceTick = Time.unscaledTime - lastTimerTickTime;
-        float fade = 1f - Mathf.Clamp01(sinceTick);
-        float beat = 1f - Mathf.Clamp01(sinceTick / Mathf.Max(warningBeatSeconds, 0.01f));
-        Color color = warningColor;
-        color.a = Mathf.Lerp(0.35f, 1f, fade);
-        timerText.color = color;
-        timerText.rectTransform.localScale = Vector3.one * Mathf.Lerp(1f, warningPulseScale, beat * beat);
-    }
-
-    private void BeginShow()
-    {
-        localChosen = false;
-        levelText.text = $"Level {manager.SequenceLevel}";
-        waitingText.gameObject.SetActive(false);
-        SetButtonsInteractable(true);
-
-        for (int i = 0; i < bonusLabels.Length; i++)
-        {
-            if (bonusLabels[i] == null)
-                continue;
-            LevelUpBonusType type = manager.GetOfferedBonusType(i);
-            string bonusName = nameFont != null ? $"<font=\"{nameFont.name}\"><size=150%>{LevelUpBonusCatalog.GetDisplayName(type)}</size></font>" : $"<size=125%>{LevelUpBonusCatalog.GetDisplayName(type)}</size>";
-            bonusLabels[i].text = $"<color=#EDE6D6>{bonusName}</color>\n<color=#9E9C94>{LevelUpBonusCatalog.GetDescription(type)}</color>";
-        }
-    }
-
-    private void ChooseBonus(int bonusIndex)
-    {
-        if (localChosen)
-            return;
-
-        Player local = LocalPlayer.GetPlayer();
-        if (local == null)
-            return;
-
-        local.ChooseLevelUpBonus(manager.GetOfferedBonusType(bonusIndex));
-        localChosen = true;
-        SetButtonsInteractable(false);
-    }
-
-    private void SetButtonsInteractable(bool interactable)
-    {
-        foreach (Button button in bonusButtons)
-            button.interactable = interactable;
-    }
-
-    private void RefreshReadyList()
-    {
-        readyListBuilder.Clear();
-        foreach (Player player in Player.AllActiveInstances)
-            readyListBuilder.AppendLine($"{player.PlayerName}: {(player.HasChosenLevelUpBonus ? "Ready" : "...")}");
-        readyListText.text = readyListBuilder.ToString();
     }
 }

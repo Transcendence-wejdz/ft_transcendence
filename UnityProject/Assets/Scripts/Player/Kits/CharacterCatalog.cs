@@ -4,19 +4,17 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Transcendence/Character Catalog", fileName = "CharacterCatalog")]
 public class CharacterCatalog : ScriptableObject
 {
+    [System.Serializable]
+    private class ColorVariant
+    {
+        public RuntimeAnimatorController[] controllersByClass;
+        public Sprite[] worldSpritesByClass;
+        public Sprite[] portraitSpritesByClass;
+    }
+
     private const string ResourcePath = "CharacterCatalog";
 
     private static CharacterCatalog instance;
-
-    public static CharacterCatalog Instance
-    {
-        get
-        {
-            if (instance == null)
-                instance = Resources.Load<CharacterCatalog>(ResourcePath);
-            return instance;
-        }
-    }
 
     [SerializeField] private ClassKit[] kitsByClass;
     [SerializeField] private ColorVariant[] colorVariants;
@@ -52,12 +50,31 @@ public class CharacterCatalog : ScriptableObject
         new Color(1f, 0.8f, 0.1f),
     };
 
-    [System.Serializable]
-    private class ColorVariant
+    public static CharacterCatalog Instance
     {
-        public RuntimeAnimatorController[] controllersByClass;
-        public Sprite[] worldSpritesByClass;
-        public Sprite[] portraitSpritesByClass;
+        get
+        {
+            if (instance == null)
+                instance = Resources.Load<CharacterCatalog>(ResourcePath);
+            return instance;
+        }
+    }
+
+    private static Player OwnerPlayer(GameObject owner)
+    {
+        if (owner == null)
+            return null;
+        return owner.GetComponentInParent<Player>();
+    }
+
+    // The class controller under a color override, so every color of one class maps back to it.
+    private static RuntimeAnimatorController BaseController(RuntimeAnimatorController current)
+    {
+        AnimatorOverrideController overrideController = current as AnimatorOverrideController;
+
+        if (overrideController == null)
+            return current;
+        return overrideController.runtimeAnimatorController;
     }
 
     public bool IsValid(int classIndex, int colorIndex)
@@ -70,7 +87,6 @@ public class CharacterCatalog : ScriptableObject
     {
         if (classIndex < 0 || classIndex >= kitsByClass.Length)
             return null;
-
         return kitsByClass[classIndex];
     }
 
@@ -78,7 +94,6 @@ public class CharacterCatalog : ScriptableObject
     {
         if (!IsValid(classIndex, colorIndex))
             return null;
-
         return colorVariants[colorIndex].portraitSpritesByClass[classIndex];
     }
 
@@ -86,7 +101,6 @@ public class CharacterCatalog : ScriptableObject
     {
         if (colorIndex < 0 || colorIndex >= backgroundSpritesByColor.Length)
             return null;
-
         return backgroundSpritesByColor[colorIndex];
     }
 
@@ -94,7 +108,6 @@ public class CharacterCatalog : ScriptableObject
     {
         if (colorIndex < 0 || colorIndex >= accentColorsByColor.Length)
             return Color.white;
-
         return accentColorsByColor[colorIndex];
     }
 
@@ -102,7 +115,6 @@ public class CharacterCatalog : ScriptableObject
     {
         if (colorIndex < 0 || colorIndex >= fxColorsByColor.Length)
             return Color.white;
-
         return fxColorsByColor[colorIndex];
     }
 
@@ -110,60 +122,56 @@ public class CharacterCatalog : ScriptableObject
     {
         if (colorIndex < 0 || colorIndex >= fxLightColorsByColor.Length)
             return Color.white;
-
         return fxLightColorsByColor[colorIndex];
     }
 
     // FX tint of the player owning this object, white when it has none (dummies, editor previews).
     public static Color FxColorOf(GameObject owner)
     {
-        Player player = owner != null ? owner.GetComponentInParent<Player>() : null;
+        Player player = OwnerPlayer(owner);
+
         if (player == null || Instance == null)
             return Color.white;
-
         return Instance.GetFxColor(player.ColorIndex);
     }
 
     // FX light color of the player owning this object, white when it has none.
     public static Color FxLightColorOf(GameObject owner)
     {
-        Player player = owner != null ? owner.GetComponentInParent<Player>() : null;
+        Player player = OwnerPlayer(owner);
+
         if (player == null || Instance == null)
             return Color.white;
-
         return Instance.GetFxLightColor(player.ColorIndex);
     }
 
     public bool ApplyVisuals(GameObject player, int classIndex, int colorIndex)
     {
+        ColorVariant variant;
+        RuntimeAnimatorController controller;
+
         if (!IsValid(classIndex, colorIndex))
             return false;
-
-        ColorVariant variant = colorVariants[colorIndex];
-        RuntimeAnimatorController controller = variant.controllersByClass[classIndex];
-        Sprite worldSprite = variant.worldSpritesByClass[classIndex];
+        variant = colorVariants[colorIndex];
+        controller = variant.controllersByClass[classIndex];
         if (controller == null)
             return false;
-
         player.GetComponent<Animator>().runtimeAnimatorController = controller;
-        player.GetComponent<SpriteRenderer>().sprite = worldSprite;
+        player.GetComponent<SpriteRenderer>().sprite = variant.worldSpritesByClass[classIndex];
         return true;
     }
 
     // Reads the class back from the player's current animator controller.
     public int ClassIndexOf(GameObject player)
     {
-        RuntimeAnimatorController current = player.GetComponent<Animator>().runtimeAnimatorController;
-        AnimatorOverrideController overrideController = current as AnimatorOverrideController;
-        RuntimeAnimatorController baseController = overrideController != null ? overrideController.runtimeAnimatorController : current;
-
+        RuntimeAnimatorController baseController = BaseController(player.GetComponent<Animator>().runtimeAnimatorController);
         RuntimeAnimatorController[] baseControllersByClass = colorVariants[0].controllersByClass;
+
         for (int i = 0; i < baseControllersByClass.Length; i++)
         {
             if (baseControllersByClass[i] == baseController)
                 return i;
         }
-
         return 0;
     }
 
@@ -180,7 +188,6 @@ public class CharacterCatalog : ScriptableObject
                     return c;
             }
         }
-
         return 0;
     }
 }

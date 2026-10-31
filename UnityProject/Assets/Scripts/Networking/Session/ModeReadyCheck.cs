@@ -6,6 +6,12 @@ using UnityEngine.SceneManagement;
 // Networked mode-select ready check; loads the scene once everyone is ready.
 public class ModeReadyCheck : NetworkBehaviour
 {
+    private static ModeReadyCheck instance;
+
+    // Empty means no check in progress; set only via the ServerRpc.
+    private readonly NetworkVariable<FixedString64Bytes> pendingSceneName = new OfflineSafeNetworkVariable<FixedString64Bytes>(
+        default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
     // Inactive-inclusive fallback lookup.
     public static ModeReadyCheck Instance
     {
@@ -16,39 +22,40 @@ public class ModeReadyCheck : NetworkBehaviour
             return instance;
         }
     }
-    private static ModeReadyCheck instance;
-
-    // Empty means no check in progress; set only via the ServerRpc.
-    private readonly NetworkVariable<FixedString64Bytes> pendingSceneName = new OfflineSafeNetworkVariable<FixedString64Bytes>(
-        default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     public event System.Action<string> OnPendingSceneChanged;
 
-    private void Awake()
+    private void HandlePendingSceneChanged(FixedString64Bytes previous, FixedString64Bytes current)
     {
-        instance = this;
-        pendingSceneName.OnValueChanged += (_, newValue) => OnPendingSceneChanged?.Invoke(newValue.ToString());
+        OnPendingSceneChanged?.Invoke(current.ToString());
     }
 
-    public void RequestReadyCheck(string sceneName)
+    // Player objects persist across scenes, so readiness is cleared per check.
+    private static void ResetAllReady()
     {
-        RequestReadyCheckServerRpc(sceneName);
+        foreach (Player player in Player.AllActiveInstances)
+            player.ServerResetReady();
     }
 
-    // Clears any in-progress check; call when returning to the Lobby so stale readiness doesn't survive the round-trip.
-    public void CancelReadyCheck()
+    private static bool EveryoneReady()
     {
-        if (!IsServer)
-            return;
+        if (Player.AllActiveInstances.Count == 0)
+            return false;
+        foreach (Player player in Player.AllActiveInstances)
+        {
+            if (!player.IsReady)
+                return false;
+        }
+        return true;
+    }
+
+    private void LoadPendingScene()
+    {
+        string sceneName = pendingSceneName.Value.ToString();
 
         pendingSceneName.Value = default;
         ResetAllReady();
-    }
-
-    // Any client can cancel a pending check, so the same mode can be proposed again.
-    public void RequestCancelReadyCheck()
-    {
-        RequestCancelReadyCheckServerRpc();
+        NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
     }
 
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
@@ -65,11 +72,30 @@ public class ModeReadyCheck : NetworkBehaviour
         ResetAllReady();
     }
 
-    // Player objects persist across scenes, so readiness is cleared per check.
-    private static void ResetAllReady()
+    public void RequestReadyCheck(string sceneName)
     {
-        foreach (Player player in Player.AllActiveInstances)
-            player.ServerResetReady();
+        RequestReadyCheckServerRpc(sceneName);
+    }
+
+    // Clears any in-progress check; call when returning to the Lobby so stale readiness doesn't survive the round-trip.
+    public void CancelReadyCheck()
+    {
+        if (!IsServer)
+            return;
+        pendingSceneName.Value = default;
+        ResetAllReady();
+    }
+
+    // Any client can cancel a pending check, so the same mode can be proposed again.
+    public void RequestCancelReadyCheck()
+    {
+        RequestCancelReadyCheckServerRpc();
+    }
+
+    private void Awake()
+    {
+        instance = this;
+        pendingSceneName.OnValueChanged += HandlePendingSceneChanged;
     }
 
     // Polls instead of subscribing per player; cheap unless a check is pending.
@@ -77,17 +103,7 @@ public class ModeReadyCheck : NetworkBehaviour
     {
         if (!IsServer || pendingSceneName.Value.IsEmpty)
             return;
-
-        if (Player.AllActiveInstances.Count == 0)
-            return;
-
-        foreach (Player player in Player.AllActiveInstances)
-            if (!player.IsReady)
-                return;
-
-        string sceneName = pendingSceneName.Value.ToString();
-        pendingSceneName.Value = default;
-        ResetAllReady();
-        NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+        if (EveryoneReady())
+            LoadPendingScene();
     }
 }

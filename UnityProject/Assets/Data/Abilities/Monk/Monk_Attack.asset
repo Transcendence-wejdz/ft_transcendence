@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 923ef523106b48a58e8aa44cc0345cb0, type: 3}
+  m_Name: Monk_Attack
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityKit
+  kind: 1
+  cooldown: 1
+  manaCost: 0
+  fxPrefab: {fileID: 4015171861668935641, guid: 4dcb863a98523a8de8ac257b0da82862, type: 3}
+  fxDistance: 1
+  fxOrigin: {x: 0, y: 0}
+  fxFromAimIndicator: 0
+  aimMode: 0
+  maxRange: 6
+  aimAssist: 1
+  aimAssistAngle: 10
+  damage: 18
+  moveLockDuration: 0.2
+  moveSpeedMultiplier: 0.5
+  animSpeed: 3
+  size: 1.5
+  ignoreAimRotation: 0
+  followCaster: 1
+  glowIntensity: 1.2
+  glowSize: 1.1
+  glowDuration: 0
+  projectileSpeed: 10
+  projectileMaxDistance: 8
+  pierceCount: 1
+  shieldHoldDuration: 10
+  shieldHealth: 150
+  shieldKnockbackForce: 8
+  shieldKnockbackDuration: 0.25
+  shieldPushInterval: 0.5
+  shieldTurnSpeed: 120
+  shieldHoldAnimation: 0

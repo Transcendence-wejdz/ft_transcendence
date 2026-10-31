@@ -3,7 +3,7 @@ using Unity.Netcode;
 using UnityEngine;
 
 // Drives the level-up choice: solo waits indefinitely, multiplayer adds a timer (multiplayerChoiceSeconds).
-public class LevelUpManager : NetworkBehaviour
+public partial class LevelUpManager : NetworkBehaviour
 {
     public const int BonusOptionCount = 3;
 
@@ -29,19 +29,84 @@ public class LevelUpManager : NetworkBehaviour
     private double remainingUnscaled;
     private XPManager xpManager;
 
-    public bool SequenceActive => IsSpawned ? sequenceActive.Value : offlineSequenceActive;
-    public int ProcessedLevel => processedLevel;
-    public int SequenceLevel => IsSpawned ? sequenceLevel.Value : offlineSequenceLevel;
-    public float SecondsRemaining => IsSpawned ? secondsRemaining.Value : 0f;
-
-    public LevelUpBonusType GetOfferedBonusType(int slot) =>
-        (IsSpawned ? offeredBonuses.Value : offlineOfferedBonuses).Get(slot);
-
-    // Levels already rewarded before a scene change must not offer their bonuses again.
-    void Start()
+    public bool SequenceActive
     {
-        if (RunCarryOver.IsForActiveScene)
-            processedLevel = RunCarryOver.ProcessedLevel;
+        get
+        {
+            if (IsSpawned)
+                return sequenceActive.Value;
+            return offlineSequenceActive;
+        }
+    }
+
+    public int ProcessedLevel => processedLevel;
+
+    public int SequenceLevel
+    {
+        get
+        {
+            if (IsSpawned)
+                return sequenceLevel.Value;
+            return offlineSequenceLevel;
+        }
+    }
+
+    public float SecondsRemaining
+    {
+        get
+        {
+            if (IsSpawned)
+                return secondsRemaining.Value;
+            return 0f;
+        }
+    }
+
+    private OfferedBonusSet OfferedBonuses
+    {
+        get
+        {
+            if (IsSpawned)
+                return offeredBonuses.Value;
+            return offlineOfferedBonuses;
+        }
+    }
+
+    private bool IsTimed => IsSpawned && timedSequence.Value;
+
+    private void SetFrozen(bool frozen)
+    {
+        frozeTime = frozen;
+        if (frozen)
+            Time.timeScale = 0f;
+        else
+            Time.timeScale = 1f;
+    }
+
+    // Every instance (host and clients) reacts identically, so all players freeze/unfreeze together.
+    private void HandleSequenceActiveChanged(bool previousValue, bool newValue)
+    {
+        SetFrozen(newValue);
+    }
+
+    private bool FindXPManager()
+    {
+        if (xpManager == null)
+            xpManager = FindAnyObjectByType<XPManager>();
+        return xpManager != null;
+    }
+
+    private void CheckForLevelUp()
+    {
+        int level;
+
+        xpManager.GetProgress(out level, out _, out _);
+        if (level > processedLevel)
+            StartSequence(level);
+    }
+
+    public LevelUpBonusType GetOfferedBonusType(int slot)
+    {
+        return OfferedBonuses.Get(slot);
     }
 
     public override void OnNetworkSpawn()
@@ -49,10 +114,9 @@ public class LevelUpManager : NetworkBehaviour
         sequenceActive.OnValueChanged += HandleSequenceActiveChanged;
     }
 
-    private void SetFrozen(bool frozen)
+    public override void OnNetworkDespawn()
     {
-        frozeTime = frozen;
-        Time.timeScale = frozen ? 0f : 1f;
+        sequenceActive.OnValueChanged -= HandleSequenceActiveChanged;
     }
 
     // A scene change mid-choice (e.g. a wipe, then back to the Lobby) never reaches EndSequence and would leave the game frozen.
@@ -63,115 +127,20 @@ public class LevelUpManager : NetworkBehaviour
         base.OnDestroy();
     }
 
-    public override void OnNetworkDespawn()
+    // Levels already rewarded before a scene change must not offer their bonuses again.
+    void Start()
     {
-        sequenceActive.OnValueChanged -= HandleSequenceActiveChanged;
-    }
-
-    // Every instance (host and clients) reacts identically, so all players freeze/unfreeze together.
-    private void HandleSequenceActiveChanged(bool previousValue, bool newValue)
-    {
-        SetFrozen(newValue);
+        if (RunCarryOver.IsForActiveScene)
+            processedLevel = RunCarryOver.ProcessedLevel;
     }
 
     void Update()
     {
-        if (!this.HasServerAuthority())
+        if (!this.HasServerAuthority() || !FindXPManager())
             return;
-
-        if (xpManager == null)
-        {
-            xpManager = FindAnyObjectByType<XPManager>();
-            if (xpManager == null)
-                return;
-        }
-
-        if (!SequenceActive)
-        {
-            xpManager.GetProgress(out int level, out _, out _);
-            if (level > processedLevel)
-                StartSequence(level);
-            return;
-        }
-
-        TickActiveSequence();
-    }
-
-    private void TickActiveSequence()
-    {
-        if (IsSpawned ? timedSequence.Value : false)
-        {
-            remainingUnscaled -= Time.unscaledDeltaTime;
-            int displaySeconds = Mathf.CeilToInt(Mathf.Max(0f, (float)remainingUnscaled));
-            if (displaySeconds != Mathf.CeilToInt(secondsRemaining.Value))
-                secondsRemaining.Value = displaySeconds;
-
-            if (remainingUnscaled <= 0d)
-            {
-                foreach (Player player in Player.ActivePlayers)
-                    if (!player.HasChosenLevelUpBonus)
-                        player.ForceLevelUpBonus(GetOfferedBonusType(Random.Range(0, BonusOptionCount)));
-                EndSequence();
-                return;
-            }
-        }
-
-        foreach (Player player in Player.ActivePlayers)
-            if (!player.HasChosenLevelUpBonus)
-                return;
-
-        EndSequence();
-    }
-
-    private void StartSequence(int level)
-    {
-        processedLevel = level;
-        bool multi = Player.AllActiveInstances.Count > 1;
-        remainingUnscaled = multiplayerChoiceSeconds;
-        OfferedBonusSet offers = PickRandomOffers();
-
-        foreach (Player player in Player.ActivePlayers)
-            player.ResetLevelUpChoice();
-
-        if (IsSpawned)
-        {
-            offeredBonuses.Value = offers;
-            timedSequence.Value = multi;
-            secondsRemaining.Value = multi ? multiplayerChoiceSeconds : 0f;
-            sequenceLevel.Value = level;
-            sequenceActive.Value = true;
-        }
+        if (SequenceActive)
+            TickActiveSequence();
         else
-        {
-            offlineOfferedBonuses = offers;
-            offlineSequenceLevel = level;
-            offlineSequenceActive = true;
-            SetFrozen(true);
-        }
-    }
-
-    // Fisher-Yates shuffles every bonus type and offers the first 3.
-    private static OfferedBonusSet PickRandomOffers()
-    {
-        LevelUpBonusType[] types = (LevelUpBonusType[])System.Enum.GetValues(typeof(LevelUpBonusType));
-        for (int i = types.Length - 1; i > 0; i--)
-        {
-            int j = Random.Range(0, i + 1);
-            (types[i], types[j]) = (types[j], types[i]);
-        }
-        return new OfferedBonusSet { first = types[0], second = types[1], third = types[2] };
-    }
-
-    private void EndSequence()
-    {
-        if (IsSpawned)
-        {
-            sequenceActive.Value = false;
-        }
-        else
-        {
-            offlineSequenceActive = false;
-            SetFrozen(false);
-        }
+            CheckForLevelUp();
     }
 }

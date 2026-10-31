@@ -6,6 +6,14 @@ public class GoldCounterUI : MonoBehaviour
 {
     [SerializeField] private TMP_Text amountText;
 
+    private void Refresh(int balance)
+    {
+        if (GoldWallet.CanEarn)
+            amountText.text = balance.ToString();
+        else
+            amountText.text = "-";
+    }
+
     void OnEnable()
     {
         GoldWallet.OnChanged += Refresh;
@@ -15,10 +23,5 @@ public class GoldCounterUI : MonoBehaviour
     void OnDisable()
     {
         GoldWallet.OnChanged -= Refresh;
-    }
-
-    private void Refresh(int balance)
-    {
-        amountText.text = GoldWallet.CanEarn ? balance.ToString() : "-";
     }
 }

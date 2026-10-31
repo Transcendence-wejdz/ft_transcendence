@@ -6,19 +6,14 @@ using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-public class PauseManager : MonoBehaviour
+// Pause menu and its settings page, plus the shared input block NPC menus use.
+public partial class PauseManager : MonoBehaviour
 {
     [SerializeField] private GameObject pausePanel;
     [SerializeField] private GameObject settingsPanel;
     [SerializeField] private string lobbySceneName = "Lobby";
     [SerializeField] private Button leaveButton;
     [SerializeField] private Button quitButton;
-
-    // Pause menu and NPC menus (SetExternalPause) block input independently, so closing one never unblocks the other.
-    public static bool IsPaused => menuPaused || externalPaused;
-
-    // True while the pause menu or its settings page is up (not while closing); it owns the close input over any other open menu.
-    public static bool IsMenuOpen => current != null && (IsPanelOpen(current.pausePanel) || IsPanelOpen(current.settingsPanel));
 
     private static bool menuPaused;
     private static bool externalPaused;
@@ -27,6 +22,20 @@ public class PauseManager : MonoBehaviour
     private bool frozeTime;
     private bool buttonsShownOnline;
 
+    // Pause menu and NPC menus (SetExternalPause) block input independently, so closing one never unblocks the other.
+    public static bool IsPaused => menuPaused || externalPaused;
+
+    // True while the pause menu or its settings page is up (not while closing); it owns the close input over any other open menu.
+    public static bool IsMenuOpen
+    {
+        get
+        {
+            if (current == null)
+                return false;
+            return IsPanelOpen(current.pausePanel) || IsPanelOpen(current.settingsPanel);
+        }
+    }
+
     private static bool IsOnline => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
     private bool InLobby => SceneManager.GetActiveScene().name == lobbySceneName;
@@ -34,30 +43,57 @@ public class PauseManager : MonoBehaviour
     // Everyone except a mode-scene host leaves the session.
     private bool LeavesSession => IsOnline && (InLobby || !NetworkManager.Singleton.IsServer);
 
-    void Awake()
+    // Only undoes a freeze this manager made, so it never unfreezes someone else's (e.g. level-up).
+    private void SetFrozen(bool frozen)
     {
-        menuPaused = false;
-        externalPaused = false;
-        current = this;
+        frozeTime = frozen;
+        if (frozen)
+            Time.timeScale = 0f;
+        else
+            Time.timeScale = 1f;
     }
 
+    // Pause only blocks input in the Lobby and in multiplayer; freezing timeScale is for solo mode scenes (would desync online).
+    private void SetPaused(bool paused)
+    {
+        menuPaused = paused;
+        if (paused && !IsOnline && !InLobby)
+            SetFrozen(true);
+        else if (!paused && frozeTime)
+            SetFrozen(false);
+        if (paused)
+            RefreshButtons();
+        SetPanelVisible(pausePanel, paused);
+    }
+
+    private async Task LeaveSessionThenLoadLobbyAsync()
+    {
+        if (IsOnline)
+            await SessionDisconnectHandler.LeaveSessionsAsync();
+        LoadingScreenManager.LoadScene(lobbySceneName);
+    }
+
+    private void BringEveryoneToLobby()
+    {
+        ModeReadyCheck.Instance?.CancelReadyCheck();
+        NetworkManager.Singleton.SceneManager.LoadScene(lobbySceneName, LoadSceneMode.Single);
+    }
+
+    // The pause key closes this menu first, then any other open menu, and only then opens the pause menu.
     public void Pause(InputAction.CallbackContext ctx)
     {
         if (!ctx.performed || GameOverUI.IsShowing || LevelUpUI.IsShowing)
             return;
-
         if (IsMenuOpen)
         {
             Resume();
             return;
         }
-
         if (MenuPanel.CurrentOpen != null)
         {
             MenuPanel.CurrentOpen.Close();
             return;
         }
-
         SetPaused(true);
     }
 
@@ -92,13 +128,10 @@ public class PauseManager : MonoBehaviour
     public void LeaveOrReturn()
     {
         bool hostBringsEveryoneBack = IsOnline && !LeavesSession;
-        SetPaused(false);
 
+        SetPaused(false);
         if (hostBringsEveryoneBack)
-        {
-            ModeReadyCheck.Instance?.CancelReadyCheck();
-            NetworkManager.Singleton.SceneManager.LoadScene(lobbySceneName, LoadSceneMode.Single);
-        }
+            BringEveryoneToLobby();
         else
             _ = LeaveSessionThenLoadLobbyAsync();
     }
@@ -117,31 +150,20 @@ public class PauseManager : MonoBehaviour
         externalPaused = paused;
     }
 
-    private async Task LeaveSessionThenLoadLobbyAsync()
+    void Awake()
     {
-        if (IsOnline)
-            await SessionDisconnectHandler.LeaveSessionsAsync();
-
-        LoadingScreenManager.LoadScene(lobbySceneName);
+        menuPaused = false;
+        externalPaused = false;
+        current = this;
     }
 
-    // Shows the leave button when there is somewhere to go; hides Quit on WebGL.
-    private void RefreshButtons()
+    // A session started while paused solo (someone joined, or we hosted to invite) must not stay frozen; buttons follow the new online state.
+    private void Update()
     {
-        buttonsShownOnline = IsOnline;
-        bool showLeave = !InLobby || IsOnline;
-        bool showQuit = Application.platform != RuntimePlatform.WebGLPlayer;
-
-        if (leaveButton != null)
-        {
-            leaveButton.gameObject.SetActive(showLeave);
-            TMP_Text label = leaveButton.GetComponentInChildren<TMP_Text>();
-            if (label != null)
-                label.text = LeavesSession ? "Leave Session" : "Return to Lobby";
-        }
-
-        if (quitButton != null)
-            quitButton.gameObject.SetActive(showQuit);
+        if (frozeTime && IsOnline)
+            SetFrozen(false);
+        if (IsPaused && IsOnline != buttonsShownOnline)
+            RefreshButtons();
     }
 
     // A scene change while paused solo would otherwise carry timeScale 0 into the next scene.
@@ -151,63 +173,5 @@ public class PauseManager : MonoBehaviour
             current = null;
         if (frozeTime)
             SetFrozen(false);
-    }
-
-    // A session started while paused solo (someone joined, or we hosted to invite) must not stay frozen; buttons follow the new online state.
-    private void Update()
-    {
-        if (frozeTime && IsOnline)
-            SetFrozen(false);
-
-        if (IsPaused && IsOnline != buttonsShownOnline)
-            RefreshButtons();
-    }
-
-    // Pause only blocks input in the Lobby and in multiplayer; freezing timeScale is for solo mode scenes (would desync online).
-    private void SetPaused(bool paused)
-    {
-        menuPaused = paused;
-
-        if (paused && !IsOnline && !InLobby)
-            SetFrozen(true);
-        else if (!paused && frozeTime)
-            SetFrozen(false);
-
-        if (paused)
-            RefreshButtons();
-
-        SetPanelVisible(pausePanel, paused);
-    }
-
-    // Only undoes a freeze this manager made, so it never unfreezes someone else's (e.g. level-up).
-    private void SetFrozen(bool frozen)
-    {
-        frozeTime = frozen;
-        Time.timeScale = frozen ? 0f : 1f;
-    }
-
-    // Animated when the panel has a PanelSlideIn, instant otherwise.
-    private static void SetPanelVisible(GameObject panel, bool show)
-    {
-        if (panel == null)
-            return;
-
-        PanelSlideIn slide = panel.GetComponent<PanelSlideIn>();
-        if (slide == null)
-            panel.SetActive(show);
-        else if (show)
-            slide.Show();
-        else
-            slide.Hide();
-    }
-
-    // A panel still playing its close animation counts as closed.
-    private static bool IsPanelOpen(GameObject panel)
-    {
-        if (panel == null || !panel.activeSelf)
-            return false;
-
-        PanelSlideIn slide = panel.GetComponent<PanelSlideIn>();
-        return slide == null || slide.IsOpen;
     }
 }

@@ -12,76 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e7453d5398a9eaa39dca01cb3e75e67, type: 3}
   m_Name: Lancer_Kit
   m_EditorClassIdentifier: Assembly-CSharp::ClassKit
-  maxHealth: 110
+  maxHealth: 105
   healthRegenPerSecond: 1.2
   maxMana: 60
-  manaRegenPerSecond: 1.6
+  manaRegenPerSecond: 1.2
   dodgeCharges: 2
-  dodgeRechargeSeconds: 6
+  dodgeRechargeSeconds: 5
   dodgeDistance: 2.5
   dodgeDuration: 0.2
-  attackCooldown: 0.65
-  attackFxPrefab: {fileID: 6017984809242283011, guid: 758d47d8121e100dea21c1680b93a746, type: 3}
-  attackFxDistance: 2.75
-  attackFxOrigin: {x: 0, y: -0.4}
-  attackFxFromAimIndicator: 1
-  attackAimMode: 1
-  attackMaxRange: 6
-  attackDamage: 20
-  attackMoveLockDuration: 0.45
-  attackMoveSpeedMultiplier: 0.2
-  attackAnimSpeed: 1
-  attackSize: 1.3
-  attackIgnoreAimRotation: 0
-  attackFollowCaster: 1
-  attackGlowIntensity: 1.2
-  attackGlowSize: 1.1
-  attackGlowDuration: 0.42
-  hasProjectile: 0
-  projectileSpeed: 12
-  projectileMaxDistance: 10
-  pierceCount: 1
-  specialCooldown: 2
-  specialManaCost: 20
-  specialFxPrefab: {fileID: 4619342916149783007, guid: 02fc21b42b5baf2ea8d53f3c6a169115, type: 3}
-  specialFxDistance: 3.34
-  specialFxOrigin: {x: 0, y: 0}
-  specialFxFromAimIndicator: 1
-  specialAimMode: 1
-  specialMaxRange: 6
-  specialDamage: 50
-  specialMoveLockDuration: 0.3
-  specialMoveSpeedMultiplier: 0.35
-  specialAnimSpeed: 1
-  specialSize: 2
-  specialIgnoreAimRotation: 1
-  specialFollowCaster: 0
-  specialGlowIntensity: 1.2
-  specialGlowSize: 1.05
-  specialGlowDuration: 1
-  ultimateCooldown: 5
-  ultimateManaCost: 0
-  ultimateFxPrefab: {fileID: 0}
-  ultimateFxDistance: 1
-  ultimateFxOrigin: {x: 0, y: 0}
-  ultimateFxFromAimIndicator: 0
-  ultimateAimMode: 0
-  ultimateMaxRange: 6
-  ultimateDamage: 15
-  ultimateMoveLockDuration: 0.3
-  ultimateMoveSpeedMultiplier: 0.35
-  ultimateAnimSpeed: 1
-  ultimateSize: 1
-  ultimateIgnoreAimRotation: 0
-  ultimateFollowCaster: 1
-  ultimateGlowIntensity: 1.2
-  ultimateGlowSize: 1.1
-  ultimateGlowDuration: 0.42
-  hasShield: 0
-  shieldHoldDuration: 10
-  shieldHealth: 150
-  shieldKnockbackForce: 8
-  shieldKnockbackDuration: 0.25
-  shieldPushInterval: 0.5
-  shieldTurnSpeed: 120
-  shieldHoldAnimation: 0
+  attack: {fileID: 11400000, guid: 0218b9841e9143249b3d02e0d049d067, type: 2}
+  specials:
+  - {fileID: 11400000, guid: f168919b3dd54dfab1540aac53cbd834, type: 2}
+  ultimates:
+  - {fileID: 11400000, guid: 95d94c3148804e48b63e87ff9428c517, type: 2}

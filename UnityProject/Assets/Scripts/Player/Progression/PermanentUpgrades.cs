@@ -25,7 +25,10 @@ public static class PermanentUpgrades
     public static int GetLevel(LevelUpBonusType type)
     {
         int index = (int)type;
-        return GoldWallet.UsesServer ? serverLevels[index] : Mathf.Clamp(LocalProgressStore.GetUpgradeLevel(index), 0, MaxLevel);
+
+        if (GoldWallet.UsesServer)
+            return serverLevels[index];
+        return Mathf.Clamp(LocalProgressStore.GetUpgradeLevel(index), 0, MaxLevel);
     }
 
     // Must match upgradeCost in the web app's upgrades.ts.
@@ -41,44 +44,73 @@ public static class PermanentUpgrades
 
     public static bool CanBuy(LevelUpBonusType type)
     {
-        return !purchasePending && GoldWallet.CanEarn && GetLevel(type) < MaxLevel && GoldWallet.Balance >= NextCost(type);
+        if (purchasePending || !GoldWallet.CanEarn)
+            return false;
+        return GetLevel(type) < MaxLevel && GoldWallet.Balance >= NextCost(type);
+    }
+
+    private static void BuyLocal(LevelUpBonusType type, int level, int cost, Action<bool> onDone)
+    {
+        bool paid = GoldWallet.TrySpendLocal(cost);
+
+        if (paid)
+            LocalProgressStore.SetUpgradeLevel((int)type, level + 1);
+        OnChanged?.Invoke();
+        onDone?.Invoke(paid);
+    }
+
+    private static void HandlePurchaseResponse(int status, LevelUpBonusType type, int level, int cost, Action<bool> onDone)
+    {
+        bool accepted = status >= 200 && status < 300;
+
+        purchasePending = false;
+        if (accepted)
+        {
+            serverLevels[(int)type] = level + 1;
+            GoldWallet.ApplyServerSpend(cost);
+        }
+        OnChanged?.Invoke();
+        onDone?.Invoke(accepted);
+    }
+
+    private static void BuyOnServer(LevelUpBonusType type, int level, int cost, Action<bool> onDone)
+    {
+        string body = JsonUtility.ToJson(new PurchaseRequest { type = type.ToString() });
+
+        purchasePending = true;
+        OnChanged?.Invoke();
+        WebBackend.Post("/api/game/upgrade", body, status => HandlePurchaseResponse(status, type, level, cost, onDone));
     }
 
     // Desktop/Editor pays from the local save at once; the website asks the server, which charges the account itself.
     public static void Buy(LevelUpBonusType type, Action<bool> onDone = null)
     {
+        int level;
+        int cost;
+
         if (!CanBuy(type))
         {
             onDone?.Invoke(false);
             return;
         }
+        level = GetLevel(type);
+        cost = CostFor(level);
+        if (GoldWallet.UsesServer)
+            BuyOnServer(type, level, cost, onDone);
+        else
+            BuyLocal(type, level, cost, onDone);
+    }
 
-        int level = GetLevel(type);
-        int cost = CostFor(level);
-        if (!GoldWallet.UsesServer)
-        {
-            bool paid = GoldWallet.TrySpendLocal(cost);
-            if (paid)
-                LocalProgressStore.SetUpgradeLevel((int)type, level + 1);
-            OnChanged?.Invoke();
-            onDone?.Invoke(paid);
-            return;
-        }
+    private static int ParseServerLevel(string json, LevelUpBonusType type)
+    {
+        Match match;
 
-        purchasePending = true;
-        OnChanged?.Invoke();
-        WebBackend.Post("/api/game/upgrade", JsonUtility.ToJson(new PurchaseRequest { type = type.ToString() }), status =>
-        {
-            purchasePending = false;
-            bool accepted = status >= 200 && status < 300;
-            if (accepted)
-            {
-                serverLevels[(int)type] = level + 1;
-                GoldWallet.ApplyServerSpend(cost);
-            }
-            OnChanged?.Invoke();
-            onDone?.Invoke(accepted);
-        });
+        if (string.IsNullOrEmpty(json))
+            return 0;
+        match = Regex.Match(json, $"\"{type}\"\\s*:\\s*(\\d+)");
+        if (!match.Success)
+            return 0;
+        return Mathf.Clamp(int.Parse(match.Groups[1].Value), 0, MaxLevel);
     }
 
     // The website sends the account's levels as a flat {"Damage":2,...} object, which JsonUtility can't read into a dictionary.
@@ -86,18 +118,15 @@ public static class PermanentUpgrades
     {
         if (!GoldWallet.UsesServer)
             return;
-
         foreach (LevelUpBonusType type in AllTypes)
-        {
-            Match match = string.IsNullOrEmpty(json) ? Match.Empty : Regex.Match(json, $"\"{type}\"\\s*:\\s*(\\d+)");
-            serverLevels[(int)type] = match.Success ? Mathf.Clamp(int.Parse(match.Groups[1].Value), 0, MaxLevel) : 0;
-        }
+            serverLevels[(int)type] = ParseServerLevel(json, type);
         OnChanged?.Invoke();
     }
 
     public static LevelUpBonusStacks StartingStacks()
     {
         LevelUpBonusStacks stacks = default;
+
         foreach (LevelUpBonusType type in AllTypes)
         {
             for (int i = GetLevel(type); i > 0; i--)

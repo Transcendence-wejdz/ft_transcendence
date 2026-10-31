@@ -13,21 +13,6 @@ public class SpriteHitFlash : MonoBehaviour
     private float lastHealth;
     private Coroutine running;
 
-    void Awake()
-    {
-        spriteRenderer = GetComponentInChildren<SpriteRenderer>();
-        stats = GetComponent<IHealthStats>();
-    }
-
-    void OnEnable()
-    {
-        if (stats != null)
-        {
-            stats.OnHealthChanged += HandleHealthChanged;
-            StartCoroutine(CaptureBaselineNextFrame());
-        }
-    }
-
     // Deferred a frame: OnEnable can run before a sibling component's Awake sets the real starting health.
     private IEnumerator CaptureBaselineNextFrame()
     {
@@ -35,20 +20,25 @@ public class SpriteHitFlash : MonoBehaviour
         lastHealth = stats.CurrentHealth;
     }
 
-    void OnDisable()
-    {
-        if (stats != null)
-            stats.OnHealthChanged -= HandleHealthChanged;
-        if (spriteRenderer != null)
-            spriteRenderer.color = Color.white;
-        running = null;
-    }
-
     private void HandleHealthChanged(float current, float max)
     {
         if (current < lastHealth)
             Flash();
         lastHealth = current;
+    }
+
+    private IEnumerator FlashRoutine()
+    {
+        float fade;
+
+        for (float t = 0f; t < duration; t += Time.unscaledDeltaTime)
+        {
+            fade = Mathf.Clamp01((t / duration - holdFraction) / (1f - holdFraction));
+            spriteRenderer.color = Color.Lerp(flashColor, Color.white, fade * fade);
+            yield return null;
+        }
+        spriteRenderer.color = Color.white;
+        running = null;
     }
 
     public void Flash()
@@ -60,15 +50,26 @@ public class SpriteHitFlash : MonoBehaviour
         running = StartCoroutine(FlashRoutine());
     }
 
-    private IEnumerator FlashRoutine()
+    void Awake()
     {
-        for (float t = 0f; t < duration; t += Time.unscaledDeltaTime)
-        {
-            float fade = Mathf.Clamp01((t / duration - holdFraction) / (1f - holdFraction));
-            spriteRenderer.color = Color.Lerp(flashColor, Color.white, fade * fade);
-            yield return null;
-        }
-        spriteRenderer.color = Color.white;
+        spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        stats = GetComponent<IHealthStats>();
+    }
+
+    void OnEnable()
+    {
+        if (stats == null)
+            return;
+        stats.OnHealthChanged += HandleHealthChanged;
+        StartCoroutine(CaptureBaselineNextFrame());
+    }
+
+    void OnDisable()
+    {
+        if (stats != null)
+            stats.OnHealthChanged -= HandleHealthChanged;
+        if (spriteRenderer != null)
+            spriteRenderer.color = Color.white;
         running = null;
     }
 }

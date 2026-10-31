@@ -11,6 +11,34 @@ public class InteractableZone : MonoBehaviour
 
     public Vector3 Position => transform.position;
 
+    // Filters out remote players - the zone registry is shared, so their movement must not affect it.
+    private static bool IsLocalPlayer(Collider2D other)
+    {
+        NetworkObject networkObject;
+
+        if (!other.CompareTag("Player"))
+            return false;
+        networkObject = other.GetComponentInParent<NetworkObject>();
+        return networkObject == null || !networkObject.IsSpawned || networkObject.IsOwner;
+    }
+
+    public void ShowPrompt()
+    {
+        if (promptUI != null)
+            promptUI.Show(promptText);
+    }
+
+    public void HidePrompt()
+    {
+        if (promptUI != null)
+            promptUI.Hide();
+    }
+
+    public void Interact()
+    {
+        onInteract?.Invoke();
+    }
+
     private void Start()
     {
         if (promptUI != null)
@@ -20,16 +48,6 @@ public class InteractableZone : MonoBehaviour
     private void Reset()
     {
         GetComponent<Collider2D>().isTrigger = true;
-    }
-
-    // Filters out remote players - the zone registry is shared, so their movement must not affect it.
-    private static bool IsLocalPlayer(Collider2D other)
-    {
-        if (!other.CompareTag("Player"))
-            return false;
-
-        NetworkObject networkObject = other.GetComponentInParent<NetworkObject>();
-        return networkObject == null || !networkObject.IsSpawned || networkObject.IsOwner;
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -48,22 +66,5 @@ public class InteractableZone : MonoBehaviour
     private void OnDisable()
     {
         InteractionManager.Unregister(this);
-    }
-
-    public void ShowPrompt()
-    {
-        if (promptUI != null)
-            promptUI.Show(promptText);
-    }
-
-    public void HidePrompt()
-    {
-        if (promptUI != null)
-            promptUI.Hide();
-    }
-
-    public void Interact()
-    {
-        onInteract?.Invoke();
     }
 }

@@ -14,6 +14,29 @@ public class WorldHealthBar : MonoBehaviour
     private Canvas canvas;
     private float fraction = 1f;
 
+    // Full-health bars stay hidden unless hideWhenFull is off, so idle crowds don't clutter the screen.
+    private bool ShouldShow()
+    {
+        if (!GameSettings.ShowEnemyHealthBars)
+            return false;
+        return !hideWhenFull || fraction < 1f;
+    }
+
+    private void ApplyVisibility()
+    {
+        if (canvas != null)
+            canvas.enabled = ShouldShow();
+    }
+
+    private void SetFill(float current, float max)
+    {
+        fraction = 0f;
+        if (max > 0f)
+            fraction = current / max;
+        BrushFill.Set(fillImage, fraction);
+        ApplyVisibility();
+    }
+
     // statsSource is a MonoBehaviour since Unity can't serialize interface references directly.
     void Awake()
     {
@@ -41,19 +64,5 @@ public class WorldHealthBar : MonoBehaviour
         if (stats != null)
             stats.OnHealthChanged -= SetFill;
         GameSettings.OnChanged -= ApplyVisibility;
-    }
-
-    // Full-health bars stay hidden unless hideWhenFull is off, so idle crowds don't clutter the screen.
-    private void ApplyVisibility()
-    {
-        if (canvas != null)
-            canvas.enabled = GameSettings.ShowEnemyHealthBars && (!hideWhenFull || fraction < 1f);
-    }
-
-    private void SetFill(float current, float max)
-    {
-        fraction = max > 0f ? current / max : 0f;
-        BrushFill.Set(fillImage, fraction);
-        ApplyVisibility();
     }
 }

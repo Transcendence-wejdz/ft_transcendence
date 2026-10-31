@@ -23,19 +23,34 @@ public static class GraphicsQualityApplier
         Apply();
     }
 
+    private static RenderPipelineAsset CurrentPipeline()
+    {
+        if (QualitySettings.renderPipeline != null)
+            return QualitySettings.renderPipeline;
+        return GraphicsSettings.defaultRenderPipeline;
+    }
+
+    // Swaps in a runtime copy of the URP asset once; false when the pipeline isn't URP.
+    private static bool EnsureRuntimeAsset()
+    {
+        if (runtimeAsset != null)
+            return true;
+        originalAsset = CurrentPipeline();
+        if (originalAsset is not UniversalRenderPipelineAsset source)
+            return false;
+        runtimeAsset = Object.Instantiate(source);
+        runtimeAsset.name = source.name + " (Runtime)";
+        QualitySettings.renderPipeline = runtimeAsset;
+        return true;
+    }
+
     public static void Apply()
     {
-        if (runtimeAsset == null)
-        {
-            originalAsset = QualitySettings.renderPipeline != null ? QualitySettings.renderPipeline : GraphicsSettings.defaultRenderPipeline;
-            if (originalAsset is not UniversalRenderPipelineAsset source)
-                return;
-            runtimeAsset = Object.Instantiate(source);
-            runtimeAsset.name = source.name + " (Runtime)";
-            QualitySettings.renderPipeline = runtimeAsset;
-        }
+        int quality;
 
-        int quality = GameSettings.GraphicsQuality;
+        if (!EnsureRuntimeAsset())
+            return;
+        quality = GameSettings.GraphicsQuality;
         runtimeAsset.renderScale = RenderScales[quality];
         runtimeAsset.msaaSampleCount = MsaaSamples[quality];
         runtimeAsset.supportsHDR = GameSettings.HdrEnabled;

@@ -4,8 +4,10 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // Network settings tab: every Relay region as a radio row sorted by QoS ping, plus the session ping averaged over each refresh window.
-public class NetworkSettingsUI : MonoBehaviour
+public partial class NetworkSettingsUI : MonoBehaviour
 {
+    private const string AutoRegion = "";
+
     [SerializeField] private Toggle rowTemplate;
     [SerializeField] private TMP_Text sessionPingLabel;
     [SerializeField] private float refreshInterval = 10f;
@@ -22,88 +24,49 @@ public class NetworkSettingsUI : MonoBehaviour
     private bool regionsLoaded;
     private bool warnedQos;
 
-    private void Awake()
+    private static string FormatPing(int ms)
     {
-        rowTemplate.gameObject.SetActive(false);
-        AddRow(string.Empty);
+        if (ms >= 0)
+            return $"{ms} ms";
+        return "--";
     }
 
-    // Probes right away on open, then every refreshInterval while the tab stays visible.
-    private void OnEnable()
+    private static string RowName(string region)
     {
-        AddRow(GameSettings.RelayRegion);
-        ShowRows();
-        refreshTimer = refreshInterval;
-        sampleTimer = 0f;
-        rttSum = 0;
-        rttSamples = 0;
-        sessionPingLabel.text = FormatPing(PerfStatsHUD.CurrentPingMs());
+        if (string.IsNullOrEmpty(region))
+            return "Region_Auto";
+        return "Region_" + region;
     }
 
-    // Unscaled since the pause menu may freeze time.
-    private void Update()
+    private static void SelectRegion(bool isOn, string region)
     {
-        sampleTimer += Time.unscaledDeltaTime;
-        if (sampleTimer >= sampleInterval)
-        {
-            sampleTimer = 0f;
-            int rtt = PerfStatsHUD.CurrentPingMs();
-            if (rtt >= 0)
-            {
-                rttSum += rtt;
-                rttSamples++;
-            }
-        }
-
-        refreshTimer += Time.unscaledDeltaTime;
-        if (refreshTimer < refreshInterval)
-            return;
-
-        refreshTimer = 0f;
-        sessionPingLabel.text = rttSamples > 0 ? FormatPing(Mathf.RoundToInt((float)rttSum / rttSamples)) : FormatPing(-1);
-        rttSum = 0;
-        rttSamples = 0;
-        _ = ProbeAsync();
+        if (isOn)
+            GameSettings.RelayRegion = region;
     }
 
-    // Empty id is the Auto row.
-    private void AddRow(string region)
+    // The region list is fetched once; a failure only leaves the list shorter.
+    private async System.Threading.Tasks.Task LoadRegionsAsync()
     {
-        if (rows.ContainsKey(region))
-            return;
-
-        Toggle row = Instantiate(rowTemplate, rowTemplate.transform.parent);
-        row.name = string.IsNullOrEmpty(region) ? "Region_Auto" : "Region_" + region;
-        row.gameObject.SetActive(true);
-        row.onValueChanged.AddListener(isOn => { if (isOn) GameSettings.RelayRegion = region; });
-        rows[region] = row;
-        regions.Add(region);
-    }
-
-    // Region list is fetched once, latencies on every call; failures leave "--" instead of breaking the tab.
-    private async System.Threading.Tasks.Task ProbeAsync()
-    {
-        if (probing)
-            return;
-        probing = true;
+        List<string> ids;
 
         try
         {
-            if (!regionsLoaded)
-            {
-                List<string> ids = await RelayRegions.ListAsync();
-                if (this == null)
-                    return;
-                foreach (string id in ids)
-                    AddRow(id);
-                regionsLoaded = true;
-            }
+            ids = await RelayRegions.ListAsync();
+            if (this == null)
+                return;
+            foreach (string id in ids)
+                AddRow(id);
+            regionsLoaded = true;
         }
         catch (System.Exception e)
         {
             Debug.LogWarning($"NetworkSettingsUI: region list failed - {e.Message}");
         }
+    }
 
+    // QoS probes are UDP, so browsers always fail: warned once, then just "--".
+    private async System.Threading.Tasks.Task PingRegionsAsync()
+    {
         try
         {
             latencies = await RelayRegions.PingAsync();
@@ -115,66 +78,82 @@ public class NetworkSettingsUI : MonoBehaviour
                 Debug.LogWarning($"NetworkSettingsUI: QoS ping failed - {e.Message}");
             warnedQos = true;
         }
-        finally
+    }
+
+    // Region list is fetched once, latencies on every call; failures leave "--" instead of breaking the tab.
+    private async System.Threading.Tasks.Task ProbeAsync()
+    {
+        if (probing)
+            return;
+        probing = true;
+        if (!regionsLoaded)
+            await LoadRegionsAsync();
+        if (this == null)
         {
             probing = false;
+            return;
         }
-
+        await PingRegionsAsync();
+        probing = false;
         if (this != null)
             ShowRows();
     }
 
-    // Auto first (labelled with the region Relay would pick), then fastest to slowest, unprobed regions last by name.
-    private void ShowRows()
+    private void SamplePing()
     {
-        string best = null;
-        int bestMs = -1;
-        foreach (KeyValuePair<string, int> pair in latencies)
+        int rtt = PerfStatsHUD.CurrentPingMs();
+
+        if (rtt < 0)
+            return;
+        rttSum += rtt;
+        rttSamples++;
+    }
+
+    private int AveragePing()
+    {
+        if (rttSamples <= 0)
+            return -1;
+        return Mathf.RoundToInt((float)rttSum / rttSamples);
+    }
+
+    private void ResetPingAverage()
+    {
+        rttSum = 0;
+        rttSamples = 0;
+    }
+
+    private void Awake()
+    {
+        rowTemplate.gameObject.SetActive(false);
+        AddRow(AutoRegion);
+    }
+
+    // Probes right away on open, then every refreshInterval while the tab stays visible.
+    private void OnEnable()
+    {
+        AddRow(GameSettings.RelayRegion);
+        ShowRows();
+        refreshTimer = refreshInterval;
+        sampleTimer = 0f;
+        ResetPingAverage();
+        sessionPingLabel.text = FormatPing(PerfStatsHUD.CurrentPingMs());
+    }
+
+    // Unscaled since the pause menu may freeze time.
+    private void Update()
+    {
+        sampleTimer += Time.unscaledDeltaTime;
+        if (sampleTimer >= sampleInterval)
         {
-            if (bestMs < 0 || pair.Value < bestMs)
-            {
-                best = pair.Key;
-                bestMs = pair.Value;
-            }
+            sampleTimer = 0f;
+            SamplePing();
         }
-
-        regions.Sort(CompareRegions);
-        for (int i = 0; i < regions.Count; i++)
-        {
-            string region = regions[i];
-            Toggle row = rows[region];
-            bool auto = string.IsNullOrEmpty(region);
-            row.transform.SetSiblingIndex(i + 1);
-            row.transform.Find("Label").GetComponent<TMP_Text>().text = auto ? (best != null ? $"Auto ({best})" : "Auto") : region;
-            row.transform.Find("Ping").GetComponent<TMP_Text>().text = FormatPing(auto ? bestMs : Latency(region));
-        }
-
-        string selected = GameSettings.RelayRegion;
-        rows[selected].SetIsOnWithoutNotify(true);
-        foreach (KeyValuePair<string, Toggle> pair in rows)
-            if (pair.Key != selected)
-                pair.Value.SetIsOnWithoutNotify(false);
-    }
-
-    private int CompareRegions(string a, string b)
-    {
-        if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b))
-            return string.IsNullOrEmpty(a) ? (string.IsNullOrEmpty(b) ? 0 : -1) : 1;
-
-        int msA = Latency(a);
-        int msB = Latency(b);
-        if (msA != msB)
-            return msA < 0 ? 1 : msB < 0 ? -1 : msA.CompareTo(msB);
-        return string.CompareOrdinal(a, b);
-    }
-
-    private int Latency(string region)
-    {
-        return latencies.TryGetValue(region, out int ms) ? ms : -1;
-    }
-
-    private static string FormatPing(int ms)
-    {
-        return ms >= 0 ? $"{ms} ms" : "--";
+        refreshTimer += Time.unscaledDeltaTime;
+        if (refreshTimer < refreshInterval)
+            return;
+        refreshTimer = 0f;
+        sessionPingLabel.text = FormatPing(AveragePing());
+        ResetPingAverage();
+        _ = ProbeAsync();
     }
 }

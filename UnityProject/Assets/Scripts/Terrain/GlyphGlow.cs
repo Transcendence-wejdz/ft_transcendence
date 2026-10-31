@@ -27,15 +27,15 @@ public class GlyphGlow : MonoBehaviour
 
     void Update()
     {
+        float t;
+        Color c = baseColor;
+
         if (!spriteRenderer.isVisible)
             return;
-
-        float t = (Mathf.Sin((Time.time + timeOffset) * pulseSpeed) + 1f) * 0.5f;
-        Color c = baseColor;
+        t = (Mathf.Sin((Time.time + timeOffset) * pulseSpeed) + 1f) * 0.5f;
         c.a = Mathf.Lerp(minAlpha, maxAlpha, t);
         spriteRenderer.color = c;
         transform.localScale = baseScale * (1f + scalePulse * t);
-
         if (light2D != null)
             light2D.intensity = Mathf.Lerp(minLightIntensity, maxLightIntensity, t);
     }

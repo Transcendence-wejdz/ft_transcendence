@@ -7,19 +7,37 @@ using UnityEditor.Build.Reporting;
 // Makes every Web build match what the site serves: gzipped player files and no Burst debug folder.
 public class WebBuildPostprocess : IPostprocessBuildWithReport
 {
+    private const string BurstDebugPattern = "*_BurstDebugInformation_DoNotShip";
+    private const string GzipSuffix = ".gz";
+
     private static readonly string[] PlayerFileSuffixes = { ".data", ".framework.js", ".wasm" };
 
     public int callbackOrder => int.MaxValue;
 
-    public void OnPostprocessBuild(BuildReport report)
+    private static bool IsPlayerFile(string name)
     {
-        if (report.summary.platform != BuildTarget.WebGL)
-            return;
-        string outputPath = report.summary.outputPath;
-        foreach (string dir in Directory.GetDirectories(outputPath, "*_BurstDebugInformation_DoNotShip"))
+        foreach (string suffix in PlayerFileSuffixes)
+        {
+            if (name.EndsWith(suffix))
+                return true;
+        }
+        return false;
+    }
+
+    // Replaces file by file.gz.
+    private static void GzipFile(string file)
+    {
+        using (FileStream source = File.OpenRead(file))
+        using (FileStream target = File.Create(file + GzipSuffix))
+        using (GZipStream gzip = new GZipStream(target, CompressionLevel.Optimal))
+            source.CopyTo(gzip);
+        File.Delete(file);
+    }
+
+    private static void DeleteBurstDebug(string outputPath)
+    {
+        foreach (string dir in Directory.GetDirectories(outputPath, BurstDebugPattern))
             Directory.Delete(dir, true);
-        if ((report.summary.options & BuildOptions.Development) != 0)
-            GzipPlayerFiles(outputPath);
     }
 
     // Unity never compresses Development builds, so gzip them the way a release build would be.
@@ -27,21 +45,32 @@ public class WebBuildPostprocess : IPostprocessBuildWithReport
     {
         string buildDir = Path.Combine(outputPath, "Build");
         string indexPath = Path.Combine(outputPath, "index.html");
-        string index = File.Exists(indexPath) ? File.ReadAllText(indexPath) : null;
+        string index = null;
+        string name;
+
+        if (File.Exists(indexPath))
+            index = File.ReadAllText(indexPath);
         foreach (string file in Directory.GetFiles(buildDir))
         {
-            string name = Path.GetFileName(file);
-            if (!System.Array.Exists(PlayerFileSuffixes, name.EndsWith))
+            name = Path.GetFileName(file);
+            if (!IsPlayerFile(name))
                 continue;
-            using (FileStream source = File.OpenRead(file))
-            using (FileStream target = File.Create(file + ".gz"))
-            using (GZipStream gzip = new GZipStream(target, CompressionLevel.Optimal))
-                source.CopyTo(gzip);
-            File.Delete(file);
+            GzipFile(file);
             if (index != null)
-                index = index.Replace("/" + name + "\"", "/" + name + ".gz\"");
+                index = index.Replace("/" + name + "\"", "/" + name + GzipSuffix + "\"");
         }
         if (index != null)
             File.WriteAllText(indexPath, index);
+    }
+
+    public void OnPostprocessBuild(BuildReport report)
+    {
+        string outputPath = report.summary.outputPath;
+
+        if (report.summary.platform != BuildTarget.WebGL)
+            return;
+        DeleteBurstDebug(outputPath);
+        if ((report.summary.options & BuildOptions.Development) != 0)
+            GzipPlayerFiles(outputPath);
     }
 }

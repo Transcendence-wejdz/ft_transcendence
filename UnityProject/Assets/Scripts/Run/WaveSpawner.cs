@@ -4,7 +4,7 @@ using Unity.Netcode;
 using UnityEngine;
 
 // Server-side wave spawner; waves fire on a timer, but end that wait early once the current wave is fully cleared.
-public class WaveSpawner : NetworkBehaviour
+public partial class WaveSpawner : NetworkBehaviour
 {
     [SerializeField] private EnemyKit[] enemyKits;
     [SerializeField] private int[] tierUnlockWave = { 1, 4 };
@@ -29,9 +29,18 @@ public class WaveSpawner : NetworkBehaviour
     private int waveNumber;
     private float offlineStartTime;
     private bool wavesStarted;
+    private ProceduralMapGenerator cachedMapGenerator;
     private readonly List<int> unlockedKitIndices = new List<int>();
 
-    public int CurrentWave => IsSpawned ? currentWave.Value : waveNumber;
+    public int CurrentWave
+    {
+        get
+        {
+            if (IsSpawned)
+                return currentWave.Value;
+            return waveNumber;
+        }
+    }
 
     // Fired server/offline side each time a new wave spawns, never for a wave carried over from the previous scene.
     public static event System.Action<int> OnWaveStarted;
@@ -43,16 +52,109 @@ public class WaveSpawner : NetworkBehaviour
         {
             if (CurrentWave <= 0)
                 return 0f;
-
-            return IsSpawned ? (float)(NetworkManager.ServerTime.Time - startServerTime.Value) : Time.time - offlineStartTime;
+            if (IsSpawned)
+                return (float)(NetworkManager.ServerTime.Time - startServerTime.Value);
+            return Time.time - offlineStartTime;
         }
     }
 
-    void Start()
+    private static bool IsNetworked()
     {
-        bool isNetworked = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
-        if (!isNetworked)
-            BeginWaves();
+        return NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+    }
+
+    private void HandleSceneLoadEventCompleted(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+    {
+        BeginWaves();
+    }
+
+    private void BeginWaves()
+    {
+        if (wavesStarted)
+            return;
+        wavesStarted = true;
+        StartCoroutine(RunWaves());
+    }
+
+    private void SetWave(int wave)
+    {
+        waveNumber = wave;
+        if (IsSpawned)
+            currentWave.Value = waveNumber;
+    }
+
+    private int EnemiesForWave()
+    {
+        int playerCount = Mathf.Max(1, Player.AllActiveInstances.Count);
+
+        return baseEnemiesPerWave + (waveNumber - 1) * extraEnemiesPerWave + (playerCount - 1) * extraEnemiesPerPlayer;
+    }
+
+    // A scene without waves (the boss scene) only shows the carried-over wave, or wave 1.
+    private void HoldCarriedWave(bool carried)
+    {
+        if (carried)
+            SetWave(Mathf.Max(1, RunCarryOver.Wave));
+        else
+            SetWave(1);
+    }
+
+    private void StartNextWave()
+    {
+        SetWave(waveNumber + 1);
+        OnWaveStarted?.Invoke(waveNumber);
+        if (waveNumber == 1)
+            NotifyRunStarted();
+        SpawnWave(EnemiesForWave());
+    }
+
+    // The map's water is only known once its seed is, so the first wave waits for it instead of landing in lakes.
+    private IEnumerator RunWaves()
+    {
+        ProceduralMapGenerator mapGenerator = FindAnyObjectByType<ProceduralMapGenerator>();
+        bool carried;
+
+        while (mapGenerator != null && !mapGenerator.IsReady)
+            yield return null;
+        carried = RunCarryOver.IsForActiveScene;
+        if (carried)
+            MarkStartTime(RunCarryOver.ElapsedSeconds);
+        else
+            MarkStartTime(0f);
+        if (!spawnWaves)
+        {
+            HoldCarriedWave(carried);
+            yield break;
+        }
+        if (carried)
+            waveNumber = RunCarryOver.Wave;
+        while (!GameOverCheck.IsRunOver)
+        {
+            StartNextWave();
+            yield return WaitForNextWave();
+        }
+    }
+
+    private bool IsWaveOver()
+    {
+        if (GameOverCheck.IsRunOver)
+            return true;
+        return FindObjectsByType<Enemy>(FindObjectsInactive.Exclude).Length == 0;
+    }
+
+    // Waits out timeBetweenWaves, but ends early the moment every enemy from the current wave is dead.
+    private IEnumerator WaitForNextWave()
+    {
+        WaitForSeconds checkDelay = new WaitForSeconds(clearCheckInterval);
+        float elapsed = 0f;
+
+        while (elapsed < timeBetweenWaves)
+        {
+            if (IsWaveOver())
+                yield break;
+            yield return checkDelay;
+            elapsed += clearCheckInterval;
+        }
     }
 
     public override void OnNetworkSpawn()
@@ -70,229 +172,9 @@ public class WaveSpawner : NetworkBehaviour
             NetworkManager.SceneManager.OnLoadEventCompleted -= HandleSceneLoadEventCompleted;
     }
 
-    // Clients see the first wave through the replicated counter, since RunWaves only runs on the server.
-    private void HandleWaveChanged(int previous, int current)
+    void Start()
     {
-        if (previous == 0 && current > 0)
-            NotifyRunStarted();
-    }
-
-    // Each peer opens the gold run on its own web account and starts its own player at its bought upgrades.
-    private void NotifyRunStarted()
-    {
-        if (!startsRun)
-            return;
-
-        GoldWallet.BeginRun(Player.AllActiveInstances.Count <= 1 ? "solo" : "coop");
-        StartCoroutine(ApplyPermanentUpgradesWhenReady());
-    }
-
-    // Offline the first wave can start before PlayerSpawner has spawned the player, so this waits for it plus one frame of its own setup.
-    private IEnumerator ApplyPermanentUpgradesWhenReady()
-    {
-        Player player;
-        while ((player = LocalPlayer.GetPlayer()) == null)
-            yield return null;
-
-        yield return null;
-        player.ApplyPermanentUpgrades();
-    }
-
-    private void HandleSceneLoadEventCompleted(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
-    {
-        BeginWaves();
-    }
-
-    private void BeginWaves()
-    {
-        if (wavesStarted)
-            return;
-
-        wavesStarted = true;
-        StartCoroutine(RunWaves());
-    }
-
-    private IEnumerator RunWaves()
-    {
-        bool carried = RunCarryOver.IsForActiveScene;
-        MarkStartTime(carried ? RunCarryOver.ElapsedSeconds : 0f);
-
-        if (!spawnWaves)
-        {
-            waveNumber = carried ? Mathf.Max(1, RunCarryOver.Wave) : 1;
-            if (IsSpawned)
-                currentWave.Value = waveNumber;
-            yield break;
-        }
-
-        if (carried)
-            waveNumber = RunCarryOver.Wave;
-
-        while (true)
-        {
-            waveNumber++;
-            if (IsSpawned)
-                currentWave.Value = waveNumber;
-            OnWaveStarted?.Invoke(waveNumber);
-            if (waveNumber == 1)
-                NotifyRunStarted();
-
-            int playerCount = Mathf.Max(1, Player.AllActiveInstances.Count);
-            int count = baseEnemiesPerWave + (waveNumber - 1) * extraEnemiesPerWave + (playerCount - 1) * extraEnemiesPerPlayer;
-            SpawnWave(count);
-
-            yield return WaitForNextWave();
-        }
-    }
-
-    // Waits out timeBetweenWaves, but ends early the moment every enemy from the current wave is dead.
-    private IEnumerator WaitForNextWave()
-    {
-        WaitForSeconds checkDelay = new WaitForSeconds(clearCheckInterval);
-        float elapsed = 0f;
-
-        while (elapsed < timeBetweenWaves)
-        {
-            if (FindObjectsByType<Enemy>(FindObjectsInactive.Exclude).Length == 0)
-                yield break;
-
-            yield return checkDelay;
-            elapsed += clearCheckInterval;
-        }
-    }
-
-    // Backdated by alreadyElapsed so a carried-over run keeps counting from where the previous scene stopped.
-    private void MarkStartTime(float alreadyElapsed)
-    {
-        if (IsSpawned)
-            startServerTime.Value = NetworkManager.ServerTime.Time - alreadyElapsed;
-        else
-            offlineStartTime = Time.time - alreadyElapsed;
-    }
-
-    // Public so every peer resolves the same kit from the replicated index (see Enemy.HandleKitIndexChanged).
-    public EnemyKit GetKit(int index)
-    {
-        return index >= 0 && index < enemyKits.Length ? enemyKits[index] : null;
-    }
-
-    // Each enemy rolls a random kit among the tiers unlocked this wave.
-    private void SpawnWave(int count)
-    {
-        RefreshUnlockedKitIndices();
-        for (int i = 0; i < count; i++)
-            SpawnEnemy(unlockedKitIndices[Random.Range(0, unlockedKitIndices.Count)], FindSpawnPosition());
-    }
-
-    // Server-side summon (e.g. a boss calling minions): spawns kit on a valid point within radius of center, or on center itself; returns where it landed.
-    public Vector3 SpawnEnemyNear(EnemyKit kit, Vector3 center, float radius)
-    {
-        int kitIndex = System.Array.IndexOf(enemyKits, kit);
-        if (kitIndex < 0)
-            return center;
-
-        ProceduralMapGenerator mapGenerator = FindAnyObjectByType<ProceduralMapGenerator>();
-        for (int attempt = 0; attempt < maxSpawnPointAttempts; attempt++)
-        {
-            Vector3 candidate = center + (Vector3)(Random.insideUnitCircle.normalized * Random.Range(radius * 0.5f, radius));
-            if (IsValidSpawnPoint(candidate, mapGenerator))
-            {
-                SpawnEnemy(kitIndex, candidate);
-                return candidate;
-            }
-        }
-        SpawnEnemy(kitIndex, center);
-        return center;
-    }
-
-    // The kit index is set before Spawn() so remote clients get it in the spawn payload.
-    private void SpawnEnemy(int kitIndex, Vector3 position)
-    {
-        EnemyKit kit = GetKit(kitIndex);
-        GameObject instance = Instantiate(kit.EnemyPrefab, position, Quaternion.identity);
-        Enemy enemy = instance.GetComponent<Enemy>();
-        enemy.Initialize(kit);
-
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-        {
-            enemy.SetNetworkedKitIndex(kitIndex);
-            instance.GetComponent<NetworkObject>().Spawn(true);
-        }
-    }
-
-    // Tier N unlocks at wave tierUnlockWave[N-1]; falls back to kit 0 while none is unlocked.
-    private void RefreshUnlockedKitIndices()
-    {
-        unlockedKitIndices.Clear();
-        for (int i = 0; i < enemyKits.Length; i++)
-        {
-            int tier = Mathf.Max(1, enemyKits[i].Tier);
-            int unlockWave = tier <= tierUnlockWave.Length ? tierUnlockWave[tier - 1] : int.MaxValue;
-            if (waveNumber >= unlockWave)
-                unlockedKitIndices.Add(i);
-        }
-
-        if (unlockedKitIndices.Count == 0)
-            unlockedKitIndices.Add(0);
-    }
-
-    // Falls back to the spawner's own position if no valid point is found; public so Enemy can reuse it to recycle stray enemies.
-    public Vector3 FindSpawnPosition()
-    {
-        ProceduralMapGenerator mapGenerator = FindAnyObjectByType<ProceduralMapGenerator>();
-        Vector3 center = GetSpawnCenter();
-
-        for (int attempt = 0; attempt < maxSpawnPointAttempts; attempt++)
-        {
-            float angle = Random.Range(0f, Mathf.PI * 2f);
-            Vector2 offset = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * spawnRadius;
-            Vector3 candidate = center + (Vector3)offset;
-
-            if (IsValidSpawnPoint(candidate, mapGenerator))
-                return candidate;
-        }
-
-        return center;
-    }
-
-    // Spawns just off a random living player's screen.
-    private Vector3 GetSpawnCenter()
-    {
-        EnemyFlowFieldManager manager = EnemyFlowFieldManager.Instance;
-        manager.RefreshPlayers();
-        IReadOnlyList<Player> living = manager.LivingPlayers;
-
-        return living.Count > 0 ? living[Random.Range(0, living.Count)].transform.position : transform.position;
-    }
-
-    // Spawn checks test the body, which sits above the pivot; every variant shares the base collider.
-    private Vector2 GetEnemyBodyOffset()
-    {
-        GameObject prefab = enemyKits.Length > 0 ? enemyKits[0].EnemyPrefab : null;
-        CircleCollider2D circle = prefab != null ? prefab.GetComponent<CircleCollider2D>() : null;
-        return circle != null ? circle.offset * (Vector2)prefab.transform.localScale : Vector2.zero;
-    }
-
-    // Valid when the point and its four sides are land with no static collider.
-    private bool IsValidSpawnPoint(Vector3 root, ProceduralMapGenerator mapGenerator)
-    {
-        Vector3 point = root + (Vector3)GetEnemyBodyOffset();
-        if (ObstacleQuery.IsBlocked(point, spawnClearance * 0.5f))
-            return false;
-        if (mapGenerator == null)
-            return true;
-
-        Vector3[] probes =
-        {
-            point,
-            point + Vector3.right * spawnClearance, point + Vector3.left * spawnClearance,
-            point + Vector3.up * spawnClearance, point + Vector3.down * spawnClearance,
-        };
-        foreach (Vector3 probe in probes)
-        {
-            if (mapGenerator.IsWaterAtWorldPosition(probe))
-                return false;
-        }
-        return true;
+        if (!IsNetworked())
+            BeginWaves();
     }
 }

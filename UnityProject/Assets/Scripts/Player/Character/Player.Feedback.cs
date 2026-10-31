@@ -1,8 +1,12 @@
 using Unity.Cinemachine;
 using UnityEngine;
 
+// Hit flash for everyone, plus the owner's own shake, red screen edges and camera punch.
 public partial class Player
 {
+    private const float BigHitWeight = 0.5f;
+    private const float LightHitVignetteFraction = 0.6f;
+
     [Header("References")]
     [SerializeField] private CinemachineImpulseSource impulseSource;
     [SerializeField] private SpriteHitFlash hitFlash;
@@ -52,32 +56,55 @@ public partial class Player
     }
 
     // Everyone sees the flash; the owner also gets shake, red edges and a punch on big hits; a drop to full health is a class switch, not a hit.
+    private void Shake(float force)
+    {
+        if (impulseSource != null && GameSettings.ScreenShakeEnabled)
+            impulseSource.GenerateImpulse(Random.insideUnitCircle.normalized * force);
+    }
+
+    // 0 for a scratch, 1 for a hit worth bigHitFraction of the max health or more.
+    private float HitWeight(float damage, float max)
+    {
+        if (max <= 0f)
+            return 1f;
+        return Mathf.Clamp01(damage / max / bigHitFraction);
+    }
+
+    private void PulseEdges(float weight)
+    {
+        float strength = Mathf.Lerp(hurtVignetteMin, hurtVignetteStrength, weight);
+        float duration = Mathf.Lerp(hurtVignetteDuration * LightHitVignetteFraction, hurtVignetteDuration, weight);
+
+        if (edgeFlash == null)
+            edgeFlash = ScreenEdgeFlash.Create();
+        edgeFlash.Pulse(strength, duration);
+    }
+
+    private void PlayOwnHurtFeedback(float weight)
+    {
+        Shake(Mathf.Lerp(hurtShakeMin, hurtShake, weight));
+        PulseEdges(weight);
+        if (weight > BigHitWeight && GameSettings.ScreenShakeEnabled)
+            GetComponentInChildren<CameraDistanceSetting>(true)?.Punch(hurtPunchZoom * weight, hurtPunchDuration);
+    }
+
     private void HandleHealthReplicated(float current, float max)
     {
         bool tookDamage = lastHealth >= 0f && current < lastHealth && current < max;
         float damage = lastHealth - current;
+
         lastHealth = current;
         if (!tookDamage)
             return;
-
         hitFlash?.Flash();
-        if (!this.IsLocallyControlled())
-            return;
-
-        float weight = max > 0f ? Mathf.Clamp01(damage / max / bigHitFraction) : 1f;
-        Shake(Mathf.Lerp(hurtShakeMin, hurtShake, weight));
-        if (edgeFlash == null)
-            edgeFlash = ScreenEdgeFlash.Create();
-        edgeFlash.Pulse(Mathf.Lerp(hurtVignetteMin, hurtVignetteStrength, weight), Mathf.Lerp(hurtVignetteDuration * 0.6f, hurtVignetteDuration, weight));
-        if (weight > 0.5f && GameSettings.ScreenShakeEnabled)
-            GetComponentInChildren<CameraDistanceSetting>(true)?.Punch(hurtPunchZoom * weight, hurtPunchDuration);
+        if (this.IsLocallyControlled())
+            PlayOwnHurtFeedback(HitWeight(damage, max));
     }
 
     private void HandleAbilityUsed(AbilityType ability, float cooldown)
     {
         if (!this.IsLocallyControlled())
             return;
-
         if (ability == AbilityType.Attack)
             Shake(attackShake);
         else if (ability == AbilityType.Special)
@@ -91,9 +118,4 @@ public partial class Player
             Shake(hitLandedShake);
     }
 
-    private void Shake(float force)
-    {
-        if (impulseSource != null && GameSettings.ScreenShakeEnabled)
-            impulseSource.GenerateImpulse(Random.insideUnitCircle.normalized * force);
-    }
 }

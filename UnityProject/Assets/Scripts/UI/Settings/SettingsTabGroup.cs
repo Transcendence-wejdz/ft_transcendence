@@ -18,56 +18,30 @@ public class SettingsTabGroup : MonoBehaviour
     private Tab current;
     private GameObject lastSelected;
 
-    // LB/RB step through the tabs in sidebar order, whatever their order in the array.
-    private void Awake()
+    private static int SidebarOrder(Tab a, Tab b)
     {
-        System.Array.Sort(tabs, (a, b) => a.tabButton.transform.GetSiblingIndex().CompareTo(b.tabButton.transform.GetSiblingIndex()));
-        foreach (Tab tab in tabs)
-        {
-            Tab captured = tab;
-            captured.tabButton.onClick.AddListener(() => Select(captured));
-            if (captured.tabButton.GetComponent<DefaultSelection>() == null)
-                captured.tabButton.gameObject.AddComponent<DefaultSelection>();
-        }
+        return a.tabButton.transform.GetSiblingIndex().CompareTo(b.tabButton.transform.GetSiblingIndex());
     }
 
-    private void OnEnable()
+    // Shoulder buttons step through the tabs: 1 for RB, -1 for LB, 0 for neither.
+    private static int ShoulderStep()
     {
-        lastSelected = null;
-        Select(tabs[0]);
-    }
+        Gamepad pad = Gamepad.current;
 
-    // Moving between tabs switches the page; coming back from a page lands on the active tab instead of the nearest one.
-    private void Update()
-    {
-        if (!InputModeTracker.UsingGamepad || KeybindsPanelUI.IsBusy || EventSystem.current == null)
-            return;
-
-        if (Gamepad.current != null && (Gamepad.current.leftShoulder.wasPressedThisFrame || Gamepad.current.rightShoulder.wasPressedThisFrame))
-        {
-            int step = Gamepad.current.rightShoulder.wasPressedThisFrame ? 1 : -1;
-            Tab next = tabs[(System.Array.IndexOf(tabs, current) + step + tabs.Length) % tabs.Length];
-            Select(next);
-            GamepadUINavigator.Focus(next.tabButton);
-        }
-
-        GameObject selected = EventSystem.current.currentSelectedGameObject;
-        if (selected != lastSelected)
-        {
-            Tab focused = TabOf(selected);
-            if (focused != null && focused != current)
-            {
-                if (InSidebar(lastSelected))
-                    Select(focused);
-                else
-                    GamepadUINavigator.Focus(current.tabButton);
-            }
-        }
-        lastSelected = EventSystem.current.currentSelectedGameObject;
+        if (pad == null)
+            return 0;
+        if (pad.rightShoulder.wasPressedThisFrame)
+            return 1;
+        if (pad.leftShoulder.wasPressedThisFrame)
+            return -1;
+        return 0;
     }
 
     // Tabs and their neighbours (the Back button), so wrapping inside the sidebar is not taken for a return from the page.
-    private bool InSidebar(GameObject selected) => selected != null && selected.transform.IsChildOf(tabs[0].tabButton.transform.parent);
+    private bool InSidebar(GameObject selected)
+    {
+        return selected != null && selected.transform.IsChildOf(tabs[0].tabButton.transform.parent);
+    }
 
     private Tab TabOf(GameObject selected)
     {
@@ -81,18 +55,79 @@ public class SettingsTabGroup : MonoBehaviour
         return null;
     }
 
+    private void ShowTab(Tab tab, bool isSelected)
+    {
+        HoverColorWipe hover = tab.tabButton.GetComponent<HoverColorWipe>();
+
+        tab.page.SetActive(isSelected);
+        tab.tabButton.interactable = true;
+        tab.tabButton.GetComponent<DefaultSelection>().enabled = isSelected;
+        if (hover != null)
+            hover.SetPinned(isSelected);
+    }
+
     private void Select(Tab selected)
     {
         current = selected;
         foreach (Tab tab in tabs)
-        {
-            bool isSelected = tab == selected;
-            tab.page.SetActive(isSelected);
-            tab.tabButton.interactable = true;
-            tab.tabButton.GetComponent<DefaultSelection>().enabled = isSelected;
-            HoverColorWipe hover = tab.tabButton.GetComponent<HoverColorWipe>();
-            if (hover != null)
-                hover.SetPinned(isSelected);
-        }
+            ShowTab(tab, tab == selected);
+    }
+
+    private void BindTab(Tab tab)
+    {
+        tab.tabButton.onClick.AddListener(() => Select(tab));
+        if (tab.tabButton.GetComponent<DefaultSelection>() == null)
+            tab.tabButton.gameObject.AddComponent<DefaultSelection>();
+    }
+
+    private void StepTab(int step)
+    {
+        Tab next = tabs[(System.Array.IndexOf(tabs, current) + step + tabs.Length) % tabs.Length];
+
+        Select(next);
+        GamepadUINavigator.Focus(next.tabButton);
+    }
+
+    // Moving between tabs switches the page; coming back from a page lands on the active tab instead of the nearest one.
+    private void FollowFocus(GameObject selected)
+    {
+        Tab focused = TabOf(selected);
+
+        if (focused == null || focused == current)
+            return;
+        if (InSidebar(lastSelected))
+            Select(focused);
+        else
+            GamepadUINavigator.Focus(current.tabButton);
+    }
+
+    // LB/RB step through the tabs in sidebar order, whatever their order in the array.
+    private void Awake()
+    {
+        System.Array.Sort(tabs, SidebarOrder);
+        foreach (Tab tab in tabs)
+            BindTab(tab);
+    }
+
+    private void OnEnable()
+    {
+        lastSelected = null;
+        Select(tabs[0]);
+    }
+
+    private void Update()
+    {
+        int step;
+        GameObject selected;
+
+        if (!InputModeTracker.UsingGamepad || KeybindsPanelUI.IsBusy || EventSystem.current == null)
+            return;
+        step = ShoulderStep();
+        if (step != 0)
+            StepTab(step);
+        selected = EventSystem.current.currentSelectedGameObject;
+        if (selected != lastSelected)
+            FollowFocus(selected);
+        lastSelected = EventSystem.current.currentSelectedGameObject;
     }
 }

@@ -48,10 +48,11 @@ public static class WebBackend
     [MonoPInvokeCallback(typeof(PatchCallback))]
     private static void OnPatchDone(int requestId, int status)
     {
+        Action<int> onDone;
+
         if (status < 200 || status >= 300)
             Debug.LogWarning($"WebBackend: request failed with HTTP {status}.");
-
-        if (!Pending.TryGetValue(requestId, out Action<int> onDone))
+        if (!Pending.TryGetValue(requestId, out onDone))
             return;
         Pending.Remove(requestId);
         onDone(status);

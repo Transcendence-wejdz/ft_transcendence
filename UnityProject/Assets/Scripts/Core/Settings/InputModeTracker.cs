@@ -16,10 +16,76 @@ public class InputModeTracker : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap()
     {
-        var go = new GameObject("InputModeTracker");
+        GameObject go = new GameObject("InputModeTracker");
+
         DontDestroyOnLoad(go);
         go.AddComponent<InputModeTracker>();
         SetMode(Gamepad.current != null);
+    }
+
+    // Global inner deadzone of every stick, read by the default stickDeadzone processor of Move, Aim and UI navigation.
+    private static void ApplyStickDeadzone()
+    {
+        InputSystem.settings.defaultDeadzoneMin = GameSettings.StickDeadzone;
+    }
+
+    private static void OnDeviceChange(InputDevice device, InputDeviceChange change)
+    {
+        if (!(device is Gamepad))
+            return;
+        if (change == InputDeviceChange.Added || change == InputDeviceChange.Reconnected)
+            SetMode(true);
+        else if ((change == InputDeviceChange.Removed || change == InputDeviceChange.Disconnected) && Gamepad.all.Count == 0)
+            SetMode(false);
+    }
+
+    private static bool PadAxisUsed(Gamepad pad)
+    {
+        if (pad.leftStick.ReadValue().magnitude > StickThreshold || pad.rightStick.ReadValue().magnitude > StickThreshold)
+            return true;
+        if (pad.dpad.ReadValue().magnitude > StickThreshold)
+            return true;
+        return pad.leftTrigger.ReadValue() > TriggerThreshold || pad.rightTrigger.ReadValue() > TriggerThreshold;
+    }
+
+    private static bool PadButtonPressed(Gamepad pad)
+    {
+        if (pad.buttonSouth.wasPressedThisFrame || pad.buttonEast.wasPressedThisFrame || pad.buttonNorth.wasPressedThisFrame)
+            return true;
+        if (pad.buttonWest.wasPressedThisFrame || pad.leftShoulder.wasPressedThisFrame || pad.rightShoulder.wasPressedThisFrame)
+            return true;
+        return pad.startButton.wasPressedThisFrame || pad.selectButton.wasPressedThisFrame;
+    }
+
+    private static bool PadUsed(Gamepad pad)
+    {
+        return PadAxisUsed(pad) || PadButtonPressed(pad);
+    }
+
+    private static bool MouseUsed(Mouse mouse)
+    {
+        if (mouse.delta.ReadValue().magnitude > MouseMoveThreshold)
+            return true;
+        return mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame;
+    }
+
+    private static void SetMode(bool gamepad)
+    {
+        if (gamepad == UsingGamepad)
+            return;
+        UsingGamepad = gamepad;
+        OnModeChanged?.Invoke(gamepad);
+    }
+
+    private void Update()
+    {
+        Gamepad pad = Gamepad.current;
+        Mouse mouse = Mouse.current;
+
+        if (pad != null && PadUsed(pad))
+            SetMode(true);
+        if (mouse != null && MouseUsed(mouse))
+            SetMode(false);
     }
 
     private void OnEnable()
@@ -33,52 +99,5 @@ public class InputModeTracker : MonoBehaviour
     {
         InputSystem.onDeviceChange -= OnDeviceChange;
         GameSettings.OnChanged -= ApplyStickDeadzone;
-    }
-
-    // Global inner deadzone of every stick, read by the default stickDeadzone processor of Move, Aim and UI navigation.
-    private static void ApplyStickDeadzone()
-    {
-        InputSystem.settings.defaultDeadzoneMin = GameSettings.StickDeadzone;
-    }
-
-    private static void OnDeviceChange(InputDevice device, InputDeviceChange change)
-    {
-        if (!(device is Gamepad))
-            return;
-
-        if (change == InputDeviceChange.Added || change == InputDeviceChange.Reconnected)
-            SetMode(true);
-        else if ((change == InputDeviceChange.Removed || change == InputDeviceChange.Disconnected) && Gamepad.all.Count == 0)
-            SetMode(false);
-    }
-
-    private void Update()
-    {
-        Gamepad pad = Gamepad.current;
-        if (pad != null && PadUsed(pad))
-            SetMode(true);
-
-        Mouse mouse = Mouse.current;
-        if (mouse != null && (mouse.delta.ReadValue().magnitude > MouseMoveThreshold || mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame))
-            SetMode(false);
-    }
-
-    private static bool PadUsed(Gamepad pad)
-    {
-        return pad.leftStick.ReadValue().magnitude > StickThreshold || pad.rightStick.ReadValue().magnitude > StickThreshold
-            || pad.dpad.ReadValue().magnitude > StickThreshold
-            || pad.leftTrigger.ReadValue() > TriggerThreshold || pad.rightTrigger.ReadValue() > TriggerThreshold
-            || pad.buttonSouth.wasPressedThisFrame || pad.buttonEast.wasPressedThisFrame || pad.buttonNorth.wasPressedThisFrame
-            || pad.buttonWest.wasPressedThisFrame || pad.leftShoulder.wasPressedThisFrame || pad.rightShoulder.wasPressedThisFrame
-            || pad.startButton.wasPressedThisFrame || pad.selectButton.wasPressedThisFrame;
-    }
-
-    private static void SetMode(bool gamepad)
-    {
-        if (gamepad == UsingGamepad)
-            return;
-
-        UsingGamepad = gamepad;
-        OnModeChanged?.Invoke(gamepad);
     }
 }

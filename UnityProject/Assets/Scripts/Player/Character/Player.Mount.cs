@@ -2,6 +2,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
+// Mount / revive: an ally rides a downed player's pig for mountDurationSeconds to bring them back.
 public partial class Player
 {
     [Header("Mount / Revive")]
@@ -20,159 +21,19 @@ public partial class Player
     // 0..1 while an ally rides this downed player, -1 otherwise; local per peer like the world revive bar.
     public float ReviveFraction { get; private set; } = -1f;
 
-    // Wired to the MountInteract zone's onInteract (a child of the downed player); starts mounting whichever local player interacted.
-    public void RequestMountByLocalPlayer()
+    // The player this one rides, read from the replicated transform.parent.
+    private Player ParentPlayer()
     {
-        if (!IsDead)
-            return;
-
-        GameObject localPlayerObj = LocalPlayer.Get();
-        Player localPlayer = localPlayerObj != null ? localPlayerObj.GetComponent<Player>() : null;
-        if (localPlayer == null || localPlayer == this || localPlayer.IsDead)
-            return;
-
-        localPlayer.StartMounting(this);
+        if (transform.parent == null)
+            return null;
+        return transform.parent.GetComponent<Player>();
     }
 
-    // The server parents the rider to the pig; LateUpdateMount applies the offset once that parenting replicates.
-    private void StartMounting(Player pig)
+    private int CurrentSortingOrder()
     {
-        if (!this.IsLocallyControlled() || isMounted || pig == null || !pig.IsDead)
-            return;
-
-        isMounted = true;
-        mountedPig = pig;
-        mountElapsed = 0f;
-
-        if (rb != null)
-            rb.bodyType = RigidbodyType2D.Kinematic;
-
-        if (NetworkObject.IsSpawned)
-        {
-            RequestMountParentServerRpc(pig.NetworkObject);
-        }
-        else
-        {
-            transform.SetParent(pig.transform, worldPositionStays: false);
-            transform.localPosition = mountedOffset;
-            transform.localRotation = Quaternion.identity;
-        }
-    }
-
-    private void StopMounting()
-    {
-        if (!isMounted)
-            return;
-
-        if (rb != null)
-            rb.bodyType = RigidbodyType2D.Dynamic;
-
-        if (NetworkObject.IsSpawned)
-            RequestUnmountParentServerRpc();
-        else
-            transform.SetParent(null, worldPositionStays: true);
-
-        isMounted = false;
-        mountedPig = null;
-        mountElapsed = 0f;
-    }
-
-    // worldPositionStays true, else the rider teleports for a frame before LateUpdateMount corrects it.
-    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-    private void RequestMountParentServerRpc(NetworkObjectReference pigRef)
-    {
-        if (pigRef.TryGet(out NetworkObject pigNetworkObject))
-            NetworkObject.TrySetParent(pigNetworkObject, worldPositionStays: true);
-    }
-
-    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-    private void RequestUnmountParentServerRpc()
-    {
-        NetworkObject.TrySetParent((Transform)null, worldPositionStays: true);
-    }
-
-    // Runs on every client (each simulates physics locally); reads the replicated transform.parent, not the local isMounted flag.
-    private void UpdateMountCollisionIgnore()
-    {
-        Player currentParent = transform.parent != null ? transform.parent.GetComponent<Player>() : null;
-        if (currentParent == collisionIgnoredWith)
-            return;
-
-        if (collisionIgnoredWith != null && bodyCollider != null && collisionIgnoredWith.bodyCollider != null)
-            Physics2D.IgnoreCollision(bodyCollider, collisionIgnoredWith.bodyCollider, false);
-
-        collisionIgnoredWith = currentParent;
-
-        if (collisionIgnoredWith != null && bodyCollider != null && collisionIgnoredWith.bodyCollider != null)
-            Physics2D.IgnoreCollision(bodyCollider, collisionIgnoredWith.bodyCollider, true);
-    }
-
-    // Unparents before reviving, or observers could see the revived player drag the rider along.
-    private void UpdateMount()
-    {
-        if (!isMounted || !this.IsLocallyControlled())
-            return;
-
-        if (IsDead || mountedPig == null || !mountedPig.IsDead)
-        {
-            StopMounting();
-            return;
-        }
-
-        mountElapsed += Time.deltaTime;
-        if (mountElapsed >= mountDurationSeconds)
-        {
-            Player pigToRevive = mountedPig;
-            StopMounting();
-            pigToRevive.RequestRevive();
-        }
-    }
-
-    // Re-offsets once the server-driven parenting request has actually landed on this client; no-op once already in place.
-    private void LateUpdateMount()
-    {
-        if (!isMounted || !this.IsLocallyControlled() || mountedPig == null)
-            return;
-
-        if (transform.parent == mountedPig.transform)
-        {
-            transform.localPosition = mountedOffset;
-            transform.localRotation = Quaternion.identity;
-        }
-    }
-
-    // Hides the revive prompt while someone rides, read from the replicated transform.parent.
-    private void UpdateMountInteractVisibility()
-    {
-        if (mountInteractRoot == null || !IsDead)
-            return;
-
-        bool shouldShow = !HasRider();
-        if (mountInteractRoot.activeSelf != shouldShow)
-            mountInteractRoot.SetActive(shouldShow);
-    }
-
-    // Revive bar filled over mountDurationSeconds while someone rides, timed locally from the replicated parenting.
-    private void UpdateReviveProgress()
-    {
-        bool riding = IsDead && HasRider();
-        if (!riding)
-            riderSince = -1f;
-        else if (riderSince < 0f)
-            riderSince = Time.time;
-        ReviveFraction = riding ? Mathf.Clamp01((Time.time - riderSince) / mountDurationSeconds) : -1f;
-
-        if (reviveProgress == null)
-            return;
-
-        Canvas canvas = reviveProgress.GetComponentInParent<Canvas>(true);
-        GameObject root = canvas != null ? canvas.gameObject : reviveProgress.gameObject;
-        if (root.activeSelf != riding)
-            root.SetActive(riding);
-        if (nameTag != null)
-            nameTag.SetHidden(riding);
-        if (riding)
-            BrushFill.Set(reviveProgress, ReviveFraction);
+        if (sortingLayerAuto != null)
+            return sortingLayerAuto.CurrentSortingOrder;
+        return spriteRenderer.sortingOrder;
     }
 
     private bool HasRider()
@@ -185,26 +46,138 @@ public partial class Player
         return false;
     }
 
+    private void PlaceOnPig()
+    {
+        transform.localPosition = mountedOffset;
+        transform.localRotation = Quaternion.identity;
+    }
+
+    // worldPositionStays true, else the rider teleports for a frame before LateUpdateMount corrects it.
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void RequestMountParentServerRpc(NetworkObjectReference pigRef)
+    {
+        NetworkObject pigNetworkObject;
+
+        if (pigRef.TryGet(out pigNetworkObject))
+            NetworkObject.TrySetParent(pigNetworkObject, worldPositionStays: true);
+    }
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void RequestUnmountParentServerRpc()
+    {
+        NetworkObject.TrySetParent((Transform)null, worldPositionStays: true);
+    }
+
+    // The server parents the rider to the pig; LateUpdateMount applies the offset once that parenting replicates.
+    private void StartMounting(Player pig)
+    {
+        if (!this.IsLocallyControlled() || isMounted || pig == null || !pig.IsDead)
+            return;
+        isMounted = true;
+        mountedPig = pig;
+        mountElapsed = 0f;
+        if (rb != null)
+            rb.bodyType = RigidbodyType2D.Kinematic;
+        if (NetworkObject.IsSpawned)
+        {
+            RequestMountParentServerRpc(pig.NetworkObject);
+            return;
+        }
+        transform.SetParent(pig.transform, worldPositionStays: false);
+        PlaceOnPig();
+    }
+
+    private void StopMounting()
+    {
+        if (!isMounted)
+            return;
+        if (rb != null)
+            rb.bodyType = RigidbodyType2D.Dynamic;
+        if (NetworkObject.IsSpawned)
+            RequestUnmountParentServerRpc();
+        else
+            transform.SetParent(null, worldPositionStays: true);
+        isMounted = false;
+        mountedPig = null;
+        mountElapsed = 0f;
+    }
+
+    private void SetCollisionIgnored(Player other, bool ignored)
+    {
+        if (other != null && bodyCollider != null && other.bodyCollider != null)
+            Physics2D.IgnoreCollision(bodyCollider, other.bodyCollider, ignored);
+    }
+
+    // Runs on every client (each simulates physics locally); reads the replicated transform.parent, not the local isMounted flag.
+    private void UpdateMountCollisionIgnore()
+    {
+        Player currentParent = ParentPlayer();
+
+        if (currentParent == collisionIgnoredWith)
+            return;
+        SetCollisionIgnored(collisionIgnoredWith, false);
+        collisionIgnoredWith = currentParent;
+        SetCollisionIgnored(collisionIgnoredWith, true);
+    }
+
+    // Unparents before reviving, or observers could see the revived player drag the rider along.
+    private void FinishRevive()
+    {
+        Player pigToRevive = mountedPig;
+
+        StopMounting();
+        pigToRevive.RequestRevive();
+    }
+
+    private void UpdateMount()
+    {
+        if (!isMounted || !this.IsLocallyControlled())
+            return;
+        if (IsDead || mountedPig == null || !mountedPig.IsDead)
+        {
+            StopMounting();
+            return;
+        }
+        mountElapsed += Time.deltaTime;
+        if (mountElapsed >= mountDurationSeconds)
+            FinishRevive();
+    }
+
+    // Re-offsets once the server-driven parenting request has actually landed on this client; no-op once already in place.
+    private void LateUpdateMount()
+    {
+        if (!isMounted || !this.IsLocallyControlled() || mountedPig == null)
+            return;
+        if (transform.parent == mountedPig.transform)
+            PlaceOnPig();
+    }
+
     // Local rendering only, runs for every observer; the rider pins itself in front of the pig and the pig right under it (after the pig's own Update).
     private void LateUpdateMountSorting()
     {
-        Player parentPlayer = transform.parent != null ? transform.parent.GetComponent<Player>() : null;
+        Player parentPlayer = ParentPlayer();
 
         if (sortingLayerAuto != null)
             sortingLayerAuto.enabled = parentPlayer == null;
-
         if (parentPlayer == null || spriteRenderer == null || parentPlayer.spriteRenderer == null)
             return;
+        spriteRenderer.sortingOrder = parentPlayer.CurrentSortingOrder() + mountedSortingOrderBump;
+        if (parentPlayer.pigRenderer == null)
+            return;
+        parentPlayer.pigRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
+        parentPlayer.pigRenderer.sortingOrder = spriteRenderer.sortingOrder - 1;
+    }
 
-        int pigSortingOrder = parentPlayer.sortingLayerAuto != null
-            ? parentPlayer.sortingLayerAuto.CurrentSortingOrder
-            : parentPlayer.spriteRenderer.sortingOrder;
-        spriteRenderer.sortingOrder = pigSortingOrder + mountedSortingOrderBump;
+    // Wired to the MountInteract zone's onInteract (a child of the downed player); starts mounting whichever local player interacted.
+    public void RequestMountByLocalPlayer()
+    {
+        Player localPlayer;
 
-        if (parentPlayer.pigRenderer != null)
-        {
-            parentPlayer.pigRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
-            parentPlayer.pigRenderer.sortingOrder = spriteRenderer.sortingOrder - 1;
-        }
+        if (!IsDead)
+            return;
+        localPlayer = LocalPlayer.GetPlayer();
+        if (localPlayer == null || localPlayer == this || localPlayer.IsDead)
+            return;
+        localPlayer.StartMounting(this);
     }
 }

@@ -1,8 +1,12 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
+// Seeded noise behind water, island coast and ground patches, plus the per-chunk water mask.
 public partial class ProceduralMapGenerator
 {
+    private const float GroundOctaveOffsetX = 1013f;
+    private const float GroundOctaveOffsetY = 2027f;
+
     private Vector2 waterOffset;
     private Vector2 islandOffset;
     private Vector2 groundOffset;
@@ -19,28 +23,33 @@ public partial class ProceduralMapGenerator
         return Mathf.PerlinNoise((worldX + offset.x) * scale, (worldY + offset.y) * scale);
     }
 
+    // False until the seed is known in Play mode, so spawn checks must wait for it.
+    public bool IsReady => !Application.isPlaying || initialized;
+
     // Lets other systems avoid water without duplicating the noise.
     public bool IsWaterAtWorldPosition(Vector3 worldPosition)
     {
+        Vector3Int cell;
+
         if (Application.isPlaying && !initialized)
             return false;
-        Vector3Int cell = landTilemap.WorldToCell(worldPosition);
+        cell = landTilemap.WorldToCell(worldPosition);
         return IsWater(cell.x, cell.y);
     }
 
     private bool IsInSpawnSafeZone(int worldX, int worldY)
     {
-        return activeBiome != null && Vector2Int.Distance(new Vector2Int(worldX, worldY), spawnCell) <= activeBiome.spawnSafeRadius;
+        if (activeBiome == null)
+            return false;
+        return Vector2Int.Distance(new Vector2Int(worldX, worldY), spawnCell) <= activeBiome.spawnSafeRadius;
     }
 
     private bool IsWater(int worldX, int worldY)
     {
         if (IsInSpawnSafeZone(worldX, worldY))
             return false;
-
         if (IsBeyondIslandCoast(worldX, worldY))
             return true;
-
         return SampleNoise(worldX, worldY, waterOffset, Water.noiseScale) < Water.threshold;
     }
 
@@ -49,6 +58,7 @@ public partial class ProceduralMapGenerator
     {
         IslandSettings island = Island;
         float wobble = SampleNoise(worldX, worldY, islandOffset, island.edgeNoiseScale) * 2f - 1f;
+
         return island.radius * (1f + wobble * island.edgeVariation);
     }
 
@@ -56,7 +66,6 @@ public partial class ProceduralMapGenerator
     {
         if (Island.radius <= 0f)
             return false;
-
         return Vector2.Distance(new Vector2(worldX, worldY), islandCenter) > CoastRadiusAt(worldX, worldY) + offset;
     }
 
@@ -64,17 +73,30 @@ public partial class ProceduralMapGenerator
     private TileBase PickLandTile(int worldX, int worldY)
     {
         GroundEntry[] grounds = activeBiome?.grounds;
+        float noise;
+        float total;
+
         if (grounds == null || grounds.Length == 0)
             return null;
-
-        float noise = SampleGroundNoise(worldX, worldY);
-        float total = 0f;
-        foreach (GroundEntry ground in grounds)
-            total += GroundWeight(ground);
+        noise = SampleGroundNoise(worldX, worldY);
+        total = TotalGroundWeight(grounds);
         if (total <= 0f)
             return grounds[Mathf.Clamp(Mathf.FloorToInt(noise * grounds.Length), 0, grounds.Length - 1)]?.tile;
+        return PickWeightedGround(grounds, noise * total);
+    }
 
-        float threshold = noise * total;
+    private static float TotalGroundWeight(GroundEntry[] grounds)
+    {
+        float total = 0f;
+
+        foreach (GroundEntry ground in grounds)
+            total += GroundWeight(ground);
+        return total;
+    }
+
+    // Walks the weighted slices until the threshold falls inside one.
+    private static TileBase PickWeightedGround(GroundEntry[] grounds, float threshold)
+    {
         foreach (GroundEntry ground in grounds)
         {
             threshold -= GroundWeight(ground);
@@ -86,7 +108,9 @@ public partial class ProceduralMapGenerator
 
     private static float GroundWeight(GroundEntry ground)
     {
-        return ground != null ? Mathf.Max(0f, ground.weight) : 0f;
+        if (ground == null)
+            return 0f;
+        return Mathf.Max(0f, ground.weight);
     }
 
     // Normalized fractal noise (octaves halve in size), then stretched around 0.5 by the contrast.
@@ -96,25 +120,29 @@ public partial class ProceduralMapGenerator
         float amplitude = 1f;
         float totalAmplitude = 0f;
         float scale = groundNoiseScale;
+        float noise = 0.5f;
+        Vector2 octaveOffset;
+
         for (int octave = 0; octave < Mathf.Max(1, groundNoiseOctaves); octave++)
         {
-            sum += SampleNoise(worldX, worldY, groundOffset + new Vector2(octave * 1013f, octave * 2027f), scale) * amplitude;
+            octaveOffset = new Vector2(octave * GroundOctaveOffsetX, octave * GroundOctaveOffsetY);
+            sum += SampleNoise(worldX, worldY, groundOffset + octaveOffset, scale) * amplitude;
             totalAmplitude += amplitude;
             amplitude *= groundNoisePersistence;
             scale *= 2f;
         }
-
-        float noise = totalAmplitude > 0f ? sum / totalAmplitude : 0.5f;
+        if (totalAmplitude > 0f)
+            noise = sum / totalAmplitude;
         return Mathf.Clamp01((noise - 0.5f) * groundNoiseContrast + 0.5f);
     }
 
     // Caches the chunk plus a 1-cell border so coast checks never resample noise.
     private void FillWaterMask(int originX, int originY)
     {
-        maskOriginX = originX;
-        maskOriginY = originY;
         int size = waterMask.GetLength(0);
 
+        maskOriginX = originX;
+        maskOriginY = originY;
         for (int y = 0; y < size; y++)
         {
             for (int x = 0; x < size; x++)
@@ -137,7 +165,6 @@ public partial class ProceduralMapGenerator
                     return true;
             }
         }
-
         return false;
     }
 }

@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 923ef523106b48a58e8aa44cc0345cb0, type: 3}
+  m_Name: Pawn_Ultimate
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityKit
+  kind: 0
+  cooldown: 6
+  manaCost: 0
+  fxPrefab: {fileID: 0}
+  fxDistance: 1
+  fxOrigin: {x: 0, y: 0}
+  fxFromAimIndicator: 0
+  aimMode: 0
+  maxRange: 6
+  aimAssist: 0
+  aimAssistAngle: 10
+  damage: 15
+  moveLockDuration: 0.3
+  moveSpeedMultiplier: 0.35
+  animSpeed: 1
+  size: 1
+  ignoreAimRotation: 0
+  followCaster: 1
+  glowIntensity: 1.2
+  glowSize: 1.1
+  glowDuration: 0.42

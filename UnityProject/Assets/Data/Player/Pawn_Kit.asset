@@ -17,65 +17,11 @@ MonoBehaviour:
   maxMana: 50
   manaRegenPerSecond: 1
   dodgeCharges: 2
-  dodgeRechargeSeconds: 3
+  dodgeRechargeSeconds: 4
   dodgeDistance: 2.5
   dodgeDuration: 0.2
-  attackCooldown: 0.7
-  attackFxPrefab: {fileID: 4596642518179572039, guid: 3546e77c2e5ff01c3a75b05a8baca4df, type: 3}
-  attackFxDistance: 1
-  attackFxOrigin: {x: 0, y: 0}
-  attackFxFromAimIndicator: 1
-  attackDamage: 15
-  attackMoveLockDuration: 0.5
-  attackMoveSpeedMultiplier: 0.15
-  attackAnimSpeed: 1
-  attackSize: 1
-  attackIgnoreAimRotation: 0
-  attackFollowCaster: 1
-  attackGlowIntensity: 1.2
-  attackGlowSize: 1.1
-  attackGlowDuration: 0.42
-  hasProjectile: 0
-  projectileSpeed: 12
-  projectileMaxDistance: 10
-  pierceCount: 1
-  specialCooldown: 2.5
-  specialManaCost: 0
-  specialFxPrefab: {fileID: 0}
-  specialFxDistance: 1
-  specialFxOrigin: {x: 0, y: 0}
-  specialFxFromAimIndicator: 0
-  specialDamage: 15
-  specialMoveLockDuration: 0.3
-  specialMoveSpeedMultiplier: 0.35
-  specialAnimSpeed: 1
-  specialSize: 1
-  specialIgnoreAimRotation: 0
-  specialFollowCaster: 1
-  specialGlowIntensity: 1.2
-  specialGlowSize: 1.1
-  specialGlowDuration: 0.42
-  ultimateCooldown: 6
-  ultimateManaCost: 0
-  ultimateFxPrefab: {fileID: 0}
-  ultimateFxDistance: 1
-  ultimateFxOrigin: {x: 0, y: 0}
-  ultimateFxFromAimIndicator: 0
-  ultimateDamage: 15
-  ultimateMoveLockDuration: 0.3
-  ultimateMoveSpeedMultiplier: 0.35
-  ultimateAnimSpeed: 1
-  ultimateSize: 1
-  ultimateIgnoreAimRotation: 0
-  ultimateFollowCaster: 1
-  ultimateGlowIntensity: 1.2
-  ultimateGlowSize: 1.1
-  ultimateGlowDuration: 0.42
-  hasShield: 0
-  shieldHoldDuration: 10
-  shieldHealth: 150
-  shieldKnockbackForce: 8
-  shieldKnockbackDuration: 0.25
-  shieldPushInterval: 0.5
-  shieldTurnSpeed: 120
-  shieldHoldAnimation: 0
+  attack: {fileID: 11400000, guid: 3a3c1ea891f5437eb500c67bc1706042, type: 2}
+  specials:
+  - {fileID: 11400000, guid: 86ee67cac8d6472bb75d0af8aae97ae9, type: 2}
+  ultimates:
+  - {fileID: 11400000, guid: ebd4ac2bb66b4f6aab59e518c7042497, type: 2}

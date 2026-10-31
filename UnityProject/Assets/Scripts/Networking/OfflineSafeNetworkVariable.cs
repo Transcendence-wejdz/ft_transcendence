@@ -15,7 +15,6 @@ public class OfflineSafeNetworkVariable<T> : NetworkVariable<T>
     {
         if (GetBehaviour() == null)
             return;
-
         base.SetDirty(isDirty);
     }
 }

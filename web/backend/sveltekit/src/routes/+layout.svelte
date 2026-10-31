@@ -8,7 +8,7 @@
 	import '@fontsource/inter/400.css';
 	import '@fontsource/inter/500.css';
 	import '@fontsource/inter/700.css';
-
+	import Topbar from '$lib/components/Topbar.svelte';
 
 	let { data, children } = $props();
 	const HEARTBEAT_INTERVAL_MS = 5_000;
@@ -79,44 +79,12 @@
 			clearInterval(friendsIntervalId);
 		};
 	});
-
-	async function logout() {
-		const response = await fetch('/api/logout', {
-			method: 'POST'
-		});
-
-		if (response.ok) {
-			window.location.assign('/login');
-		}
-	}
 </script>
 
 <!-- Full page loads in and out of /game so the Unity instance never outlives its page and other pages refetch fresh data. -->
 <div class="app-shell" class:game-route={page.url.pathname === '/game'}
 	 data-sveltekit-reload={page.url.pathname === '/game' ? '' : 'off'}>
-	<header class="topbar">
-		<a class="brand" href="/" aria-label="Transcendence home">
-			<span class="brand-mark">T</span>
-			<span>Transcendence</span>
-		</a>
-
-		<nav class="main-nav" aria-label="Main navigation">
-			<a href="/game" data-sveltekit-reload>Play</a>
-			<a href="/settings">Settings</a>
-			<a href="/project">Project</a>
-			<a href="/team">Team</a>
-		</nav>
-
-		<div class="account-nav">
-			{#if data.user}
-				<span class="welcome">Hi, {data.user.display_name}</span>
-				<button class="button button-small button-quiet" onclick={logout}>Log out</button>
-			{:else}
-				<a class="login-link" href="/login">Log in</a>
-				<a class="button button-small" href="/register">Sign up</a>
-			{/if}
-		</div>
-	</header>
+	<Topbar user={data.user} />
 
 	<main class="page-content">
 		{@render children()}
@@ -144,11 +112,9 @@
 		margin: 0;
 		min-width: 320px;
 		min-height: 100vh;
-		color: #edf2ff;
-		background:
-			radial-gradient(ellipse at 15% 0%, rgba(48, 76, 130, 0.24), transparent 38rem),
-			#0c1020;
-		font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+		color: var(--color-text);
+		background: var(--color-bg-page);
+		font-family: var(--font-body);
 	}
 
 	:global(button), :global(input) {
@@ -161,65 +127,6 @@
 
 	.app-shell {
 		min-height: 100vh;
-	}
-
-	.topbar {
-		min-height: 76px;
-		display: flex;
-		align-items: center;
-		gap: 2rem;
-		padding: 0 clamp(1rem, 5vw, 4.5rem);
-		border-bottom: 1px solid rgba(189, 204, 242, 0.1);
-		background: rgba(12, 16, 32, 0.78);
-		backdrop-filter: blur(14px);
-	}
-
-	.brand {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.7rem;
-		color: #f4f6ff;
-		font-size: 0.98rem;
-		font-weight: 750;
-		letter-spacing: 0.02em;
-		text-decoration: none;
-		white-space: nowrap;
-	}
-
-	.brand-mark {
-		display: grid;
-		width: 2rem;
-		height: 2rem;
-		place-items: center;
-		border-radius: 0.7rem;
-		color: #161222;
-		background: #f5b85c;
-		font-weight: 900;
-	}
-
-	.main-nav, .account-nav {
-		display: flex;
-		align-items: center;
-		gap: 1.25rem;
-	}
-
-	.main-nav {
-		margin-left: auto;
-	}
-
-	.main-nav a, .login-link {
-		color: #aeb8d3;
-		font-size: 0.9rem;
-		text-decoration: none;
-		transition: color 150ms ease;
-	}
-
-	.main-nav a:hover, .login-link:hover {
-		color: #fff;
-	}
-
-	.account-nav {
-		gap: 1rem;
 	}
 
 	.online-alerts {
@@ -249,11 +156,6 @@
 	.online-dot { width: 0.55rem; height: 0.55rem; flex: 0 0 auto; border-radius: 50%; background: #69d991; }
 	.online-alert button { margin-left: auto; border: 0; color: #c8d6d2; background: transparent; font-size: 1.25rem; cursor: pointer; }
 	@keyframes alert-enter { from { opacity: 0; transform: translateY(-0.4rem); } to { opacity: 1; transform: translateY(0); } }
-
-	.welcome {
-		color: #aeb8d3;
-		font-size: 0.88rem;
-	}
 
 	:global(.button) {
 		display: inline-flex;
@@ -318,7 +220,7 @@
 		overflow: hidden;
 	}
 
-	.game-route .topbar {
+	.game-route :global(.topbar) {
 		position: fixed;
 		top: 0;
 		right: 0;
@@ -328,7 +230,7 @@
 		transition: transform 200ms ease 300ms;
 	}
 
-	.game-route .topbar::after {
+	.game-route :global(.topbar::after) {
 		content: '';
 		position: absolute;
 		right: 0;
@@ -337,33 +239,8 @@
 		height: 12px;
 	}
 
-	.game-route .topbar:hover, .game-route .topbar:focus-within {
+	.game-route :global(.topbar:hover), .game-route :global(.topbar:focus-within) {
 		transform: translateY(0);
 		transition-delay: 0ms;
-	}
-
-	@media (max-width: 720px) {
-		.topbar {
-			flex-wrap: wrap;
-			gap: 0.8rem 1rem;
-			padding-top: 0.8rem;
-			padding-bottom: 0.8rem;
-		}
-
-		.main-nav {
-			order: 3;
-			width: 100%;
-			justify-content: space-between;
-			gap: 0.5rem;
-		}
-
-		.main-nav a {
-			font-size: 0.82rem;
-		}
-
-		.account-nav {
-			margin-left: auto;
-		}
-
 	}
 </style>

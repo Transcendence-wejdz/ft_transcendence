@@ -54,8 +54,8 @@
 	.brand-mark {
 		display: grid;
 		place-items: center;
-		width: 2.5rem;
-		height: 2.5rem;
+		width: 2.875rem;
+		height: 2.875rem;
 		background: var(--color-gold);
 		color: var(--color-parchment-text);
 		border: var(--border-width) solid var(--color-outline);

@@ -24,6 +24,7 @@
 	<DropdownMenu.Trigger class="account-trigger">
 		<Avatar size="sm" name={user.display_name} {team} src={user.avatar_url ?? undefined} />
 		<span>{user.display_name}</span>
+		<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
 	</DropdownMenu.Trigger>
 	<DropdownMenu.Portal>
 		<DropdownMenu.Content class="account-menu" align="end" sideOffset={8}>

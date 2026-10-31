@@ -102,7 +102,7 @@
 
 		<nav class="main-nav" aria-label="Main navigation">
 			<a href="/game" data-sveltekit-reload>Play</a>
-			<a href="/setting">Settings</a>
+			<a href="/settings">Settings</a>
 			<a href="/project">Project</a>
 			<a href="/team">Team</a>
 		</nav>

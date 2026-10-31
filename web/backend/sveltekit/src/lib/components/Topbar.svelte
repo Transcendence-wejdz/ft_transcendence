@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/Button.svelte';
+	import AccountMenu from '$lib/components/AccountMenu.svelte';
 
 	type Props = {
 		user: App.Locals['user'];
@@ -23,7 +24,7 @@
 
 	<div class="actions">
 		{#if user}
-			<span>{user.display_name}</span>
+			<AccountMenu {user} />
 		{:else}
 			<a class="login" href="/login">Log in</a>
 			<Button href="/register" size="sm">Sign up</Button>

@@ -9,6 +9,7 @@
 	import '@fontsource/inter/500.css';
 	import '@fontsource/inter/700.css';
 	import Topbar from '$lib/components/Topbar.svelte';
+	import Footer from '$lib/components/Footer.svelte';
 
 	let { data, children } = $props();
 	const HEARTBEAT_INTERVAL_MS = 5_000;
@@ -89,6 +90,9 @@
 	<main class="page-content">
 		{@render children()}
 	</main>
+	{#if page.url.pathname !== '/game'}
+		<Footer />
+	{/if}
 </div>
 
 {#if onlineAlerts.length > 0}
@@ -127,6 +131,8 @@
 
 	.app-shell {
 		min-height: 100vh;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.online-alerts {
@@ -200,6 +206,7 @@
 		width: min(100% - 2rem, 1100px);
 		margin: 0 auto;
 		padding: clamp(2rem, 7vh, 5rem) 0;
+		flex: 1;
 	}
 
 	.game-route :global(.page-content) {

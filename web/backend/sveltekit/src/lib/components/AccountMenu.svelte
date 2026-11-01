@@ -26,7 +26,7 @@
 		<span>{user.display_name}</span>
 		<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
 	</DropdownMenu.Trigger>
-	<DropdownMenu.Portal>
+	<DropdownMenu.Portal disabled>
 		<DropdownMenu.Content class="account-menu" align="end" sideOffset={8}>
 			<DropdownMenu.Item class="account-item">
 				{#snippet child({ props })}

@@ -10,6 +10,7 @@
 	import '@fontsource/inter/700.css';
 	import Topbar from '$lib/components/Topbar.svelte';
 	import Footer from '$lib/components/Footer.svelte';
+	import Toaster from '$lib/components/ui/Toaster.svelte';
 
 	let { data, children } = $props();
 	const HEARTBEAT_INTERVAL_MS = 5_000;
@@ -94,6 +95,8 @@
 		<Footer />
 	{/if}
 </div>
+
+<Toaster />
 
 {#if onlineAlerts.length > 0}
 	<aside class="online-alerts" aria-label="Friend activity" aria-live="polite">

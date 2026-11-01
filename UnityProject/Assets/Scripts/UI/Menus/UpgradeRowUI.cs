@@ -99,6 +99,7 @@ public class UpgradeRowUI : MonoBehaviour
         bound = true;
         buyButton.onClick.AddListener(OnBuyClicked);
         descriptionText.text = $"{LevelUpBonusCatalog.GetDescription(type)} per level";
+        nameText.color = LevelUpBonusCatalog.GetColor(type);
         Refresh();
     }
 

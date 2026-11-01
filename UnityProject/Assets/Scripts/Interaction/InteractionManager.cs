@@ -48,6 +48,8 @@ public class InteractionManager : MonoBehaviour
         }
         if (PauseManager.IsPaused)
             return;
+        if (player != null && player.TryDismount())
+            return;
         currentZone?.Interact();
         interactionPanel = MenuPanel.CurrentOpen;
     }

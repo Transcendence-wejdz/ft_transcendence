@@ -1,4 +1,5 @@
 using Unity.Netcode;
+using UnityEngine;
 
 // The pool LevelUpManager offers 3-of-N from each level-up.
 public enum LevelUpBonusType
@@ -29,6 +30,28 @@ public static class LevelUpBonusCatalog
     public const float SizeBonusPerStack = 0.1f;
     public const float AttackMobilityBonusPerStack = 0.1f;
 
+    // Survival, then offense, then mobility; the enum's own order is what saves and offers rely on, so it stays as it is.
+    public static readonly LevelUpBonusType[] DisplayOrder = { LevelUpBonusType.Health, LevelUpBonusType.HealthRegen, LevelUpBonusType.ManaMax, LevelUpBonusType.ManaRegen, LevelUpBonusType.Damage, LevelUpBonusType.AttackSpeed, LevelUpBonusType.SpecialCooldown, LevelUpBonusType.Size, LevelUpBonusType.AttackMobility, LevelUpBonusType.MoveSpeed };
+
+    // A family of bonuses shares a hue: health is red, mana is blue, the regen variant of each a lighter shade.
+    public static Color32 GetColor(LevelUpBonusType type)
+    {
+        switch (type)
+        {
+            case LevelUpBonusType.AttackSpeed: return new Color32(0xF5, 0xD5, 0x45, 0xFF);
+            case LevelUpBonusType.SpecialCooldown: return new Color32(0xB3, 0x7D, 0xFF, 0xFF);
+            case LevelUpBonusType.Damage: return new Color32(0xFF, 0x9A, 0x3D, 0xFF);
+            case LevelUpBonusType.Health: return new Color32(0xF0, 0x4F, 0x4A, 0xFF);
+            case LevelUpBonusType.MoveSpeed: return new Color32(0x4F, 0xC9, 0x5A, 0xFF);
+            case LevelUpBonusType.HealthRegen: return new Color32(0xFF, 0x9A, 0x94, 0xFF);
+            case LevelUpBonusType.ManaMax: return new Color32(0x4C, 0x8D, 0xFF, 0xFF);
+            case LevelUpBonusType.ManaRegen: return new Color32(0x8F, 0xC4, 0xFF, 0xFF);
+            case LevelUpBonusType.Size: return new Color32(0xF0, 0x6F, 0xC8, 0xFF);
+            case LevelUpBonusType.AttackMobility: return new Color32(0x3F, 0xD1, 0xC6, 0xFF);
+            default: return new Color32(0xED, 0xE6, 0xD6, 0xFF);
+        }
+    }
+
     public static string GetDisplayName(LevelUpBonusType type)
     {
         switch (type)
@@ -39,11 +62,30 @@ public static class LevelUpBonusCatalog
             case LevelUpBonusType.Health: return "Health";
             case LevelUpBonusType.MoveSpeed: return "Move Speed";
             case LevelUpBonusType.HealthRegen: return "Health Regen";
-            case LevelUpBonusType.ManaMax: return "Max Mana";
+            case LevelUpBonusType.ManaMax: return "Mana";
             case LevelUpBonusType.ManaRegen: return "Mana Regen";
             case LevelUpBonusType.Size: return "Attack Size";
             case LevelUpBonusType.AttackMobility: return "Attack Mobility";
             default: return type.ToString();
+        }
+    }
+
+    // The real total for that many stacks: special cooldown shrinks by a divisor, so its percent doesn't simply add up.
+    public static string GetTotalText(LevelUpBonusType type, int count)
+    {
+        switch (type)
+        {
+            case LevelUpBonusType.AttackSpeed: return $"+{count * AttackCooldownReductionPerStack * 100f:0}%";
+            case LevelUpBonusType.SpecialCooldown: return $"-{(1f - 1f / (1f + count * SpecialCooldownReductionPerStack)) * 100f:0}%";
+            case LevelUpBonusType.Damage: return $"+{count * DamageBonusPerStack * 100f:0}%";
+            case LevelUpBonusType.Health: return $"+{count * HealthBonusPerStack:0}";
+            case LevelUpBonusType.MoveSpeed: return $"+{count * MoveSpeedBonusPerStack * 100f:0}%";
+            case LevelUpBonusType.HealthRegen: return $"+{count * HealthRegenBonusPerStack:0}/s";
+            case LevelUpBonusType.ManaMax: return $"+{count * ManaBonusPerStack:0}";
+            case LevelUpBonusType.ManaRegen: return $"+{count * ManaRegenBonusPerStack:0}/s";
+            case LevelUpBonusType.Size: return $"+{count * SizeBonusPerStack * 100f:0}%";
+            case LevelUpBonusType.AttackMobility: return $"-{count * AttackMobilityBonusPerStack * 100f:0} pts";
+            default: return string.Empty;
         }
     }
 
@@ -66,8 +108,8 @@ public static class LevelUpBonusCatalog
     }
 }
 
-// Which 3 of the pool are on offer this level-up round; replicated so every client shows the same choices.
-public struct OfferedBonusSet : INetworkSerializable
+// The 3 bonuses of the pool one player is offered this round, derived on every peer from the round's seed.
+public struct OfferedBonusSet
 {
     public LevelUpBonusType first;
     public LevelUpBonusType second;
@@ -80,13 +122,6 @@ public struct OfferedBonusSet : INetworkSerializable
         if (slot == 1)
             return second;
         return third;
-    }
-
-    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
-    {
-        serializer.SerializeValue(ref first);
-        serializer.SerializeValue(ref second);
-        serializer.SerializeValue(ref third);
     }
 }
 
@@ -103,6 +138,24 @@ public struct LevelUpBonusStacks : INetworkSerializable
     public int manaRegen;
     public int size;
     public int attackMobility;
+
+    public int Get(LevelUpBonusType type)
+    {
+        switch (type)
+        {
+            case LevelUpBonusType.AttackSpeed: return attackSpeed;
+            case LevelUpBonusType.SpecialCooldown: return specialCooldown;
+            case LevelUpBonusType.Damage: return damage;
+            case LevelUpBonusType.Health: return health;
+            case LevelUpBonusType.MoveSpeed: return moveSpeed;
+            case LevelUpBonusType.HealthRegen: return healthRegen;
+            case LevelUpBonusType.ManaMax: return manaMax;
+            case LevelUpBonusType.ManaRegen: return manaRegen;
+            case LevelUpBonusType.Size: return size;
+            case LevelUpBonusType.AttackMobility: return attackMobility;
+            default: return 0;
+        }
+    }
 
     public void Increment(LevelUpBonusType type)
     {

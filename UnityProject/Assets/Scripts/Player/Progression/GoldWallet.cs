@@ -5,6 +5,8 @@ using UnityEngine;
 public static class GoldWallet
 {
     public const int ScorePerGold = 1000;
+    public const int CheckpointEveryWaves = 5;
+    private const string RunTokenKey = "gold.runToken";
 
     public const int Offline = -1;
     public const int Refused = -2;
@@ -26,6 +28,15 @@ public static class GoldWallet
         public int seconds;
         public int kills;
         public bool victory;
+    }
+
+    [Serializable]
+    private class RunCheckpoint
+    {
+        public string runToken;
+        public int wave;
+        public int kills;
+        public int score;
     }
 
     private static string runToken;
@@ -78,9 +89,7 @@ public static class GoldWallet
 
     private static void HandleRewardResponse(int status, int earned, Action<int> onDone)
     {
-        bool accepted = status >= 200 && status < 300;
-
-        if (!accepted)
+        if (status < 200 || status >= 300)
         {
             onDone?.Invoke(Refused);
             return;
@@ -104,6 +113,7 @@ public static class GoldWallet
         int earned = GoldForScore(report.score);
 
         runToken = null;
+        PlayerPrefs.DeleteKey(RunTokenKey);
         WebBackend.Post("/api/game/reward", JsonUtility.ToJson(report), status => HandleRewardResponse(status, earned, onDone));
     }
 
@@ -118,7 +128,24 @@ public static class GoldWallet
         if (!UsesServer || !CanEarn)
             return;
         runToken = Guid.NewGuid().ToString();
+        PlayerPrefs.SetString(RunTokenKey, runToken);
+        PlayerPrefs.Save();
         WebBackend.Post("/api/game/run/start", JsonUtility.ToJson(new RunStart { runToken = runToken, mode = mode }));
+    }
+
+    // A rejoining player picks the run back up, since a restart lost the token kept in memory.
+    public static void RestoreRun()
+    {
+        if (UsesServer && string.IsNullOrEmpty(runToken))
+            runToken = PlayerPrefs.GetString(RunTokenKey, string.Empty);
+    }
+
+    // Lets the server timestamp the run's progress; values are cumulative, so a lost one is covered by the next.
+    public static void ReportCheckpoint(int wave, ScoreBreakdown score)
+    {
+        if (!UsesServer || string.IsNullOrEmpty(runToken))
+            return;
+        WebBackend.Post("/api/game/run/checkpoint", JsonUtility.ToJson(new RunCheckpoint { runToken = runToken, wave = wave, kills = score.kills, score = score.Total }));
     }
 
     // onDone gets the gold credited, Offline on the website without an account, or Refused when the server rejects the run.

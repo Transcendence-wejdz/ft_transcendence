@@ -34,6 +34,8 @@ public partial class PauseInviteByCodeUI : MonoBehaviour
     {
         if (!string.IsNullOrEmpty(code))
             return code;
+        if (ActiveSession.Current != null)
+            return "In game";
         if (canHost)
             return "No session";
         return "Solo";
@@ -48,10 +50,18 @@ public partial class PauseInviteByCodeUI : MonoBehaviour
             statusText.color = infoColor;
     }
 
+    // The session is locked outside the Lobby, so its code is no use to anyone there.
+    private static string ShareableCode()
+    {
+        if (!FriendInviteFlow.CanInvite)
+            return null;
+        return FriendsManager.CurrentSessionCode;
+    }
+
     private void RefreshCode(bool force)
     {
-        string code = FriendsManager.CurrentSessionCode;
-        bool canHost = string.IsNullOrEmpty(code) && bootstrap != null;
+        string code = ShareableCode();
+        bool canHost = ActiveSession.Current == null && bootstrap != null;
 
         if (!force && code == shownCode && canHost == shownCanHost)
             return;

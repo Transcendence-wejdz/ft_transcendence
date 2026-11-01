@@ -17,12 +17,12 @@ public partial class LevelUpManager : NetworkBehaviour
         false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private readonly NetworkVariable<float> secondsRemaining = new OfflineSafeNetworkVariable<float>(
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-    private readonly NetworkVariable<OfferedBonusSet> offeredBonuses = new OfflineSafeNetworkVariable<OfferedBonusSet>(
-        default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private readonly NetworkVariable<int> offerSeed = new OfflineSafeNetworkVariable<int>(
+        0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     private bool offlineSequenceActive;
     private int offlineSequenceLevel;
-    private OfferedBonusSet offlineOfferedBonuses;
+    private int offlineOfferSeed;
 
     private int processedLevel = 1;
     private bool frozeTime;
@@ -61,13 +61,13 @@ public partial class LevelUpManager : NetworkBehaviour
         }
     }
 
-    private OfferedBonusSet OfferedBonuses
+    private int OfferSeed
     {
         get
         {
             if (IsSpawned)
-                return offeredBonuses.Value;
-            return offlineOfferedBonuses;
+                return offerSeed.Value;
+            return offlineOfferSeed;
         }
     }
 
@@ -104,9 +104,10 @@ public partial class LevelUpManager : NetworkBehaviour
             StartSequence(level);
     }
 
-    public LevelUpBonusType GetOfferedBonusType(int slot)
+    // Each player gets their own offers: every peer derives the same ones from the round's seed and that player's id.
+    public LevelUpBonusType GetOfferedBonusType(int slot, ulong clientId)
     {
-        return OfferedBonuses.Get(slot);
+        return PickOffers(OfferSeed, clientId).Get(slot);
     }
 
     public override void OnNetworkSpawn()
@@ -136,7 +137,7 @@ public partial class LevelUpManager : NetworkBehaviour
 
     void Update()
     {
-        if (!this.HasServerAuthority() || !FindXPManager())
+        if (!this.HasServerAuthority() || !FindXPManager() || GameOverCheck.IsWaitingForPlayers)
             return;
         if (SequenceActive)
             TickActiveSequence();

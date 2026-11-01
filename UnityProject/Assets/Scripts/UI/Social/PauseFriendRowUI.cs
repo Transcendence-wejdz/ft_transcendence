@@ -9,6 +9,7 @@ public class PauseFriendRowUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
 {
     [SerializeField] private Image avatar;
     [SerializeField] private TMP_Text initialText;
+    [SerializeField] private SiteAvatarPhoto sitePhoto;
     [SerializeField] private TMP_Text nameText;
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private Button inviteButton;
@@ -77,7 +78,7 @@ public class PauseFriendRowUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
         return selected != null && (selected == gameObject || selected == inviteButton.gameObject);
     }
 
-    public void Setup(string displayName, string status, Color statusColor, bool isOnline, Action onInvite, Action<RectTransform> onMenu = null)
+    public void Setup(string memberId, string displayName, string status, Color statusColor, bool isOnline, Action onInvite, Action<RectTransform> onMenu = null)
     {
         onClicked = onMenu;
         RowSelectable.interactable = onMenu != null;
@@ -85,6 +86,7 @@ public class PauseFriendRowUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
         nameText.text = displayName;
         initialText.text = FriendAvatar.InitialFor(displayName);
         avatar.color = FriendAvatar.ColorFor(displayName);
+        sitePhoto.Load(memberId);
         statusText.text = status;
         statusText.color = statusColor;
         BindInvite(onInvite);

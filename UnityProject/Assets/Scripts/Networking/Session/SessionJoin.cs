@@ -15,6 +15,9 @@ public static class SessionJoin
     public const string CodeProperty = "code";
 
     private const string LobbySceneName = "Lobby";
+    private const string HostedSessionKey = "session.hostedId";
+
+    private static string offeredRejoinId;
 
     private static bool IsOnline => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
@@ -90,6 +93,69 @@ public static class SessionJoin
         if (lookup == Lookup.NotFound)
             return (false, "No game found with that code.");
         return (false, "Couldn't check that code, try again.");
+    }
+
+    // Our own hosted game dies with us, so it is never offered back.
+    public static void MarkHosted(string sessionId)
+    {
+        PlayerPrefs.SetString(HostedSessionKey, sessionId);
+        PlayerPrefs.Save();
+    }
+
+    private static string FirstRejoinable(List<string> joined)
+    {
+        string hosted = PlayerPrefs.GetString(HostedSessionKey, string.Empty);
+
+        foreach (string id in joined)
+        {
+            if (id != hosted && id != offeredRejoinId)
+                return id;
+        }
+        return null;
+    }
+
+    // A session we still belong to after a drop or a crash, offered once per app run; null when there is none.
+    public static async Task<string> FindRejoinableAsync()
+    {
+        string id;
+
+        try
+        {
+            await ServicesAuth.EnsureSignedInAsync();
+            id = FirstRejoinable(await MultiplayerService.Instance.GetJoinedSessionIdsAsync());
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"SessionJoin: couldn't look for a game to rejoin - {e.Message}");
+            return null;
+        }
+        if (id != null)
+            offeredRejoinId = id;
+        return id;
+    }
+
+    // Tells a failed rejoin worth retrying from a game that is really gone.
+    public static async Task<bool> IsStillMemberAsync(string sessionId)
+    {
+        try
+        {
+            return (await MultiplayerService.Instance.GetJoinedSessionIdsAsync()).Contains(sessionId);
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"SessionJoin: couldn't check session membership - {e.Message}");
+            return false;
+        }
+    }
+
+    public static async Task<bool> RejoinAsync(string sessionId, NetworkBootstrap preferred = null)
+    {
+        NetworkBootstrap target = ResolveBootstrap(preferred);
+
+        if (target == null || IsOnline)
+            return false;
+        offeredRejoinId = null;
+        return await target.RejoinSessionAsync(sessionId);
     }
 
     public static async Task<(bool ok, string message)> JoinAsync(string code, NetworkBootstrap preferred = null, bool alreadyChecked = false)

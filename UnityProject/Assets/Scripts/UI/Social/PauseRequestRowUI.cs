@@ -9,6 +9,7 @@ public class PauseRequestRowUI : MonoBehaviour, IPointerEnterHandler, IPointerEx
 {
     [SerializeField] private Image avatar;
     [SerializeField] private TMP_Text initialText;
+    [SerializeField] private SiteAvatarPhoto sitePhoto;
     [SerializeField] private TMP_Text nameText;
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private Button acceptButton;
@@ -25,11 +26,12 @@ public class PauseRequestRowUI : MonoBehaviour, IPointerEnterHandler, IPointerEx
             button.onClick.AddListener(() => action());
     }
 
-    public void Setup(string displayName, string status, Color statusColor, Action onAccept, Action onRemove)
+    public void Setup(string memberId, string displayName, string status, Color statusColor, Action onAccept, Action onRemove)
     {
         nameText.text = displayName;
         initialText.text = FriendAvatar.InitialFor(displayName);
         avatar.color = FriendAvatar.ColorFor(displayName);
+        sitePhoto.Load(memberId);
         statusText.text = status;
         statusText.color = statusColor;
         Bind(acceptButton, onAccept);

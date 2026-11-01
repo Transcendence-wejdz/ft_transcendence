@@ -38,17 +38,6 @@ public static partial class FriendsManager
     public static bool IsReady { get; private set; }
     public static string OwnName { get; private set; } = string.Empty;
 
-    // Unity services player id (the id Friends and sessions use for us), empty until signed in.
-    public static string OwnId
-    {
-        get
-        {
-            if (!IsReady || !AuthenticationService.Instance.IsSignedIn)
-                return string.Empty;
-            return AuthenticationService.Instance.PlayerId;
-        }
-    }
-
     public static IReadOnlyList<Relationship> Friends
     {
         get

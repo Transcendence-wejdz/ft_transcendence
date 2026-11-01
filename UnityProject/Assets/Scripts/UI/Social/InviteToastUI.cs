@@ -5,13 +5,14 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // Shows a friend's invite with Join/Decline on its own top canvas (clickable over the pause menu); stays on an always-active object.
-public class InviteToastUI : MonoBehaviour
+public partial class InviteToastUI : MonoBehaviour
 {
     [SerializeField] private ToastCard card;
     [SerializeField] private TMP_Text senderText;
     [SerializeField] private TMP_Text messageText;
     [SerializeField] private Image avatar;
     [SerializeField] private TMP_Text avatarInitial;
+    [SerializeField] private SiteAvatarPhoto sitePhoto;
     [SerializeField] private Button joinButton;
     [SerializeField] private TMP_Text joinLabel;
     [SerializeField] private Button dismissButton;
@@ -21,6 +22,7 @@ public class InviteToastUI : MonoBehaviour
 
     private string pendingCode;
     private string pendingSenderId;
+    private string pendingRejoinId;
     private bool waitingForCode;
 
     private static bool IsInSession()
@@ -72,6 +74,7 @@ public class InviteToastUI : MonoBehaviour
             return;
         }
         sender = FriendsManager.ShortName(invite.SenderName);
+        pendingRejoinId = null;
         pendingCode = invite.SessionCode;
         pendingSenderId = invite.SenderId;
         waitingForCode = false;
@@ -79,6 +82,7 @@ public class InviteToastUI : MonoBehaviour
         senderText.text = sender;
         avatar.color = FriendAvatar.ColorFor(sender);
         avatarInitial.text = FriendAvatar.InitialFor(sender);
+        sitePhoto.Load(invite.SenderId);
         ShowInviteMessage();
         card.Show();
     }
@@ -97,6 +101,11 @@ public class InviteToastUI : MonoBehaviour
         string code;
         (bool ok, string message) check;
 
+        if (!string.IsNullOrEmpty(pendingRejoinId))
+        {
+            Rejoin();
+            return;
+        }
         if (string.IsNullOrEmpty(pendingCode))
         {
             WaitForCode();
@@ -145,5 +154,6 @@ public class InviteToastUI : MonoBehaviour
         {
             Debug.LogWarning($"InviteToastUI: friends service unavailable, invites disabled - {e.Message}");
         }
+        await OfferRejoinAsync();
     }
 }

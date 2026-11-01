@@ -7,6 +7,9 @@ public static class FriendInviteFlow
 {
     public static bool IsBusy { get; private set; }
 
+    // A game can only be joined from the Lobby, so invites stop once the run has started.
+    public static bool CanInvite => ActiveSession.InLobby;
+
     // Fires when an invite starts or ends, so every open list can lock its buttons.
     public static event Action<bool> OnBusyChanged;
 
@@ -69,6 +72,8 @@ public static class FriendInviteFlow
     {
         if (IsBusy)
             return (false, string.Empty);
+        if (!CanInvite)
+            return (false, "You can only invite from the Lobby.");
         SetBusy(true);
         try
         {

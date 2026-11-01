@@ -12,6 +12,7 @@ public class FriendRequestToastUI : MonoBehaviour
     [SerializeField] private TMP_Text messageText;
     [SerializeField] private Image avatar;
     [SerializeField] private TMP_Text avatarInitial;
+    [SerializeField] private SiteAvatarPhoto sitePhoto;
     [SerializeField] private Button acceptButton;
     [SerializeField] private TMP_Text acceptLabel;
     [SerializeField] private Button dismissButton;
@@ -60,6 +61,7 @@ public class FriendRequestToastUI : MonoBehaviour
         senderText.text = sender;
         avatar.color = FriendAvatar.ColorFor(sender);
         avatarInitial.text = FriendAvatar.InitialFor(sender);
+        sitePhoto.Load(memberId);
         messageText.text = "wants to be friends";
         messageText.color = messageColor;
         ResetAcceptButton();

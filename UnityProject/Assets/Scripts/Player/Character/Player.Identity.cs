@@ -49,16 +49,14 @@ public partial class Player
             NumberGroup(group);
     }
 
-    private static bool IsServicesIdTaken(Player claimer, string claimed)
+    private static Player FindServicesIdHolder(Player claimer, string claimed)
     {
         foreach (Player other in ActiveInstances)
         {
-            if (other == claimer || other.ServicesId != claimed)
-                continue;
-            Debug.LogWarning($"Player: client {claimer.OwnerClientId} tried to claim services id {claimed}, already held by client {other.OwnerClientId}");
-            return true;
+            if (other != claimer && other.ServicesId == claimed)
+                return other;
         }
-        return false;
+        return null;
     }
 
     private void ApplyName(string value)
@@ -69,26 +67,43 @@ public partial class Player
         OnDisplayNameChanged?.Invoke(value);
     }
 
-    // Only once spawned (never from Awake), and again when the friends name arrives or changes; also shares our services id.
+    // Only once spawned (never from Awake), and again when the friends name arrives or changes.
     private void PublishFriendsTag()
     {
         if (this == null || !IsOwner || !IsSpawned || !FriendsManager.IsReady)
             return;
         if (FriendsManager.OwnName != FriendsTag)
             friendsTag.Value = FriendsManager.OwnName;
-        if (string.IsNullOrEmpty(ServicesId) && !string.IsNullOrEmpty(FriendsManager.OwnId))
-            ClaimServicesIdServerRpc(FriendsManager.OwnId);
     }
 
-    // Write-once, and refused if another spawned player already holds that id.
+    // Comes from the sign-in rather than the friends service, which may be down: a session can't be joined without signing in.
+    private void PublishServicesId()
+    {
+        string id = ServicesAuth.SignedInPlayerId;
+
+        if (IsOwner && IsSpawned && !string.IsNullOrEmpty(id))
+            ClaimServicesIdServerRpc(id);
+    }
+
+    // Write-once; another player holding that id is our own body from before a drop, unless it's the host's.
     [ServerRpc]
     private void ClaimServicesIdServerRpc(FixedString64Bytes id)
     {
         string claimed = id.ToString();
+        Player holder;
 
         if (!string.IsNullOrEmpty(ServicesId) || string.IsNullOrEmpty(claimed))
             return;
-        if (!IsServicesIdTaken(this, claimed))
-            servicesId.Value = id;
+        holder = FindServicesIdHolder(this, claimed);
+        if (holder != null && holder.IsOwner)
+        {
+            Debug.LogWarning($"Player: client {OwnerClientId} tried to claim the host's services id {claimed}");
+            return;
+        }
+        if (holder != null)
+            holder.ReleaseStaleBody();
+        servicesId.Value = id;
+        RestoreRejoinSnapshot(claimed);
+        OnServicesIdClaimed?.Invoke(claimed);
     }
 }

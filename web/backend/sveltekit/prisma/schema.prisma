@@ -15,6 +15,7 @@ model User {
   color        String    @default("Black")
   class        String    @default("Warrior")
   avatarUrl    String?   @map("avatar_url")
+  unityPlayerId String?  @unique @map("unity_player_id")
   gameSettings Json?     @map("game_settings")
   gold         Int       @default(0)
   upgrades     Json      @default("{}")
@@ -55,6 +56,10 @@ model GameRun {
   kills      Int?
   victory    Boolean?
   gold       Int?
+  checkpointAt    DateTime? @map("checkpoint_at") @db.Timestamptz(6)
+  checkpointWave  Int       @default(0) @map("checkpoint_wave")
+  checkpointKills Int       @default(0) @map("checkpoint_kills")
+  checkpointScore Int       @default(0) @map("checkpoint_score")
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, startedAt], map: "game_runs_user_id_started_at_idx")

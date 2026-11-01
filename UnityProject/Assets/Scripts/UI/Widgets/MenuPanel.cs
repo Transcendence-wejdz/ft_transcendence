@@ -12,6 +12,8 @@ public class MenuPanel : MonoBehaviour
     private RectTransform rectTransform;
     private PanelSlideIn slideIn;
     private Coroutine activeAnimation;
+    private MenuPanel underlying;
+    private bool isClosing;
 
     public static MenuPanel CurrentOpen { get; private set; }
 
@@ -67,6 +69,9 @@ public class MenuPanel : MonoBehaviour
     {
         gameObject.SetActive(true);
         PauseManager.SetExternalPause(true);
+        if (CurrentOpen != null && CurrentOpen != this)
+            underlying = CurrentOpen;
+        isClosing = false;
         CurrentOpen = this;
         if (slideIn != null)
             slideIn.Show();
@@ -82,6 +87,7 @@ public class MenuPanel : MonoBehaviour
             gameObject.SetActive(false);
             return;
         }
+        isClosing = true;
         if (slideIn != null)
             slideIn.Hide();
         else
@@ -95,6 +101,17 @@ public class MenuPanel : MonoBehaviour
         slideIn = GetComponent<PanelSlideIn>();
     }
 
+    // A panel opened over another (a ready check over an NPC menu) hands control back to it when it closes.
+    private bool RestoreUnderlying()
+    {
+        bool restored = underlying != null && underlying.gameObject.activeInHierarchy && !underlying.isClosing;
+
+        if (restored)
+            CurrentOpen = underlying;
+        underlying = null;
+        return restored;
+    }
+
     // Only unpauses if still the open panel, so closing one panel to open another keeps the pause; also covers external deactivation.
     private void OnDisable()
     {
@@ -102,7 +119,8 @@ public class MenuPanel : MonoBehaviour
         if (CurrentOpen != this)
             return;
         CurrentOpen = null;
-        PauseManager.SetExternalPause(false);
+        if (!RestoreUnderlying())
+            PauseManager.SetExternalPause(false);
         OnClosed?.Invoke();
     }
 }

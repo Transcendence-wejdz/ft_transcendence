@@ -45,11 +45,24 @@ public class SessionDisconnectHandler : MonoBehaviour
         }
     }
 
-    // Best-effort cleanup of sessions the SDK still lists after the host is gone (calls can be slow to fail); never touches the NetworkManager, so a new session started meanwhile is safe.
+    // Best-effort cleanup of ended sessions the SDK still lists, keeping any we still belong to so it can be rejoined; never touches the NetworkManager, so a new session started meanwhile is safe.
     private static async Task ForgetSessionsAsync(List<ISession> sessions)
     {
+        List<string> joined;
+
+        try
+        {
+            joined = await MultiplayerService.Instance.GetJoinedSessionIdsAsync();
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"SessionDisconnectHandler: couldn't list joined sessions - {e.Message}");
+            return;
+        }
         foreach (ISession session in sessions)
         {
+            if (joined.Contains(session.Id) && !session.IsHost)
+                continue;
             try
             {
                 await session.LeaveAsync();
@@ -85,9 +98,19 @@ public class SessionDisconnectHandler : MonoBehaviour
     public static async Task LeaveSessionsAsync()
     {
         expectedStopUntil = Time.unscaledTime + ExpectedStopWindow;
+        LocalPlayer.GetPlayer()?.AnnounceLeaving();
         ActiveSession.Clear();
         foreach (ISession session in ListedSessions())
             await LeaveOneAsync(session);
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            NetworkManager.Singleton.Shutdown();
+    }
+
+    // After a failed rejoin: drops the half-open connection but keeps our place in the session.
+    public static void StopWithoutLeaving()
+    {
+        expectedStopUntil = Time.unscaledTime + ExpectedStopWindow;
+        ActiveSession.Clear();
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             NetworkManager.Singleton.Shutdown();
     }

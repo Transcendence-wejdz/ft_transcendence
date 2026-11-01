@@ -57,11 +57,12 @@ public partial class Player
             UpdatePigVisuals();
     }
 
+    // From the collider's local offset, since its bounds lag behind the transform until physics next runs, which a frozen game never does.
     private Vector3 BodyCenter()
     {
         if (bodyCollider == null)
             return transform.position;
-        return bodyCollider.bounds.center;
+        return transform.TransformPoint(bodyCollider.offset);
     }
 
     // Smoke burst over the body; skipped for players already dead when first seen.

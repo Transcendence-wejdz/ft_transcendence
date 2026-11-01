@@ -20,8 +20,6 @@ public static class PermanentUpgrades
 
     public static event Action OnChanged;
 
-    public static LevelUpBonusType[] Types => AllTypes;
-
     public static int GetLevel(LevelUpBonusType type)
     {
         int index = (int)type;

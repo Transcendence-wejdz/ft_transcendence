@@ -77,7 +77,7 @@ public partial class GameOverCheck : NetworkBehaviour
 
     private bool CanEvaluate()
     {
-        if (!this.HasServerAuthority() || IsGameOver)
+        if (!this.HasServerAuthority() || IsGameOver || IsFrozenForPlayers)
             return false;
         return sceneReady && Time.time >= readyTime;
     }
@@ -136,6 +136,8 @@ public partial class GameOverCheck : NetworkBehaviour
     {
         NetworkManager network = NetworkManager.Singleton;
 
+        Player.OnPlayerUnregistered += HandlePlayerLeft;
+        Player.OnServicesIdClaimed += HandleServicesIdClaimed;
         if (network != null && network.IsListening && network.SceneManager != null)
             network.SceneManager.OnLoadEventCompleted += HandleLoadEventCompleted;
         else
@@ -146,6 +148,7 @@ public partial class GameOverCheck : NetworkBehaviour
     {
         bool victory;
 
+        TickResumeCountdown();
         if (!CanEvaluate())
             return;
         victory = IsBossDefeated();
@@ -157,6 +160,10 @@ public partial class GameOverCheck : NetworkBehaviour
     {
         if (instance == this)
             instance = null;
+        Player.OnPlayerUnregistered -= HandlePlayerLeft;
+        Player.OnServicesIdClaimed -= HandleServicesIdClaimed;
+        if (frozeForPlayers)
+            Time.timeScale = 1f;
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= HandleLoadEventCompleted;
         base.OnDestroy();

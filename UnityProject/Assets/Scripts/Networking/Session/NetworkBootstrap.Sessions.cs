@@ -75,6 +75,7 @@ public partial class NetworkBootstrap
         options = new SessionOptions { MaxPlayers = maxPlayers }.WithRelayNetwork(RelayRegions.Selected);
         session = await MultiplayerService.Instance.CreateSessionAsync(options);
         await PublishCodeAsync(session);
+        SessionJoin.MarkHosted(session.Id);
         ActiveSession.Set(session);
         SpawnGameModeManager();
         SetSessionCodeText($"Code {session.Code}");
@@ -91,6 +92,57 @@ public partial class NetworkBootstrap
         capture = CaptureOfflinePlayerState();
         joined = await MultiplayerService.Instance.JoinSessionByCodeAsync(code);
         ActiveSession.Set(joined);
+        StartCoroutine(RestoreLocalCustomizationWhenSpawned(capture));
+    }
+
+    // The SDK doesn't document that a reconnect restarts Netcode, so a connection that never comes up counts as a failure.
+    private static async Task WaitForConnectionAsync()
+    {
+        float deadline = Time.unscaledTime + SpawnTimeout;
+
+        while (!NetworkManager.Singleton.IsListening)
+        {
+            if (Time.unscaledTime > deadline)
+                throw new System.TimeoutException("Netcode didn't reconnect.");
+            await Task.Yield();
+        }
+    }
+
+    // After a drop without a page reload the SDK still holds the session object and only its own reconnect can revive it.
+    private static async Task<ISession> ReconnectThroughSdkAsync(string sessionId)
+    {
+        ISession known;
+
+        if (!MultiplayerService.Instance.Sessions.TryGetValue(sessionId, out known))
+            return await MultiplayerService.Instance.ReconnectToSessionAsync(sessionId);
+        try
+        {
+            await known.ReconnectAsync();
+            return known;
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"NetworkBootstrap: couldn't revive the known session, reconnecting from scratch - {e.Message}");
+            return await MultiplayerService.Instance.ReconnectToSessionAsync(sessionId);
+        }
+    }
+
+    private async Task ReconnectSessionAsync(string sessionId)
+    {
+        OfflineCapture capture;
+        ISession session;
+
+        SyncTransportWebSockets();
+        await ServicesAuth.EnsureSignedInAsync();
+        capture = CaptureOfflinePlayerState();
+        session = await ReconnectThroughSdkAsync(sessionId);
+        if (session.IsHost)
+        {
+            await SessionDisconnectHandler.LeaveSessionsAsync();
+            throw new System.InvalidOperationException("A hosted game can't be resumed.");
+        }
+        await WaitForConnectionAsync();
+        ActiveSession.Set(session);
         StartCoroutine(RestoreLocalCustomizationWhenSpawned(capture));
     }
 

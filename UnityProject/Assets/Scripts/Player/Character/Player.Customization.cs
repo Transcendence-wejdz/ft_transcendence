@@ -84,7 +84,7 @@ public partial class Player
         RefreshAllDisplayNames();
         if (IsOwner)
         {
-            PublishServicesId();
+            StartCoroutine(PublishServicesId());
             PublishFriendsTag();
             FriendsManager.OnChanged += PublishFriendsTag;
         }

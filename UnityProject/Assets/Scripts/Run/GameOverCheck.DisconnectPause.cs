@@ -80,7 +80,7 @@ public partial class GameOverCheck
         pauseActive.Value = true;
     }
 
-    // A player who left on purpose or was kicked isn't coming back, and an old body released by a rejoin has no id left.
+    // A player who left on purpose or was kicked isn't coming back, so only a real drop pauses the run.
     private void HandlePlayerLeft(Player player)
     {
         if (!IsServer || !IsSpawned || IsGameOver || NetworkManager.ShutdownInProgress)

@@ -56,7 +56,6 @@ model GameRun {
   kills      Int?
   victory    Boolean?
   gold       Int?
-  checkpointAt    DateTime? @map("checkpoint_at") @db.Timestamptz(6)
   checkpointWave  Int       @default(0) @map("checkpoint_wave")
   checkpointKills Int       @default(0) @map("checkpoint_kills")
   checkpointScore Int       @default(0) @map("checkpoint_score")

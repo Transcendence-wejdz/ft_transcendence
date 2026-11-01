@@ -63,14 +63,14 @@ public static class ServicesAuth
     [Serializable]
     private class UnityIdLink
     {
-        public string unityId;
+        public string accessToken;
     }
 
-    // Lets the site find this account's avatar from the id the game's friends lists know it by.
+    // Proves this account's Unity player to the site, which then finds its avatar from the id the game's friends lists know it by.
     private static void PublishPlayerId()
     {
         if (WebProfileBridge.HasProfile)
-            WebBackend.Post("/api/game/unity-id", JsonUtility.ToJson(new UnityIdLink { unityId = SignedInPlayerId }));
+            WebBackend.Post("/api/game/unity-id", JsonUtility.ToJson(new UnityIdLink { accessToken = AuthenticationService.Instance.AccessToken }));
     }
 
     // Web display name with spaces turned to underscores, cut to the Unity name length.

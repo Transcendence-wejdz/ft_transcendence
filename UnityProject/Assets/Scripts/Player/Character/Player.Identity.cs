@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
@@ -7,6 +8,8 @@ using UnityEngine;
 // Player identity shared with others: deduplicated display names, Friends tag and services id.
 public partial class Player
 {
+    private const float ServicesIdRetrySeconds = 1f;
+
     // Players sharing a base name, grouped so duplicates can be numbered.
     private static Dictionary<string, List<Player>> GroupByBaseName()
     {
@@ -49,14 +52,14 @@ public partial class Player
             NumberGroup(group);
     }
 
-    private static Player FindServicesIdHolder(Player claimer, string claimed)
+    private static bool IsServicesIdHeld(Player claimer, string claimed)
     {
         foreach (Player other in ActiveInstances)
         {
             if (other != claimer && other.ServicesId == claimed)
-                return other;
+                return true;
         }
-        return null;
+        return false;
     }
 
     private void ApplyName(string value)
@@ -76,32 +79,29 @@ public partial class Player
             friendsTag.Value = FriendsManager.OwnName;
     }
 
-    // Comes from the sign-in rather than the friends service, which may be down: a session can't be joined without signing in.
-    private void PublishServicesId()
+    // Comes from the sign-in rather than the friends service, which may be down; retried since our old body can still hold the id right after a drop.
+    private IEnumerator PublishServicesId()
     {
+        WaitForSecondsRealtime retryDelay = new WaitForSecondsRealtime(ServicesIdRetrySeconds);
         string id = ServicesAuth.SignedInPlayerId;
 
-        if (IsOwner && IsSpawned && !string.IsNullOrEmpty(id))
+        while (IsOwner && IsSpawned && !string.IsNullOrEmpty(id) && string.IsNullOrEmpty(ServicesId))
+        {
             ClaimServicesIdServerRpc(id);
+            yield return retryDelay;
+        }
     }
 
-    // Write-once; another player holding that id is our own body from before a drop, unless it's the host's.
+    // Write-once and refused while another player holds that id, so a client can never push a connected player out.
     [ServerRpc]
     private void ClaimServicesIdServerRpc(FixedString64Bytes id)
     {
         string claimed = id.ToString();
-        Player holder;
 
         if (!string.IsNullOrEmpty(ServicesId) || string.IsNullOrEmpty(claimed))
             return;
-        holder = FindServicesIdHolder(this, claimed);
-        if (holder != null && holder.IsOwner)
-        {
-            Debug.LogWarning($"Player: client {OwnerClientId} tried to claim the host's services id {claimed}");
+        if (IsServicesIdHeld(this, claimed))
             return;
-        }
-        if (holder != null)
-            holder.ReleaseStaleBody();
         servicesId.Value = id;
         RestoreRejoinSnapshot(claimed);
         OnServicesIdClaimed?.Invoke(claimed);

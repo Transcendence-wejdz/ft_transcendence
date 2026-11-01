@@ -7,7 +7,6 @@ using UnityEngine;
 public partial class Player
 {
     private const int RejoinRestoreDelayFrames = 2;
-    private const string StaleBodyReason = "Rejoined from another connection";
     private const float RideResumeTimeout = 5f;
     private const float SpawnTeleportBlockSeconds = 5f;
 
@@ -147,17 +146,7 @@ public partial class Player
             mountElapsed = Mathf.Max(0f, fraction) * mountDurationSeconds;
     }
 
-    // Server: the host only notices a drop after a timeout, so the player can be back while their old body is still here.
-    private void ReleaseStaleBody()
-    {
-        ulong staleClient = OwnerClientId;
-
-        SaveRejoinSnapshot();
-        servicesId.Value = default;
-        NetworkManager.DisconnectClient(staleClient, StaleBodyReason);
-    }
-
-    // Server, once the player has proven who they are; each snapshot is handed back only once.
+    // Server, once the player's id is accepted; each snapshot is handed back only once.
     private void RestoreRejoinSnapshot(string id)
     {
         RejoinSnapshot snapshot;

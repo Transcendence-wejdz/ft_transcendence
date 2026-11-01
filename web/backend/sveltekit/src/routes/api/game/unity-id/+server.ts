@@ -1,9 +1,12 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { prisma } from '$lib/server/db.js';
-import { isUniqueViolation, isUnityPlayerId } from '$lib/server/validation.js';
+import { unityPlayerIdFromToken } from '$lib/server/unityToken.js';
+import { isUnityPlayerId } from '$lib/server/validation.js';
 
-// Links this account to its Unity player, so the game's friends lists can find its avatar; an id already linked to another account is refused.
+const MAX_TOKEN_LENGTH = 8192;
+
+// Links this account to the Unity player it proves to be with an access token, so the game's friends lists can find its avatar; a proven link replaces any older one on that id.
 export const POST: RequestHandler = async ({ locals, request }) => {
     if (!locals.user) return json({ success: false, error: 'Not authenticated' }, { status: 401 });
 
@@ -15,13 +18,21 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     }
 
     const input = body && typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
-    if (!isUnityPlayerId(input.unityId)) return json({ success: false, error: 'Invalid Unity id.' }, { status: 400 });
+    if (typeof input.accessToken !== 'string' || input.accessToken.length > MAX_TOKEN_LENGTH) {
+        return json({ success: false, error: 'Invalid Unity token.' }, { status: 400 });
+    }
 
+    const userId = locals.user.id;
     try {
-        await prisma.user.update({ where: { id: locals.user.id }, data: { unityPlayerId: input.unityId } });
+        const unityPlayerId = await unityPlayerIdFromToken(input.accessToken);
+        if (!isUnityPlayerId(unityPlayerId)) return json({ success: false, error: 'Invalid Unity token.' }, { status: 400 });
+
+        await prisma.$transaction([
+            prisma.user.updateMany({ where: { unityPlayerId, NOT: { id: userId } }, data: { unityPlayerId: null } }),
+            prisma.user.update({ where: { id: userId }, data: { unityPlayerId } })
+        ]);
         return json({ success: true });
     } catch (error) {
-        if (isUniqueViolation(error)) return json({ success: false, error: 'Unity id already linked.' }, { status: 409 });
         console.error('Failed to link Unity id:', error);
         return json({ success: false, error: 'Could not link the Unity id.' }, { status: 500 });
     }

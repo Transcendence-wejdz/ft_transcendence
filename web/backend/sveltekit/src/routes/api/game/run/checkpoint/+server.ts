@@ -40,7 +40,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     try {
         const saved = await prisma.gameRun.updateMany({
             where: { id: report.runToken, userId, finishedAt: null, checkpointWave: { lt: report.wave } },
-            data: { checkpointAt: new Date(now), checkpointWave: report.wave, checkpointKills: report.kills, checkpointScore: report.score }
+            data: { checkpointWave: report.wave, checkpointKills: report.kills, checkpointScore: report.score }
         });
         if (saved.count !== 1) return json({ success: false, error: 'Checkpoint out of date.' }, { status: 409 });
         return json({ success: true });

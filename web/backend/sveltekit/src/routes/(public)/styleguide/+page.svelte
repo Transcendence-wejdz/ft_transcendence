@@ -98,11 +98,10 @@
 		title="Delete your account?"
 		description="Your profile, friends, messages, achievements and level will be removed for good. This can't be undone."
 		confirmLabel="Yes, delete my account"
-		onConfirm={() => {
+		onConfirm={async () => {
+			await new Promise((resolve) => setTimeout(resolve, 2000));
 			toast.success('Account deleted', { description: 'Just kidding, this is the styleguide.' });
-			}
-		}
-
+			}}
 	/>
 </section>
 

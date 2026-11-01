@@ -15,9 +15,17 @@
 	let { open = $bindable(false), cancelLabel = 'Cancel', variant = 'danger',
 		title, description, confirmLabel, onConfirm }: Props = $props();
 
+	let busy = $state(false);
+
 	async function confirm() {
-		await onConfirm();
-		open = false;
+		if (busy) return;
+		busy = true;
+		try {
+			await onConfirm();
+			open = false;
+		} finally {
+			busy = false;
+		}
 	}
 </script>
 
@@ -30,12 +38,12 @@
 			<div class="modal-actions">
 				<AlertDialog.Cancel>
 					{#snippet child({ props })}
-						<Button variant="secondary" size="sm" {...props}>{cancelLabel}</Button>
+						<Button variant="secondary" size="sm" {...props} disabled={busy}>{cancelLabel}</Button>
 					{/snippet}
 				</AlertDialog.Cancel>
 				<AlertDialog.Action>
 					{#snippet child({ props })}
-						<Button variant={variant} size="sm" {...props} onclick={confirm}>{confirmLabel}</Button>
+						<Button variant={variant} size="sm" {...props} {busy} onclick={confirm}>{confirmLabel}</Button>
 					{/snippet}
 				</AlertDialog.Action>
 			</div>

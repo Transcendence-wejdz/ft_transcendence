@@ -22,7 +22,10 @@ public partial class Player
         if (!riding)
             riderSince = -1f;
         else if (riderSince < 0f)
-            riderSince = Time.time;
+        {
+            riderSince = Time.time - pendingRideOffset;
+            pendingRideOffset = 0f;
+        }
         if (riding)
             ReviveFraction = Mathf.Clamp01((Time.time - riderSince) / mountDurationSeconds);
         else

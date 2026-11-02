@@ -57,7 +57,7 @@ public partial class Player
     {
         Vector3 position;
 
-        if (NetworkManager == null || clientId != NetworkManager.LocalClientId)
+        if (NetworkManager == null || clientId != NetworkManager.LocalClientId || Time.unscaledTime < spawnTeleportBlockedUntil)
             return;
         if (!PlayerSpawner.TryGetSpawnPosition(OwnerClientId, out position))
             return;

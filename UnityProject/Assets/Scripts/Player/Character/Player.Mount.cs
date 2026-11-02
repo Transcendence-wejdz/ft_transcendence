@@ -17,6 +17,7 @@ public partial class Player
     private float mountElapsed;
     private Player collisionIgnoredWith;
     private float riderSince = -1f;
+    private float pendingRideOffset;
 
     // 0..1 while an ally rides this downed player, -1 otherwise; local per peer like the world revive bar.
     public float ReviveFraction { get; private set; } = -1f;
@@ -100,6 +101,15 @@ public partial class Player
         isMounted = false;
         mountedPig = null;
         mountElapsed = 0f;
+    }
+
+    // Interact pressed again while riding: gets off and cancels the revive; false when not riding.
+    public bool TryDismount()
+    {
+        if (!isMounted || !this.IsLocallyControlled())
+            return false;
+        StopMounting();
+        return true;
     }
 
     private void SetCollisionIgnored(Player other, bool ignored)

@@ -58,6 +58,7 @@ public static class SessionKick
         if (!CanKick(player))
             return false;
         clientId = player.OwnerClientId;
+        player.MarkLeftOnPurpose();
         await RemoveFromSessionAsync(player.ServicesId);
         manager = NetworkManager.Singleton;
         if (manager != null && manager.IsServer && manager.ConnectedClients.ContainsKey(clientId))

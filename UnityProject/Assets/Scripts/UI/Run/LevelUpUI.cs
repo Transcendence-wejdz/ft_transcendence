@@ -51,11 +51,18 @@ public partial class LevelUpUI : MonoBehaviour
         return $"<size=125%>{displayName}</size>";
     }
 
-    private void LabelBonus(int slot)
+    private static ulong LocalOfferId()
     {
-        LevelUpBonusType type = manager.GetOfferedBonusType(slot);
+        Player local = LocalPlayer.GetPlayer();
 
-        bonusLabels[slot].text = $"<color=#EDE6D6>{BonusTitle(type)}</color>\n<color=#9E9C94>{LevelUpBonusCatalog.GetDescription(type)}</color>";
+        if (local == null)
+            return 0;
+        return local.OwnerClientId;
+    }
+
+    private string BonusText(LevelUpBonusType type)
+    {
+        return $"<color=#{ColorUtility.ToHtmlStringRGB(LevelUpBonusCatalog.GetColor(type))}>{BonusTitle(type)}</color>\n<color=#9E9C94>{LevelUpBonusCatalog.GetDescription(type)}</color>";
     }
 
     private void BeginShow()
@@ -64,23 +71,19 @@ public partial class LevelUpUI : MonoBehaviour
         levelText.text = $"Level {manager.SequenceLevel}";
         waitingText.gameObject.SetActive(false);
         SetButtonsInteractable(true);
-        for (int i = 0; i < bonusLabels.Length; i++)
-        {
-            if (bonusLabels[i] != null)
-                LabelBonus(i);
-        }
+        BeginSpin();
     }
 
     private void ChooseBonus(int bonusIndex)
     {
         Player local;
 
-        if (localChosen)
+        if (localChosen || !allSlotsLanded)
             return;
         local = LocalPlayer.GetPlayer();
         if (local == null)
             return;
-        local.ChooseLevelUpBonus(manager.GetOfferedBonusType(bonusIndex));
+        local.ChooseLevelUpBonus(manager.GetOfferedBonusType(bonusIndex, local.OwnerClientId));
         localChosen = true;
         SetButtonsInteractable(false);
     }
@@ -88,9 +91,9 @@ public partial class LevelUpUI : MonoBehaviour
     private void SetShown(bool active)
     {
         shown = active;
-        IsShowing = active;
+        if (!active)
+            EndSpin();
         panel.SetActive(active);
-        PauseManager.SetExternalPause(active);
         if (active)
             BeginShow();
     }
@@ -126,14 +129,22 @@ public partial class LevelUpUI : MonoBehaviour
             MaterialReferenceManager.AddFontAsset(nameFont);
         timerBaseColor = timerText.color;
         BindBonusButtons();
+        CreateReels();
     }
 
     // Releases the input block too if the scene unloads while the choice is still open.
     void OnDestroy()
     {
-        IsShowing = false;
-        if (shown)
+        if (IsShowing)
             PauseManager.SetExternalPause(false);
+        IsShowing = false;
+    }
+
+    // Input stays blocked through the resume countdown, after the panel itself has closed.
+    private void SetInputBlocked(bool blocked)
+    {
+        IsShowing = blocked;
+        PauseManager.SetExternalPause(blocked);
     }
 
     void Update()
@@ -142,11 +153,14 @@ public partial class LevelUpUI : MonoBehaviour
 
         if (!FindManager())
             return;
-        active = manager.SequenceActive;
+        if (manager.SequenceActive != IsShowing)
+            SetInputBlocked(manager.SequenceActive);
+        active = manager.IsChoosing;
         if (active != shown)
             SetShown(active);
         if (!active)
             return;
+        TickSpin();
         UpdateMultiplayerExtras();
         waitingText.gameObject.SetActive(localChosen);
     }

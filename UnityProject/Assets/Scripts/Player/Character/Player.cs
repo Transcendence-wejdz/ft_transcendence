@@ -93,6 +93,7 @@ public partial class Player : NetworkBehaviour, IDamageable
     {
         if (!isValidInstance)
             return;
+        SaveRejoinSnapshot();
         DespawnMovement();
         DespawnStats();
         DespawnCustomization();

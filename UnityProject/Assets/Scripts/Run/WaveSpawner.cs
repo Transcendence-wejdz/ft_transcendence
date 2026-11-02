@@ -105,6 +105,7 @@ public partial class WaveSpawner : NetworkBehaviour
         OnWaveStarted?.Invoke(waveNumber);
         if (waveNumber == 1)
             NotifyRunStarted();
+        ReportCheckpoint(waveNumber);
         SpawnWave(EnemiesForWave());
     }
 
@@ -161,6 +162,8 @@ public partial class WaveSpawner : NetworkBehaviour
     {
         if (!IsServer)
             currentWave.OnValueChanged += HandleWaveChanged;
+        if (!IsServer && currentWave.Value > 0)
+            HandleRejoinedRun();
         if (IsServer && NetworkManager != null && NetworkManager.SceneManager != null)
             NetworkManager.SceneManager.OnLoadEventCompleted += HandleSceneLoadEventCompleted;
     }

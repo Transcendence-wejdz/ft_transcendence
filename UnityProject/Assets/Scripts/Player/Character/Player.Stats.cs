@@ -13,6 +13,7 @@ public partial class Player
 
     private float maxHealth;
     private float maxMana;
+    private bool healthReported;
 
     private readonly NetworkVariable<float> currentHealth = new OfflineSafeNetworkVariable<float>(
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
@@ -22,6 +23,8 @@ public partial class Player
     public float CurrentHealth => currentHealth.Value;
     public float CurrentMana { get; private set; }
     public bool IsDead => currentHealth.Value <= 0f;
+    // A player who just spawned reads 0 health until their owner's first write arrives, which isn't a death.
+    public bool IsHealthPending => IsSpawned && !healthReported;
 
     public static bool DeathProtected { get; set; }
 
@@ -44,6 +47,7 @@ public partial class Player
 
     private void HandleHealthValueChanged(float previousValue, float newValue)
     {
+        healthReported = true;
         if (previousValue > 0f && newValue <= 0f)
             OnPlayerDied?.Invoke(this);
         OnHealthReplicated?.Invoke(newValue, MaxHealth);

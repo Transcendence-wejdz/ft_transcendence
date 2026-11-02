@@ -15,6 +15,17 @@ public static class ServicesAuth
 
     private static Task signInTask;
 
+    // Unity services player id (the id Friends and sessions use for us), empty until signed in.
+    public static string SignedInPlayerId
+    {
+        get
+        {
+            if (UnityServices.State != ServicesInitializationState.Initialized || !AuthenticationService.Instance.IsSignedIn)
+                return string.Empty;
+            return AuthenticationService.Instance.PlayerId;
+        }
+    }
+
     // Concurrent callers share one in-flight sign-in (two SignInAnonymouslyAsync calls throw); a failed or finished attempt is redone if still signed out.
     public static Task EnsureSignedInAsync()
     {
@@ -46,6 +57,20 @@ public static class ServicesAuth
             return;
         await AuthenticationService.Instance.SignInAnonymouslyAsync();
         await SyncPlayerNameAsync();
+        PublishPlayerId();
+    }
+
+    [Serializable]
+    private class UnityIdLink
+    {
+        public string accessToken;
+    }
+
+    // Proves this account's Unity player to the site, which then finds its avatar from the id the game's friends lists know it by.
+    private static void PublishPlayerId()
+    {
+        if (WebProfileBridge.HasProfile)
+            WebBackend.Post("/api/game/unity-id", JsonUtility.ToJson(new UnityIdLink { accessToken = AuthenticationService.Instance.AccessToken }));
     }
 
     // Web display name with spaces turned to underscores, cut to the Unity name length.

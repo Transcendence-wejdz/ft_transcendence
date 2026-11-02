@@ -45,10 +45,10 @@ public partial class PauseFriendsListUI
         }
     }
 
-    // Friends already in our game, or offline, get no Invite button.
+    // Friends already in our game or offline, and everyone outside the Lobby, get no Invite button.
     private Action InviteFor(string memberId, bool reachable, bool inGame)
     {
-        if (!reachable || inGame)
+        if (!reachable || inGame || !FriendInviteFlow.CanInvite)
             return null;
         return () => Invite(memberId);
     }
@@ -65,7 +65,7 @@ public partial class PauseFriendsListUI
 
         Describe(friend, inGame, out status, out color);
         row.gameObject.SetActive(true);
-        row.Setup(FriendsManager.ShortName(friend.Member.Profile.Name), status, color, reachable, invite, rect => OpenFriendMenu(rect, memberId, inGame, invite));
+        row.Setup(memberId, FriendsManager.ShortName(friend.Member.Profile.Name), status, color, reachable, invite, rect => OpenFriendMenu(rect, memberId, inGame, invite));
         rows.Add(row);
     }
 
@@ -74,7 +74,7 @@ public partial class PauseFriendsListUI
         PauseRequestRowUI row = Instantiate(requestRowTemplate, requestContent);
 
         row.gameObject.SetActive(true);
-        row.Setup(FriendsManager.ShortName(request.Member.Profile?.Name), status, color, onAccept, onRemove);
+        row.Setup(request.Member.Id, FriendsManager.ShortName(request.Member.Profile?.Name), status, color, onAccept, onRemove);
         requestRows.Add(row);
     }
 

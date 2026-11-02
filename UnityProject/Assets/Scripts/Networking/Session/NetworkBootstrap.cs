@@ -106,6 +106,23 @@ public partial class NetworkBootstrap : MonoBehaviour
         }
     }
 
+    // Same player swap as a join, for a session we never left; a failure keeps our place, so the player can try again.
+    public async Task<bool> RejoinSessionAsync(string sessionId)
+    {
+        LoadingScreenManager.Show("Rejoining session...");
+        try
+        {
+            await ReconnectSessionAsync(sessionId);
+            return true;
+        }
+        catch (System.Exception e)
+        {
+            SessionDisconnectHandler.StopWithoutLeaving();
+            FailSession("rejoin", e);
+            return false;
+        }
+    }
+
     // Start runs after every Awake, so NetworkManager.Singleton is set.
     private void Start()
     {

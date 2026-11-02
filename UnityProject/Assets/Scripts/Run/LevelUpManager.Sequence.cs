@@ -5,6 +5,8 @@ using UnityEngine;
 // One level-up round: offers picked, published, timed in multiplayer, and closed once everyone chose.
 public partial class LevelUpManager
 {
+    private const int OfferSeedPlayerStep = 7919;
+
     private static bool AllPlayersChose()
     {
         foreach (Player player in Player.ActivePlayers)
@@ -20,7 +22,7 @@ public partial class LevelUpManager
         foreach (Player player in Player.ActivePlayers)
         {
             if (!player.HasChosenLevelUpBonus)
-                player.ForceLevelUpBonus(GetOfferedBonusType(Random.Range(0, BonusOptionCount)));
+                player.ForceLevelUpBonus(GetOfferedBonusType(Random.Range(0, BonusOptionCount), player.OwnerClientId));
         }
     }
 
@@ -38,6 +40,11 @@ public partial class LevelUpManager
 
     private void TickActiveSequence()
     {
+        if (IsResuming)
+        {
+            TickResumeCountdown();
+            return;
+        }
         if (IsTimed && TickTimer())
         {
             ForceMissingChoices();
@@ -48,23 +55,24 @@ public partial class LevelUpManager
             EndSequence();
     }
 
-    // Fisher-Yates shuffles every bonus type and offers the first 3.
-    private static OfferedBonusSet PickRandomOffers()
+    // Fisher-Yates shuffles every bonus type and offers the first 3; System.Random gives every peer the same result for the same seed.
+    private static OfferedBonusSet PickOffers(int seed, ulong clientId)
     {
         LevelUpBonusType[] types = (LevelUpBonusType[])System.Enum.GetValues(typeof(LevelUpBonusType));
+        System.Random random = new System.Random(unchecked(seed + (int)clientId * OfferSeedPlayerStep));
         int j;
 
         for (int i = types.Length - 1; i > 0; i--)
         {
-            j = Random.Range(0, i + 1);
+            j = random.Next(0, i + 1);
             (types[i], types[j]) = (types[j], types[i]);
         }
         return new OfferedBonusSet { first = types[0], second = types[1], third = types[2] };
     }
 
-    private void PublishSequence(int level, OfferedBonusSet offers, bool multi)
+    private void PublishSequence(int level, int seed, bool multi)
     {
-        offeredBonuses.Value = offers;
+        offerSeed.Value = seed;
         timedSequence.Value = multi;
         if (multi)
             secondsRemaining.Value = multiplayerChoiceSeconds;
@@ -77,25 +85,33 @@ public partial class LevelUpManager
     private void StartSequence(int level)
     {
         bool multi = Player.AllActiveInstances.Count > 1;
-        OfferedBonusSet offers;
+        int seed = Random.Range(int.MinValue, int.MaxValue);
 
         processedLevel = level;
         remainingUnscaled = multiplayerChoiceSeconds;
-        offers = PickRandomOffers();
         foreach (Player player in Player.ActivePlayers)
             player.ResetLevelUpChoice();
         if (IsSpawned)
         {
-            PublishSequence(level, offers, multi);
+            PublishSequence(level, seed, multi);
             return;
         }
-        offlineOfferedBonuses = offers;
+        offlineOfferSeed = seed;
         offlineSequenceLevel = level;
         offlineSequenceActive = true;
         SetFrozen(true);
     }
 
+    // A chained level goes straight to its own choice; the countdown only comes before the game actually resumes.
     private void EndSequence()
+    {
+        if (HasNextLevelWaiting())
+            FinishSequence();
+        else
+            StartResumeCountdown();
+    }
+
+    private void FinishSequence()
     {
         if (IsSpawned)
         {

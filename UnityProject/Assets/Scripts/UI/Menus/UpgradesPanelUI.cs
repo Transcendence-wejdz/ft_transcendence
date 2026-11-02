@@ -41,7 +41,7 @@ public class UpgradesPanelUI : MonoBehaviour
     void Awake()
     {
         rowTemplate.gameObject.SetActive(false);
-        foreach (LevelUpBonusType type in PermanentUpgrades.Types)
+        foreach (LevelUpBonusType type in LevelUpBonusCatalog.DisplayOrder)
             rows.Add(CreateRow(type));
     }
 

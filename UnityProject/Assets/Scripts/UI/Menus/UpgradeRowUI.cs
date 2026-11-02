@@ -98,7 +98,7 @@ public class UpgradeRowUI : MonoBehaviour
         textColor = buyText.color;
         bound = true;
         buyButton.onClick.AddListener(OnBuyClicked);
-        descriptionText.text = $"{LevelUpBonusCatalog.GetDescription(type)} per level";
+        descriptionText.text = $"{LevelUpBonusCatalog.GetDescription(type, PermanentUpgrades.StacksPerLevel)} per level";
         nameText.color = LevelUpBonusCatalog.GetColor(type);
         Refresh();
     }

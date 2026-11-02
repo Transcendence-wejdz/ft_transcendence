@@ -21,7 +21,7 @@ public partial class ZoneAttackFX
         if (damageable == null || !hitThisTick.Add(damageable))
             return;
         if (!IsOwner(damageable) && !Player.TryBlockAttack(owner, damageable, damage))
-            damageable.RequestDamage(damage);
+            Player.DealAttackDamage(owner, damageable, damage);
     }
 
     // One hit per damageable per tick, however many of its colliders overlap the zone.

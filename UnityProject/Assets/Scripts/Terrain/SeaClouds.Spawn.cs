@@ -14,12 +14,13 @@ public partial class SeaClouds
         wrapKeys = new Vector2Int[cloudCount];
     }
 
-    private SpriteRenderer AddCloudRenderer(GameObject cloud)
+    // Each cloud has its own order: equal orders leave the draw order free to flip while clouds cross.
+    private SpriteRenderer AddCloudRenderer(GameObject cloud, int i)
     {
         SpriteRenderer renderer = cloud.AddComponent<SpriteRenderer>();
 
         renderer.sortingLayerName = sortingLayer;
-        renderer.sortingOrder = sortingOrder;
+        renderer.sortingOrder = sortingOrder + i;
         if (cloudMaterial != null)
             renderer.sharedMaterial = cloudMaterial;
         return renderer;
@@ -39,7 +40,7 @@ public partial class SeaClouds
 
         cloud.transform.SetParent(transform, false);
         clouds[i] = cloud.transform;
-        renderers[i] = AddCloudRenderer(cloud);
+        renderers[i] = AddCloudRenderer(cloud, i);
         startOffsets[i] = new Vector2((float)rng.NextDouble(), (float)rng.NextDouble());
         speeds[i] = Mathf.Lerp(speedRange.x, speedRange.y, (float)rng.NextDouble());
         wrapKeys[i] = new Vector2Int(int.MinValue, int.MinValue);

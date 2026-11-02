@@ -105,7 +105,7 @@ public class LobbyRosterEntryUI : MonoBehaviour
 
         if (boundPlayer == null || needReviveLabel == null || reviveBarRoot == null)
             return;
-        dead = boundPlayer.IsDead;
+        dead = boundPlayer.IsDead && !boundPlayer.IsArrivalHealthPending;
         revive = boundPlayer.ReviveFraction;
         reviving = dead && revive >= 0f;
         ShowDownedState(dead, reviving);

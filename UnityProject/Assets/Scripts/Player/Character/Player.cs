@@ -66,6 +66,7 @@ public partial class Player : NetworkBehaviour, IDamageable
     void OnDisable()
     {
         OnDisableFeedback();
+        StopSpawnFade();
     }
 
     void Start()
@@ -87,6 +88,8 @@ public partial class Player : NetworkBehaviour, IDamageable
         SpawnMovement();
         SpawnStats();
         SpawnCustomization();
+        SpawnDecorSync();
+        SpawnArrivalHold();
     }
 
     public override void OnNetworkDespawn()

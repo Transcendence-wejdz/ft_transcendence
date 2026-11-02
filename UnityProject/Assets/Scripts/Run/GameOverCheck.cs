@@ -131,16 +131,14 @@ public partial class GameOverCheck : NetworkBehaviour
         instance = this;
     }
 
-    // Networked: waits for every client's scene load to finish before evaluating wipes, so stale health can't false-trigger it.
+    // Offline: evaluates right away; networked, OnNetworkSpawn waits for the scene load instead.
     void Start()
     {
         NetworkManager network = NetworkManager.Singleton;
 
         Player.OnPlayerUnregistered += HandlePlayerLeft;
         Player.OnServicesIdClaimed += HandleServicesIdClaimed;
-        if (network != null && network.IsListening && network.SceneManager != null)
-            network.SceneManager.OnLoadEventCompleted += HandleLoadEventCompleted;
-        else
+        if (network == null || !network.IsListening)
             ArmReadiness();
     }
 
@@ -163,7 +161,7 @@ public partial class GameOverCheck : NetworkBehaviour
         Player.OnPlayerUnregistered -= HandlePlayerLeft;
         Player.OnServicesIdClaimed -= HandleServicesIdClaimed;
         if (frozeForPlayers)
-            Time.timeScale = 1f;
+            TimeFreeze.Set(this, false);
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= HandleLoadEventCompleted;
         base.OnDestroy();

@@ -136,6 +136,7 @@ public partial class NetworkBootstrap
             customization.SetSelection(capture.classIndex, capture.colorIndex);
             if (!string.IsNullOrEmpty(capture.playerName))
                 customization.SetName(capture.playerName);
+            customization.AnnounceJoinArrival();
         }
         LoadingScreenManager.Hide();
     }

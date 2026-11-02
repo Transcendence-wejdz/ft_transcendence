@@ -27,16 +27,22 @@ public partial class LevelUpUI
         return reelFirstCardCount + slot * reelExtraCardsPerSlot;
     }
 
-    private static LevelUpBonusType RandomBonus()
+    private LevelUpBonusType RandomBonus()
     {
-        LevelUpBonusType[] types = (LevelUpBonusType[])System.Enum.GetValues(typeof(LevelUpBonusType));
+        Player local = LocalPlayer.GetPlayer();
+        LevelUpBonusType[] types = LevelUpBonusCatalog.OfferPool(manager.SequenceLevel, local != null && local.HasProjectile);
 
         return types[Random.Range(0, types.Length)];
     }
 
+    // The reels are only cosmetic until a choice is made, and choosing needs the local player anyway.
     private LevelUpBonusType LocalOffer(int slot)
     {
-        return manager.GetOfferedBonusType(slot, LocalOfferId());
+        Player local = LocalPlayer.GetPlayer();
+
+        if (local == null)
+            return RandomBonus();
+        return manager.GetOfferedBonusType(slot, local);
     }
 
     private void CreateReels()

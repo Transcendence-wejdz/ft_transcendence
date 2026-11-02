@@ -11,13 +11,16 @@ public class LevelUpReel
     private const int Incoming = 1;
     private const int Below = 2;
     private const int GhostCount = 3;
+    private const string SpecialBorderName = "RainbowBorder";
 
     private readonly RectTransform card;
     private readonly TMP_Text cardLabel;
+    private readonly GameObject cardBorder;
     private readonly Func<LevelUpBonusType, string> describe;
     private readonly RectTransform[] ghosts = new RectTransform[GhostCount];
     private readonly TMP_Text[] ghostLabels = new TMP_Text[GhostCount];
     private readonly LevelUpBonusType[] ghostBonuses = new LevelUpBonusType[GhostCount];
+    private readonly GameObject[] ghostBorders = new GameObject[GhostCount];
     private LevelUpBonusType cardBonus;
     private Vector2 restPosition;
 
@@ -35,6 +38,7 @@ public class LevelUpReel
             graphic.raycastTarget = false;
         ghosts[index] = (RectTransform)ghost.transform;
         ghostLabels[index] = ghost.GetComponentInChildren<TMP_Text>();
+        ghostBorders[index] = ghost.transform.Find(SpecialBorderName).gameObject;
         ghost.SetActive(false);
     }
 
@@ -43,6 +47,7 @@ public class LevelUpReel
         this.card = card;
         this.cardLabel = cardLabel;
         this.describe = describe;
+        cardBorder = card.Find(SpecialBorderName).gameObject;
         for (int i = 0; i < GhostCount; i++)
             CreateGhost(i);
     }
@@ -52,6 +57,7 @@ public class LevelUpReel
         cardBonus = bonus;
         cardLabel.text = describe(bonus);
         card.GetComponent<Image>().color = LevelUpBonusCatalog.GetColor(bonus);
+        cardBorder.SetActive(LevelUpBonusCatalog.IsSpecial(bonus));
     }
 
     private void ShowOnGhost(int index, LevelUpBonusType bonus)
@@ -59,6 +65,7 @@ public class LevelUpReel
         ghostBonuses[index] = bonus;
         ghostLabels[index].text = describe(bonus);
         ghosts[index].GetComponent<Image>().color = LevelUpBonusCatalog.GetColor(bonus);
+        ghostBorders[index].SetActive(LevelUpBonusCatalog.IsSpecial(bonus));
     }
 
     // The ghosts were cloned before the row's first layout, which moves each card's anchors, so positions only compare once these match.

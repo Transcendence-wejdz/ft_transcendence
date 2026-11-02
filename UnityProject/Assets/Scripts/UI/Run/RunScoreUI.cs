@@ -22,6 +22,7 @@ public class RunScoreUI : MonoBehaviour
     private const string PendingGold = "...";
     private const string SignInGold = "Sign in";
     private const string RefusedGold = "Refused";
+    private const string DelayedGold = "Sent later";
 
     private string goldDisplay = PendingGold;
 
@@ -31,6 +32,8 @@ public class RunScoreUI : MonoBehaviour
             return SignInGold;
         if (gold == GoldWallet.Refused)
             return RefusedGold;
+        if (gold == GoldWallet.Pending)
+            return DelayedGold;
         return $"+{gold}";
     }
 

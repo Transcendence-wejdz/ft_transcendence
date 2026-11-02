@@ -79,7 +79,7 @@ public partial class WaveSpawner
         return circle.offset * (Vector2)prefab.transform.localScale;
     }
 
-    private bool IsAnyProbeInWater(Vector3 point, ProceduralMapGenerator mapGenerator)
+    private bool IsAnyProbeOffMainland(Vector3 point, ProceduralMapGenerator mapGenerator)
     {
         Vector3[] probes =
         {
@@ -90,13 +90,13 @@ public partial class WaveSpawner
 
         foreach (Vector3 probe in probes)
         {
-            if (mapGenerator.IsWaterAtWorldPosition(probe))
+            if (!mapGenerator.IsOnMainland(probe))
                 return true;
         }
         return false;
     }
 
-    // Valid when the point and its four sides are land with no static collider; nothing is valid before the map knows its water.
+    // Valid when the point and its four sides are on the players' landmass with no static collider; nothing is valid before the map knows its water.
     private bool IsValidSpawnPoint(Vector3 root, ProceduralMapGenerator mapGenerator)
     {
         Vector3 point = root + (Vector3)GetEnemyBodyOffset();
@@ -107,7 +107,7 @@ public partial class WaveSpawner
             return true;
         if (!mapGenerator.IsReady)
             return false;
-        return !IsAnyProbeInWater(point, mapGenerator);
+        return !IsAnyProbeOffMainland(point, mapGenerator);
     }
 
     // Public so every peer resolves the same kit from the replicated index (see Enemy.HandleKitIndexChanged).
@@ -159,13 +159,13 @@ public partial class WaveSpawner
         return center;
     }
 
-    // True when a body center is over water; water colliders are outlines only, so an enemy pushed inside a lake would stay trapped there.
-    public bool IsInWater(Vector2 bodyCenter)
+    // True when a body center is over water or on an islet; water colliders are outlines only, so an enemy pushed there would stay trapped.
+    public bool IsStranded(Vector2 bodyCenter)
     {
         if (cachedMapGenerator == null)
             cachedMapGenerator = FindAnyObjectByType<ProceduralMapGenerator>();
         if (cachedMapGenerator == null || !cachedMapGenerator.IsReady)
             return false;
-        return cachedMapGenerator.IsWaterAtWorldPosition(bodyCenter);
+        return !cachedMapGenerator.IsOnMainland(bodyCenter);
     }
 }

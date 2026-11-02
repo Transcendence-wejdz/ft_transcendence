@@ -5,14 +5,14 @@ using UnityEngine.UI;
 // Revive feedback on the downed player: hidden prompt while ridden and the revive bar filling over the ride.
 public partial class Player
 {
-    // Hides the revive prompt while someone rides, read from the replicated transform.parent.
+    // The prompt follows the pig form, not a 0 health that may just be a new spawn; hidden while ridden.
     private void UpdateMountInteractVisibility()
     {
         bool shouldShow;
 
-        if (mountInteractRoot == null || !IsDead)
+        if (mountInteractRoot == null)
             return;
-        shouldShow = !HasRider();
+        shouldShow = isPig && !HasRider();
         if (mountInteractRoot.activeSelf != shouldShow)
             mountInteractRoot.SetActive(shouldShow);
     }
@@ -43,7 +43,7 @@ public partial class Player
         if (root.activeSelf != riding)
             root.SetActive(riding);
         if (nameTag != null)
-            nameTag.SetHidden(riding);
+            nameTag.SetHidden(riding || arrivalHold != null);
         if (riding)
             BrushFill.Set(reviveProgress, ReviveFraction);
     }

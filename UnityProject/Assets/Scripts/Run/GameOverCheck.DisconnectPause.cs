@@ -105,20 +105,10 @@ public partial class GameOverCheck
     // A level-up choice open under the pause keeps its own freeze once the pause ends.
     private void ApplyPauseFreeze(bool frozen)
     {
-        LevelUpManager levelUp;
-
-        if (frozen)
-        {
-            frozeForPlayers = true;
-            Time.timeScale = 0f;
+        if (!frozen && !frozeForPlayers)
             return;
-        }
-        if (!frozeForPlayers)
-            return;
-        frozeForPlayers = false;
-        levelUp = FindAnyObjectByType<LevelUpManager>();
-        if (levelUp == null || !levelUp.SequenceActive)
-            Time.timeScale = 1f;
+        frozeForPlayers = frozen;
+        TimeFreeze.Set(this, frozen);
     }
 
     private void HandlePauseActiveChanged(bool previous, bool current)
@@ -126,8 +116,11 @@ public partial class GameOverCheck
         ApplyPauseFreeze(current);
     }
 
+    // Waits for every client's scene load; subscribed here since a solo host's load can beat Start.
     public override void OnNetworkSpawn()
     {
+        if (IsServer && NetworkManager.SceneManager != null)
+            NetworkManager.SceneManager.OnLoadEventCompleted += HandleLoadEventCompleted;
         pauseActive.OnValueChanged += HandlePauseActiveChanged;
         ApplyPauseFreeze(IsFrozenForPlayers);
     }

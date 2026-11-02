@@ -91,9 +91,12 @@ public partial class ProceduralMapGenerator
         GameObject instance = RentDecorInstance(prefab);
         Vector3 position = landTilemap.GetCellCenterWorld(new Vector3Int(worldX, worldY, 0));
         SortingLayer_Auto sortScript;
+        DestructibleDecor destructible;
 
         instance.transform.SetPositionAndRotation(position, Quaternion.identity);
         instance.SetActive(true);
+        if (Application.isPlaying && instance.TryGetComponent(out destructible))
+            destructible.Bind(new Vector2Int(worldX, worldY));
         if (instance.TryGetComponent(out sortScript))
             sortScript.SetSortingOffset(((worldX % SortingOffsetSpread) + SortingOffsetSpread) % SortingOffsetSpread - 2);
         return instance;

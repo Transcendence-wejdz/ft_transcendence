@@ -22,7 +22,7 @@ public partial class LevelUpManager
         foreach (Player player in Player.ActivePlayers)
         {
             if (!player.HasChosenLevelUpBonus)
-                player.ForceLevelUpBonus(GetOfferedBonusType(Random.Range(0, BonusOptionCount), player.OwnerClientId));
+                player.ForceLevelUpBonus(GetOfferedBonusType(Random.Range(0, BonusOptionCount), player));
         }
     }
 
@@ -55,10 +55,10 @@ public partial class LevelUpManager
             EndSequence();
     }
 
-    // Fisher-Yates shuffles every bonus type and offers the first 3; System.Random gives every peer the same result for the same seed.
-    private static OfferedBonusSet PickOffers(int seed, ulong clientId)
+    // Shuffles the round's pool and offers the first 3; same seed, same result on every peer.
+    private static OfferedBonusSet PickOffers(int seed, ulong clientId, LevelUpBonusType[] pool)
     {
-        LevelUpBonusType[] types = (LevelUpBonusType[])System.Enum.GetValues(typeof(LevelUpBonusType));
+        LevelUpBonusType[] types = (LevelUpBonusType[])pool.Clone();
         System.Random random = new System.Random(unchecked(seed + (int)clientId * OfferSeedPlayerStep));
         int j;
 
@@ -102,10 +102,10 @@ public partial class LevelUpManager
         SetFrozen(true);
     }
 
-    // A chained level goes straight to its own choice; the countdown only comes before the game actually resumes.
+    // Solo and chained levels go straight on; the countdown only lets a group resume together.
     private void EndSequence()
     {
-        if (HasNextLevelWaiting())
+        if (!IsTimed || HasNextLevelWaiting())
             FinishSequence();
         else
             StartResumeCountdown();

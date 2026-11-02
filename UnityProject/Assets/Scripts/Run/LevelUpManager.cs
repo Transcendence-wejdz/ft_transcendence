@@ -76,10 +76,7 @@ public partial class LevelUpManager : NetworkBehaviour
     private void SetFrozen(bool frozen)
     {
         frozeTime = frozen;
-        if (frozen)
-            Time.timeScale = 0f;
-        else
-            Time.timeScale = 1f;
+        TimeFreeze.Set(this, frozen);
     }
 
     // Every instance (host and clients) reacts identically, so all players freeze/unfreeze together.
@@ -95,19 +92,20 @@ public partial class LevelUpManager : NetworkBehaviour
         return xpManager != null;
     }
 
+    // One round per level, so a burst of XP can't jump over a special level.
     private void CheckForLevelUp()
     {
         int level;
 
         xpManager.GetProgress(out level, out _, out _);
         if (level > processedLevel)
-            StartSequence(level);
+            StartSequence(processedLevel + 1);
     }
 
-    // Each player gets their own offers: every peer derives the same ones from the round's seed and that player's id.
-    public LevelUpBonusType GetOfferedBonusType(int slot, ulong clientId)
+    // Each player gets their own offers: every peer derives the same ones from the round's seed, that player's id and class.
+    public LevelUpBonusType GetOfferedBonusType(int slot, Player player)
     {
-        return PickOffers(OfferSeed, clientId).Get(slot);
+        return PickOffers(OfferSeed, player.OwnerClientId, LevelUpBonusCatalog.OfferPool(SequenceLevel, player.HasProjectile)).Get(slot);
     }
 
     public override void OnNetworkSpawn()

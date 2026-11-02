@@ -47,10 +47,7 @@ public partial class PauseManager : MonoBehaviour
     private void SetFrozen(bool frozen)
     {
         frozeTime = frozen;
-        if (frozen)
-            Time.timeScale = 0f;
-        else
-            Time.timeScale = 1f;
+        TimeFreeze.Set(this, frozen);
     }
 
     // Pause only blocks input in the Lobby and in multiplayer; freezing timeScale is for solo mode scenes (would desync online).
@@ -142,6 +139,13 @@ public partial class PauseManager : MonoBehaviour
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #endif
+    }
+
+    // A level-up takes over the screen, and the pause key is blocked while it is up.
+    public static void CloseMenu()
+    {
+        if (current != null && (menuPaused || IsMenuOpen))
+            current.Resume();
     }
 
     // Used by NPC menu panels: blocks input via IsPaused but leaves Time.timeScale running.

@@ -92,7 +92,7 @@ public partial class Boss
         if (IsSpawned && player.OwnerClientId != NetworkManager.LocalClientId)
             return;
         if (!Player.TryAbsorbWithShield(BodyCenter, player.Center, damage))
-            player.RequestDamage(damage);
+            player.TakeMeleeHit(damage, this);
     }
 
     // Each living player the boss body passes over is hit at most once per charge.
@@ -121,7 +121,7 @@ public partial class Boss
         if (local == null || local.IsDead || !IsWithin(local, radius))
             return false;
         if (!Player.TryAbsorbWithShield(BodyCenter, local.Center, damage))
-            local.TakeDamage(damage);
+            local.TakeMeleeHit(damage, this);
         return true;
     }
 

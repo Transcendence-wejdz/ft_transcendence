@@ -9,6 +9,9 @@ using UnityEngine.UI;
 // Pause panels: slide-in aware show/hide and the context-aware Leave/Quit buttons.
 public partial class PauseManager
 {
+    private const string IssuesUrl = "https://github.com/Transcendence-wejdz/ft_transcendence/issues";
+    private const string FeedbackUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfYh9e3zfYBe0XgsqJGcTkNGslAohAmEPprQ2z1_-iKDSK-sg/viewform";
+
     // Animated when the panel has a PanelSlideIn, instant otherwise.
     private static void SetPanelVisible(GameObject panel, bool show)
     {
@@ -34,6 +37,18 @@ public partial class PauseManager
             return false;
         slide = panel.GetComponent<PanelSlideIn>();
         return slide == null || slide.IsOpen;
+    }
+
+    // Opens the project's GitHub issues in the browser.
+    public void ReportBug()
+    {
+        Application.OpenURL(IssuesUrl);
+    }
+
+    // Opens the players' review form in the browser.
+    public void GiveFeedback()
+    {
+        Application.OpenURL(FeedbackUrl);
     }
 
     private void RefreshLeaveButton()

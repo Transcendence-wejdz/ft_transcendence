@@ -64,6 +64,10 @@ PrefabInstance:
       propertyPath: m_Offset.y
       value: 1.1
       objectReference: {fileID: 0}
+    - target: {fileID: 5103145015877556344, guid: 80684958157020e5b9d23c35045e0a68, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 1.73
+      objectReference: {fileID: 0}
     - target: {fileID: 8760497899193580633, guid: 80684958157020e5b9d23c35045e0a68, type: 3}
       propertyPath: m_Name
       value: SpearGoblin

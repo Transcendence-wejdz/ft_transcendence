@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 6379216980287281456}
   - component: {fileID: 4152792689016811719}
   - component: {fileID: 4650920407595326699}
+  - component: {fileID: 5789945626803266521}
   m_Layer: 6
   m_Name: Tree1
   m_TagString: Untagged
@@ -99,6 +100,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62b3f53c378aa9c24b95a797c56cd225, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RevealOccluder
+  alwaysInFront: 0
+  moves: 0
+--- !u!114 &5789945626803266521
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1598588655992799798}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 102e83615d92c17d289851de66403275, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DestructibleDecor
+  hitFxPrefab: {fileID: 6335748554010743751, guid: 8152961470508f376a985cfe1d417438, type: 3}
+  breakFxPrefab: {fileID: 2142159080699418567, guid: 0c74483002b3fecc09deccc04c57360a, type: 3}
+  breakFxColor: {r: 0.27, g: 0.55, b: 0.3, a: 1}
+  maxHealth: 45
+  stumpSprite: {fileID: 21300000, guid: 7951e8106b28e48e0b11aed17a9978d1, type: 3}
 --- !u!1 &5052273220380032198
 GameObject:
   m_ObjectHideFlags: 0

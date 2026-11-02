@@ -50,7 +50,7 @@ public partial class Player
     private void StartDashStrike()
     {
         dashStruck.Clear();
-        invulnerableEndTime = dodgeEndTime + DodgeInvulnerabilityBonus;
+        invulnerableEndTime = Mathf.Max(invulnerableEndTime, dodgeEndTime + DodgeInvulnerabilityBonus);
     }
 
     private void StrikeDashTarget(Collider2D other, float damage)

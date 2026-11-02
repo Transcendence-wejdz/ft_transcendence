@@ -88,13 +88,14 @@
 	}
 
 	.variant-42 {
-		color: var(--color-outline);
-		background: var(--color-input-bg);
-		box-shadow: inset 0 -5px 0 #d3bd88, var(--shadow-drop);
+		color: var(--color-input-bg);
+		background: var(--color-outline);
+		box-shadow: inset 0 -5px 0 #000, var(--shadow-drop);
 	}
 
 	.variant-42:hover:not(:disabled) {
-		background: #fff;
+		background: var(--color-bg-card);
+		color: #fff;
 	}
 
 	.btn:disabled {

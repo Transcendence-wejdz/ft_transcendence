@@ -45,6 +45,9 @@ services:
     build: ./backend/sveltekit
     restart: unless-stopped
     env_file: .env
+    environment:
+      # avatars reach 700 KB once in base64, past the adapter's 512K default
+      BODY_SIZE_LIMIT: 1M
     depends_on:
       migrate:
         condition: service_completed_successfully

@@ -6,6 +6,12 @@ public class PlayerNameUI : MonoBehaviour
 {
     private TextMeshProUGUI label;
 
+    private void SetName(string value)
+    {
+        if (label != null && !string.IsNullOrEmpty(value))
+            label.text = value;
+    }
+
     void Awake()
     {
         label = GetComponent<TextMeshProUGUI>();
@@ -14,18 +20,11 @@ public class PlayerNameUI : MonoBehaviour
     void OnEnable()
     {
         LocalCharacterLook.OnNameChanged += SetName;
-
         SetName(LocalCharacterLook.CurrentName());
     }
 
     void OnDisable()
     {
         LocalCharacterLook.OnNameChanged -= SetName;
-    }
-
-    private void SetName(string value)
-    {
-        if (label != null && !string.IsNullOrEmpty(value))
-            label.text = value;
     }
 }

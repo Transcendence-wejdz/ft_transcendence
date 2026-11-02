@@ -9,6 +9,7 @@ public class PauseFriendRowUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
 {
     [SerializeField] private Image avatar;
     [SerializeField] private TMP_Text initialText;
+    [SerializeField] private SiteAvatarPhoto sitePhoto;
     [SerializeField] private TMP_Text nameText;
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private Button inviteButton;
@@ -33,18 +34,51 @@ public class PauseFriendRowUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         get
         {
+            if (rowSelectable != null)
+                return rowSelectable;
+            rowSelectable = GetComponent<Selectable>();
             if (rowSelectable == null)
-            {
-                rowSelectable = GetComponent<Selectable>();
-                if (rowSelectable == null)
-                    rowSelectable = gameObject.AddComponent<Selectable>();
-                rowSelectable.transition = Selectable.Transition.None;
-            }
+                rowSelectable = gameObject.AddComponent<Selectable>();
+            rowSelectable.transition = Selectable.Transition.None;
             return rowSelectable;
         }
     }
 
-    public void Setup(string displayName, string status, Color statusColor, bool isOnline, Action onInvite, Action<RectTransform> onMenu = null)
+    private void BindInvite(Action onInvite)
+    {
+        inviteButton.onClick.RemoveAllListeners();
+        inviteButton.gameObject.SetActive(onInvite != null);
+        if (onInvite != null)
+            inviteButton.onClick.AddListener(() => onInvite());
+    }
+
+    // Offline friends stay dimmed, brightening a little on hover.
+    private float RowAlpha()
+    {
+        if (online)
+            return 1f;
+        return Mathf.Lerp(offlineAlpha, offlineHoverAlpha, highlight);
+    }
+
+    private void Apply()
+    {
+        background.color = Color.Lerp(backgroundColor, hoverBackgroundColor, highlight);
+        rowGroup.alpha = RowAlpha();
+        inviteGroup.alpha = Mathf.Lerp(idleInviteAlpha, 1f, highlight);
+    }
+
+    // Gamepad focus on the row or its Invite counts as hover.
+    private bool IsGamepadFocused()
+    {
+        GameObject selected;
+
+        if (EventSystem.current == null || !InputModeTracker.UsingGamepad)
+            return false;
+        selected = EventSystem.current.currentSelectedGameObject;
+        return selected != null && (selected == gameObject || selected == inviteButton.gameObject);
+    }
+
+    public void Setup(string memberId, string displayName, string status, Color statusColor, bool isOnline, Action onInvite, Action<RectTransform> onMenu = null)
     {
         onClicked = onMenu;
         RowSelectable.interactable = onMenu != null;
@@ -52,14 +86,10 @@ public class PauseFriendRowUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
         nameText.text = displayName;
         initialText.text = FriendAvatar.InitialFor(displayName);
         avatar.color = FriendAvatar.ColorFor(displayName);
+        sitePhoto.Load(memberId);
         statusText.text = status;
         statusText.color = statusColor;
-
-        inviteButton.onClick.RemoveAllListeners();
-        inviteButton.gameObject.SetActive(onInvite != null);
-        if (onInvite != null)
-            inviteButton.onClick.AddListener(() => onInvite());
-
+        BindInvite(onInvite);
         highlight = 0f;
         Apply();
     }
@@ -69,13 +99,26 @@ public class PauseFriendRowUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
         inviteButton.interactable = interactable;
     }
 
-    public void OnPointerEnter(PointerEventData eventData) => hovered = true;
-    public void OnPointerExit(PointerEventData eventData) => hovered = false;
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        hovered = true;
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        hovered = false;
+    }
 
     // The invite button handles its own clicks, so only clicks on the row itself open the menu.
-    public void OnPointerClick(PointerEventData eventData) => onClicked?.Invoke((RectTransform)transform);
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        onClicked?.Invoke((RectTransform)transform);
+    }
 
-    public void OnSubmit(BaseEventData eventData) => onClicked?.Invoke((RectTransform)transform);
+    public void OnSubmit(BaseEventData eventData)
+    {
+        onClicked?.Invoke((RectTransform)transform);
+    }
 
     private void OnDisable()
     {
@@ -84,23 +127,16 @@ public class PauseFriendRowUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
         Apply();
     }
 
-    // Unscaled time since the pause menu freezes timeScale; gamepad focus on the row or its Invite counts as hover.
+    // Unscaled time since the pause menu freezes timeScale.
     private void LateUpdate()
     {
-        GameObject selected = EventSystem.current != null && InputModeTracker.UsingGamepad ? EventSystem.current.currentSelectedGameObject : null;
-        bool focused = selected != null && (selected == gameObject || selected == inviteButton.gameObject);
-        float target = hovered || focused ? 1f : 0f;
+        float target = 0f;
+
+        if (hovered || IsGamepadFocused())
+            target = 1f;
         if (highlight == target)
             return;
-
         highlight = Mathf.MoveTowards(highlight, target, Time.unscaledDeltaTime * revealSpeed);
         Apply();
-    }
-
-    private void Apply()
-    {
-        background.color = Color.Lerp(backgroundColor, hoverBackgroundColor, highlight);
-        rowGroup.alpha = online ? 1f : Mathf.Lerp(offlineAlpha, offlineHoverAlpha, highlight);
-        inviteGroup.alpha = Mathf.Lerp(idleInviteAlpha, 1f, highlight);
     }
 }

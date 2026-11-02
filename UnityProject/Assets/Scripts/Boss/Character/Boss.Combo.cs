@@ -8,6 +8,8 @@ public partial class Boss
     private const float ChainWindupFraction = 0.6f;
     private const float ChargeOvershoot = 3f;
     private const float MinChargeLength = 4f;
+    private const float MinChargeSpeed = 0.01f;
+    private const float MinDirectionSqr = 0.0001f;
 
     private readonly Queue<BossPattern> combo = new Queue<BossPattern>();
     private BossPattern pattern;
@@ -16,173 +18,132 @@ public partial class Boss
     private bool chained;
     private float chargeLength;
     private Vector2 patternDirection;
+
     private bool comboUsedCharge;
     private bool comboUsedSlam;
     private bool comboUsedSummon;
     private bool openingDone;
+
     private float nextPatternTime;
     private float nextSlamTime;
     private float nextChargeTime;
     private float nextSummonTime;
 
     private bool CanSummon => kit.SummonKits != null && kit.SummonKits.Length > 0 && kit.SummonCount > 0;
+    private bool IsCharging => pattern == BossPattern.Charge && phase == BossPhase.Active;
 
-    // Opens with a summon; then melee: charge through the target then slam (or slam alone); far: chained charges finished by a summon, or a single charge.
-    private bool TryStartCombo(float distance)
+    private void EnqueueMany(BossPattern step, int count)
+    {
+        for (int i = 0; i < count; i++)
+            combo.Enqueue(step);
+    }
+
+    // Melee: charge through the target then slam, or slam alone.
+    private void QueueMeleeCombo(bool chargeReady)
+    {
+        if (chargeReady)
+            combo.Enqueue(BossPattern.Charge);
+        if (chargeReady || Time.time >= nextSlamTime)
+            combo.Enqueue(BossPattern.Slam);
+    }
+
+    // Far: chained charges finished by a summon, or a single charge.
+    private void QueueRangedCombo()
+    {
+        if (!CanSummon || Time.time < nextSummonTime)
+        {
+            combo.Enqueue(BossPattern.Charge);
+            return;
+        }
+        EnqueueMany(BossPattern.Charge, Mathf.Max(1, kit.ChargeChainCount));
+        combo.Enqueue(BossPattern.Summon);
+    }
+
+    // Opens with a summon, then picks a melee or ranged combo from the distance.
+    private void QueueCombo(float distance)
     {
         bool chargeReady = Time.time >= nextChargeTime;
-        if (!openingDone && CanSummon)
-        {
-            combo.Enqueue(BossPattern.Summon);
-        }
-        else if (distance <= kit.SlamMaxRange)
-        {
-            if (chargeReady)
-                combo.Enqueue(BossPattern.Charge);
-            if (chargeReady || Time.time >= nextSlamTime)
-                combo.Enqueue(BossPattern.Slam);
-        }
-        else if (distance >= kit.ChargeMinRange && chargeReady)
-        {
-            bool finishWithSummon = CanSummon && Time.time >= nextSummonTime;
-            int charges = finishWithSummon ? Mathf.Max(1, kit.ChargeChainCount) : 1;
-            for (int i = 0; i < charges; i++)
-                combo.Enqueue(BossPattern.Charge);
-            if (finishWithSummon)
-                combo.Enqueue(BossPattern.Summon);
-        }
 
+        if (!openingDone && CanSummon)
+            combo.Enqueue(BossPattern.Summon);
+        else if (distance <= kit.SlamMaxRange)
+            QueueMeleeCombo(chargeReady);
+        else if (distance >= kit.ChargeMinRange && chargeReady)
+            QueueRangedCombo();
+    }
+
+    private void ResetComboUsage()
+    {
+        comboUsedCharge = false;
+        comboUsedSlam = false;
+        comboUsedSummon = false;
+    }
+
+    private bool TryStartCombo(float distance)
+    {
+        QueueCombo(distance);
         openingDone = true;
         if (combo.Count == 0)
             return false;
-
-        comboUsedCharge = comboUsedSlam = comboUsedSummon = false;
+        ResetComboUsage();
         StartNextPattern(false);
         return true;
+    }
+
+    // Leads the target by its estimated velocity and overshoots it, within the kit's charge length.
+    private void AimCharge(Vector2 toTarget)
+    {
+        Vector2 aim = toTarget + targetVelocity * kit.ChargeLeadSeconds;
+        float maxLength = Mathf.Max(MinChargeLength, kit.ChargeDistance);
+
+        comboUsedCharge = true;
+        patternDirection = Vector2.right;
+        if (aim.sqrMagnitude > MinDirectionSqr)
+            patternDirection = aim.normalized;
+        chargeLength = Mathf.Clamp(aim.magnitude + ChargeOvershoot, MinChargeLength, maxLength);
+    }
+
+    private void AimStill(Vector2 toTarget)
+    {
+        if (pattern == BossPattern.Slam)
+            comboUsedSlam = true;
+        if (pattern == BossPattern.Summon)
+            comboUsedSummon = true;
+        if (toTarget.sqrMagnitude > MinDirectionSqr)
+            patternDirection = toTarget.normalized;
     }
 
     // Re-aims every step at the current target, so each chained charge tracks where the player went.
     private void StartNextPattern(bool isChained)
     {
+        Vector2 toTarget = patternDirection;
+
         pattern = combo.Dequeue();
         chained = isChained;
         if (target == null || target.IsDead)
             ChooseTarget(EnemyFlowFieldManager.Instance);
-
-        Vector2 toTarget = target != null ? target.Center - BodyCenter : patternDirection;
+        if (target != null)
+            toTarget = target.Center - BodyCenter;
         if (pattern == BossPattern.Charge)
-        {
-            comboUsedCharge = true;
-            Vector2 aim = toTarget + targetVelocity * kit.ChargeLeadSeconds;
-            patternDirection = aim.sqrMagnitude > 0.0001f ? aim.normalized : Vector2.right;
-            chargeLength = Mathf.Clamp(aim.magnitude + ChargeOvershoot, MinChargeLength, Mathf.Max(MinChargeLength, kit.ChargeDistance));
-        }
+            AimCharge(toTarget);
         else
-        {
-            comboUsedSlam |= pattern == BossPattern.Slam;
-            comboUsedSummon |= pattern == BossPattern.Summon;
-            if (toTarget.sqrMagnitude > 0.0001f)
-                patternDirection = toTarget.normalized;
-        }
-
+            AimStill(toTarget);
         SetFacing(patternDirection.x);
         EnterPhase(BossPhase.Windup);
     }
 
-    // Steps inside a combo skip their recovery; only the last one recovers before the boss moves again.
     private void TickPattern()
     {
-        bool charging = pattern == BossPattern.Charge && phase == BossPhase.Active;
-        rb.linearVelocity = charging ? patternDirection * kit.ChargeSpeed : Vector2.zero;
-        if (charging)
+        if (IsCharging)
+        {
+            rb.linearVelocity = patternDirection * kit.ChargeSpeed;
             HitChargeVictims();
-
-        if (Time.time < phaseEndTime)
-            return;
-
-        if (phase == BossPhase.Windup)
-            EnterPhase(BossPhase.Active);
-        else if (phase == BossPhase.Active && combo.Count > 0)
-            StartNextPattern(true);
-        else if (phase == BossPhase.Active)
-            EnterPhase(BossPhase.Recovery);
-        else
-            FinishCombo();
-    }
-
-    // Applies the phase's gameplay effect here (server), then replays its visuals on every peer with the same duration and lane length.
-    private void EnterPhase(BossPhase next)
-    {
-        phase = next;
-        float duration = PhaseDuration(pattern, next);
-        phaseEndTime = Time.time + duration;
-
-        if (next == BossPhase.Active && pattern == BossPattern.Charge)
-            chargeHits.Clear();
-        else if (next == BossPhase.Active && pattern == BossPattern.Slam)
-            ResolveSlam();
-        else if (next == BossPhase.Active && pattern == BossPattern.Summon)
-            Summon();
-
-        PlayPhaseVisual(pattern, next, patternDirection, duration, chargeLength);
-        if (IsSpawned)
-            PhaseRpc(pattern, next, patternDirection, duration, chargeLength);
-    }
-
-    // Cooldowns start once the whole combo is over; only a short pause separates two combos.
-    private void FinishCombo()
-    {
-        float tempo = Tempo;
-        if (comboUsedSlam)
-            nextSlamTime = Time.time + kit.SlamCooldown / tempo;
-        if (comboUsedCharge)
-            nextChargeTime = Time.time + kit.ChargeCooldown / tempo;
-        if (comboUsedSummon)
-            nextSummonTime = Time.time + kit.SummonInterval / tempo;
-
-        pattern = BossPattern.None;
-        nextPatternTime = Time.time + kit.PatternCooldown / tempo;
-        nextRetargetTime = 0f;
-        rb.linearVelocity = Vector2.zero;
-    }
-
-    // Charge travel time follows its length and speed; everything else speeds up with the enrage tempo, chained windups are shorter.
-    private float PhaseDuration(BossPattern p, BossPhase ph)
-    {
-        if (p == BossPattern.Charge && ph == BossPhase.Active)
-            return chargeLength / Mathf.Max(0.01f, kit.ChargeSpeed);
-
-        float baseDuration;
-        if (ph == BossPhase.Recovery)
-            baseDuration = kit.RecoveryDuration;
-        else if (p == BossPattern.Charge)
-            baseDuration = kit.ChargeWindup;
-        else if (p == BossPattern.Slam)
-            baseDuration = ph == BossPhase.Windup ? kit.SlamWindup : kit.SlamActiveDuration;
-        else
-            baseDuration = ph == BossPhase.Windup ? kit.SummonWindup : kit.SummonActiveDuration;
-
-        if (ph == BossPhase.Windup && chained)
-            baseDuration *= ChainWindupFraction;
-        return baseDuration / Tempo;
-    }
-
-    // Clients replay the phase and judge Active hits against their own player.
-    [Rpc(SendTo.NotServer)]
-    private void PhaseRpc(BossPattern p, BossPhase ph, Vector2 direction, float duration, float laneLength)
-    {
-        PlayPhaseVisual(p, ph, direction, duration, laneLength);
-        if (ph != BossPhase.Active)
-            return;
-
-        if (p == BossPattern.Slam)
-        {
-            JudgeLocalHit(kit.SlamRadius, kit.SlamDamage);
+            PushMinionsAside();
         }
-        else if (p == BossPattern.Charge)
-        {
-            localChargeEndTime = Time.time + duration;
-            localChargeHit = false;
-        }
+        else
+            rb.linearVelocity = Vector2.zero;
+        if (Time.time >= phaseEndTime)
+            AdvancePhase();
     }
+
 }

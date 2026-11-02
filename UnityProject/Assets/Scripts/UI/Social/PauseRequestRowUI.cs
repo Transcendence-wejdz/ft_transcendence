@@ -9,6 +9,7 @@ public class PauseRequestRowUI : MonoBehaviour, IPointerEnterHandler, IPointerEx
 {
     [SerializeField] private Image avatar;
     [SerializeField] private TMP_Text initialText;
+    [SerializeField] private SiteAvatarPhoto sitePhoto;
     [SerializeField] private TMP_Text nameText;
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private Button acceptButton;
@@ -17,11 +18,20 @@ public class PauseRequestRowUI : MonoBehaviour, IPointerEnterHandler, IPointerEx
     [SerializeField] private Color backgroundColor = new Color(0.82f, 0.82f, 0.82f, 0.93f);
     [SerializeField] private Color hoverBackgroundColor = new Color(1f, 1f, 1f, 1f);
 
-    public void Setup(string displayName, string status, Color statusColor, Action onAccept, Action onRemove)
+    private static void Bind(Button button, Action action)
+    {
+        button.onClick.RemoveAllListeners();
+        button.gameObject.SetActive(action != null);
+        if (action != null)
+            button.onClick.AddListener(() => action());
+    }
+
+    public void Setup(string memberId, string displayName, string status, Color statusColor, Action onAccept, Action onRemove)
     {
         nameText.text = displayName;
         initialText.text = FriendAvatar.InitialFor(displayName);
         avatar.color = FriendAvatar.ColorFor(displayName);
+        sitePhoto.Load(memberId);
         statusText.text = status;
         statusText.color = statusColor;
         Bind(acceptButton, onAccept);
@@ -35,14 +45,13 @@ public class PauseRequestRowUI : MonoBehaviour, IPointerEnterHandler, IPointerEx
         removeButton.interactable = interactable;
     }
 
-    public void OnPointerEnter(PointerEventData eventData) => background.color = hoverBackgroundColor;
-    public void OnPointerExit(PointerEventData eventData) => background.color = backgroundColor;
-
-    private static void Bind(Button button, Action action)
+    public void OnPointerEnter(PointerEventData eventData)
     {
-        button.onClick.RemoveAllListeners();
-        button.gameObject.SetActive(action != null);
-        if (action != null)
-            button.onClick.AddListener(() => action());
+        background.color = hoverBackgroundColor;
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        background.color = backgroundColor;
     }
 }

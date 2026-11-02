@@ -17,19 +17,18 @@ public static class PlayerProfileStore
 
     public static bool TryLoad(out int classIndex, out int colorIndex, out string playerName)
     {
+        ProfileData data;
+
         classIndex = 0;
         colorIndex = 0;
         playerName = "";
-
         if (!File.Exists(FilePath))
             return false;
-
         try
         {
-            ProfileData data = JsonUtility.FromJson<ProfileData>(File.ReadAllText(FilePath));
+            data = JsonUtility.FromJson<ProfileData>(File.ReadAllText(FilePath));
             if (data == null)
                 return false;
-
             classIndex = data.classIndex;
             colorIndex = data.colorIndex;
             playerName = data.playerName ?? "";

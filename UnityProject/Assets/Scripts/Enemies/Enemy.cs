@@ -5,11 +5,14 @@ using UnityEngine;
 // One networked enemy built from an EnemyKit; behavior is split across Enemy.*.cs by concern.
 public partial class Enemy : NetworkBehaviour
 {
+    private const float DefaultBodyRadius = 0.4f;
+
     private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;
     private Animator animator;
     private NetworkTransform networkTransform;
     private WaveSpawner waveSpawner;
+
     private float bodyRadius;
     private Vector2 bodyOffset;
 
@@ -21,29 +24,65 @@ public partial class Enemy : NetworkBehaviour
     // The collider is offset from the pivot; queries must start at the real body.
     public Vector2 BodyCenter => rb.position + bodyOffset;
 
-    void Awake()
+    private void CacheComponents()
     {
         rb = GetComponent<Rigidbody2D>();
         rb.sharedMaterial = GetSlipperyMaterial();
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         animator = GetComponentInChildren<Animator>();
         networkTransform = GetComponent<NetworkTransform>();
-
-        CircleCollider2D circle = GetComponent<CircleCollider2D>();
-        float scale = Mathf.Max(transform.lossyScale.x, transform.lossyScale.y);
-        bodyRadius = circle != null ? circle.radius * scale : 0.4f;
-        bodyOffset = circle != null ? circle.offset * (Vector2)transform.lossyScale : Vector2.zero;
-        EnemyFlowFieldManager.BodyOffset = bodyOffset;
-
-        AwakeHealth();
     }
 
-    void Start()
+    // Body size comes from the collider, shared with the flow field so its cells match an enemy body.
+    private void InitBody()
     {
-        lastPosition = transform.position;
-        waveSpawner = FindAnyObjectByType<WaveSpawner>();
-        if (Kit != null)
-            StaggerTimers();
+        CircleCollider2D circle = GetComponent<CircleCollider2D>();
+        float scale = Mathf.Max(transform.lossyScale.x, transform.lossyScale.y);
+
+        bodyRadius = DefaultBodyRadius;
+        bodyOffset = Vector2.zero;
+        if (circle != null)
+        {
+            bodyRadius = circle.radius * scale;
+            bodyOffset = circle.offset * (Vector2)transform.lossyScale;
+        }
+        EnemyFlowFieldManager.BodyOffset = bodyOffset;
+        EnemyFlowFieldManager.BodyRadius = bodyRadius;
+    }
+
+    private WaveSpawner GetWaveSpawner()
+    {
+        if (waveSpawner == null)
+            return FindAnyObjectByType<WaveSpawner>();
+        return waveSpawner;
+    }
+
+    // Remote clients never get Initialize, so they resolve the kit from the replicated index.
+    private void HandleKitIndexChanged(int previous, int current)
+    {
+        WaveSpawner spawner;
+        EnemyKit kit;
+
+        if (Kit != null || current < 0)
+            return;
+        spawner = GetWaveSpawner();
+        if (spawner == null)
+            return;
+        kit = spawner.GetKit(current);
+        if (kit != null)
+            Initialize(kit);
+    }
+
+    // Frozen in place (animation included) behind the Game Over screen.
+    private bool FreezeIfRunOver()
+    {
+        if (!GameOverCheck.IsRunOver)
+            return false;
+        if (animator != null)
+            animator.speed = 0f;
+        if (this.HasServerAuthority())
+            rb.linearVelocity = Vector2.zero;
+        return true;
     }
 
     // Called by WaveSpawner right after Instantiate, before any network spawn.
@@ -54,7 +93,10 @@ public partial class Enemy : NetworkBehaviour
     }
 
     // Called by WaveSpawner before Spawn(), so remote clients get the kit in the first payload.
-    public void SetNetworkedKitIndex(int index) => kitIndex.Value = index;
+    public void SetNetworkedKitIndex(int index)
+    {
+        kitIndex.Value = index;
+    }
 
     public override void OnNetworkSpawn()
     {
@@ -67,28 +109,32 @@ public partial class Enemy : NetworkBehaviour
         kitIndex.OnValueChanged -= HandleKitIndexChanged;
     }
 
-    // Remote clients never get Initialize, so they resolve the kit from the replicated index.
-    private void HandleKitIndexChanged(int previous, int current)
+    void Awake()
     {
-        if (Kit != null || current < 0)
-            return;
+        CacheComponents();
+        InitBody();
+        AwakeHealth();
+    }
 
-        WaveSpawner spawner = waveSpawner != null ? waveSpawner : FindAnyObjectByType<WaveSpawner>();
-        EnemyKit kit = spawner != null ? spawner.GetKit(current) : null;
-        if (kit != null)
-            Initialize(kit);
+    void Start()
+    {
+        lastPosition = transform.position;
+        waveSpawner = FindAnyObjectByType<WaveSpawner>();
+        if (Kit != null)
+            StaggerTimers();
     }
 
     void Update()
     {
+        if (FreezeIfRunOver())
+            return;
         UpdateVisuals();
     }
 
     void FixedUpdate()
     {
-        if (!this.HasServerAuthority())
+        if (!this.HasServerAuthority() || GameOverCheck.IsRunOver)
             return;
-
         TickAttack();
         TickMovement();
     }

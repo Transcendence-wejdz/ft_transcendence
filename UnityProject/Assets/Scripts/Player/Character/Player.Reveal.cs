@@ -1,5 +1,6 @@
 using UnityEngine;
 
+// Local player only: opens a see-through circle in decor that hides it.
 public partial class Player
 {
     [Header("Occlusion Reveal")]
@@ -26,21 +27,34 @@ public partial class Player
     private static readonly int RevealPixelsPerUnitId = Shader.PropertyToID("_RevealPixelsPerUnit");
 
     // Local player only: feeds the circle to the reveal shader and flags every decor whose sprite covers the player from in front.
-    private void LateUpdateReveal()
+    private int RevealSortingOrder()
     {
-        if (!this.IsLocallyControlled() || spriteRenderer == null)
-            return;
+        if (sortingLayerAuto != null)
+            return sortingLayerAuto.CurrentSortingOrder;
+        return spriteRenderer.sortingOrder;
+    }
 
-        int layer = spriteRenderer.sortingLayerID;
-        int order = sortingLayerAuto != null ? sortingLayerAuto.CurrentSortingOrder : spriteRenderer.sortingOrder;
-        Vector3 center = spriteRenderer.bounds.center;
-
+    private void SetRevealGlobals(Vector3 center)
+    {
         Shader.SetGlobalVector(RevealCenterId, center);
         Shader.SetGlobalFloat(RevealRadiusId, revealRadius);
         Shader.SetGlobalFloat(RevealAlphaId, revealAlpha);
         Shader.SetGlobalFloat(RevealSoftnessId, revealSoftness);
         Shader.SetGlobalFloat(RevealPixelsPerUnitId, revealPixelsPerUnit);
+    }
 
+    private void LateUpdateReveal()
+    {
+        int layer;
+        int order;
+        Vector3 center;
+
+        if (!this.IsLocallyControlled() || spriteRenderer == null)
+            return;
+        layer = spriteRenderer.sortingLayerID;
+        order = RevealSortingOrder();
+        center = spriteRenderer.bounds.center;
+        SetRevealGlobals(center);
         foreach (RevealOccluder occluder in RevealOccluder.Active)
             occluder.SetTarget(revealRadius > 0f && occluder.Covers(center, layer, order), revealSpeed);
         RevealOccluder.TickAll(Time.deltaTime);

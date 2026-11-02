@@ -14,8 +14,27 @@ public class SettingsSwitch : MonoBehaviour
     [SerializeField] private float knobPop = 1.2f;
 
     private Toggle toggle;
-    private bool shown;
     private float progress;
+
+    private float Target
+    {
+        get
+        {
+            if (toggle.isOn)
+                return 1f;
+            return 0f;
+        }
+    }
+
+    // Knob eases across, swelling mid-travel, while the track blends between both colors.
+    private void Apply()
+    {
+        float eased = progress * progress * (3f - 2f * progress);
+
+        track.color = Color.Lerp(offColor, onColor, eased);
+        knob.anchoredPosition = new Vector2(Mathf.Lerp(-knobTravel, knobTravel, eased), knob.anchoredPosition.y);
+        knob.localScale = Vector3.one * Mathf.Lerp(1f, knobPop, Mathf.Sin(eased * Mathf.PI));
+    }
 
     private void Awake()
     {
@@ -25,28 +44,18 @@ public class SettingsSwitch : MonoBehaviour
     // Opens on the current value without replaying the slide.
     private void OnEnable()
     {
-        shown = toggle.isOn;
-        progress = shown ? 1f : 0f;
+        progress = Target;
         Apply();
     }
 
     // Also catches SetIsOnWithoutNotify, which fires no event; unscaled since the pause freezes time.
     private void LateUpdate()
     {
-        shown = toggle.isOn;
-        float target = shown ? 1f : 0f;
+        float target = Target;
+
         if (progress == target)
             return;
         progress = Mathf.MoveTowards(progress, target, Time.unscaledDeltaTime / duration);
         Apply();
-    }
-
-    // Knob eases across, swelling mid-travel, while the track blends between both colors.
-    private void Apply()
-    {
-        float eased = progress * progress * (3f - 2f * progress);
-        track.color = Color.Lerp(offColor, onColor, eased);
-        knob.anchoredPosition = new Vector2(Mathf.Lerp(-knobTravel, knobTravel, eased), knob.anchoredPosition.y);
-        knob.localScale = Vector3.one * Mathf.Lerp(1f, knobPop, Mathf.Sin(eased * Mathf.PI));
     }
 }

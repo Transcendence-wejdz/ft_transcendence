@@ -11,6 +11,28 @@ public class BossUI : MonoBehaviour
 
     private Boss bound;
 
+    private void SetFill(float current, float max)
+    {
+        float fraction = 0f;
+
+        if (max > 0f)
+            fraction = current / max;
+        BrushFill.Set(fillImage, fraction);
+    }
+
+    private void Bind(Boss boss)
+    {
+        if (bound != null)
+            bound.OnHealthChanged -= SetFill;
+        bound = boss;
+        content.SetActive(bound != null);
+        if (bound == null)
+            return;
+        bound.OnHealthChanged += SetFill;
+        nameText.text = bound.Kit.DisplayName;
+        SetFill(bound.CurrentHealth, bound.MaxHealth);
+    }
+
     void OnEnable()
     {
         Boss.OnActiveChanged += Bind;
@@ -21,25 +43,5 @@ public class BossUI : MonoBehaviour
     {
         Boss.OnActiveChanged -= Bind;
         Bind(null);
-    }
-
-    private void Bind(Boss boss)
-    {
-        if (bound != null)
-            bound.OnHealthChanged -= SetFill;
-
-        bound = boss;
-        content.SetActive(bound != null);
-        if (bound == null)
-            return;
-
-        bound.OnHealthChanged += SetFill;
-        nameText.text = bound.Kit.DisplayName;
-        SetFill(bound.CurrentHealth, bound.MaxHealth);
-    }
-
-    private void SetFill(float current, float max)
-    {
-        BrushFill.Set(fillImage, max > 0f ? current / max : 0f);
     }
 }

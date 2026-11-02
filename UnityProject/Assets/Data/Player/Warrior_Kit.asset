@@ -15,69 +15,13 @@ MonoBehaviour:
   maxHealth: 120
   healthRegenPerSecond: 1.5
   maxMana: 60
-  manaRegenPerSecond: 0.5
+  manaRegenPerSecond: 1.2
   dodgeCharges: 1
   dodgeRechargeSeconds: 3
   dodgeDistance: 2.5
   dodgeDuration: 0.2
-  attackCooldown: 0.7
-  attackFxPrefab: {fileID: 2950713147391728551, guid: 03676747502a51cbd8b33fb46557150e, type: 3}
-  attackFxDistance: 0.8
-  attackFxOrigin: {x: 0, y: 0}
-  attackFxFromAimIndicator: 1
-  attackDamage: 15
-  attackMoveLockDuration: 0.25
-  attackMoveSpeedMultiplier: 0.75
-  attackAnimSpeed: 2.5
-  attackSize: 1.5
-  attackIgnoreAimRotation: 0
-  attackFollowCaster: 1
-  attackGlowIntensity: 1.2
-  attackGlowSize: 1.1
-  attackGlowDuration: 0.42
-  hasProjectile: 0
-  projectileSpeed: 12
-  projectileMaxDistance: 10
-  pierceCount: 1
-  specialCooldown: 5
-  specialManaCost: 20
-  specialFxPrefab: {fileID: 5746027779926496099, guid: 93353710a3ca808dbb3841221af00b41, type: 3}
-  specialFxDistance: 0
-  specialFxOrigin: {x: 0, y: 0}
-  specialFxFromAimIndicator: 1
-  specialAimMode: 0
-  specialMaxRange: 6
-  specialDamage: 40
-  specialMoveLockDuration: 0.3
-  specialMoveSpeedMultiplier: 0.35
-  specialAnimSpeed: 2
-  specialSize: 2
-  specialIgnoreAimRotation: 0
-  specialFollowCaster: 1
-  specialGlowIntensity: 1.2
-  specialGlowSize: 1.1
-  specialGlowDuration: 0.42
-  ultimateCooldown: 5
-  ultimateManaCost: 40
-  ultimateFxPrefab: {fileID: 2543181571912392695, guid: 25ba05138bee6b5cd838262031469df2, type: 3}
-  ultimateFxDistance: 1
-  ultimateFxOrigin: {x: 0, y: 0}
-  ultimateFxFromAimIndicator: 1
-  ultimateDamage: 0
-  ultimateMoveLockDuration: 0.3
-  ultimateMoveSpeedMultiplier: 1
-  ultimateAnimSpeed: 1
-  ultimateSize: 2
-  ultimateIgnoreAimRotation: 0
-  ultimateFollowCaster: 1
-  ultimateGlowIntensity: 1.2
-  ultimateGlowSize: 1.1
-  ultimateGlowDuration: 0
-  hasShield: 1
-  shieldHoldDuration: 10
-  shieldHealth: 150
-  shieldKnockbackForce: 1
-  shieldKnockbackDuration: 1
-  shieldPushInterval: 0.2
-  shieldTurnSpeed: 100
-  shieldHoldAnimation: 1
+  attack: {fileID: 11400000, guid: 3c700eacb61449859403049a47735460, type: 2}
+  specials:
+  - {fileID: 11400000, guid: b3fa9585cfc04ef08928c1679d0961f3, type: 2}
+  ultimates:
+  - {fileID: 11400000, guid: fe5d91c185b54951b0e172934173e41e, type: 2}

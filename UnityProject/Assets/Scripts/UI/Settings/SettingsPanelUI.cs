@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // Settings panel: gameplay preference toggles and graphics options, synced from GameSettings whenever the panel opens.
-public class SettingsPanelUI : MonoBehaviour
+public partial class SettingsPanelUI : MonoBehaviour
 {
     [SerializeField] private Toggle enemyHealthBarsToggle;
     [SerializeField] private Toggle screenShakeToggle;
@@ -14,6 +14,14 @@ public class SettingsPanelUI : MonoBehaviour
     [SerializeField] private Toggle showFpsToggle;
     [SerializeField] private Toggle showPingToggle;
     [SerializeField] private Toggle[] qualityOptions;
+    [SerializeField] private Toggle[] cursorStyleOptions;
+    [SerializeField] private Toggle[] cursorColorOptions;
+    [SerializeField] private Image crosshairPreviewFill;
+    [SerializeField] private Image crosshairPreviewOutline;
+    [Tooltip("Preview size at 100% Cursor Size.")]
+    [SerializeField] private float crosshairPreviewSize = 32f;
+    [Tooltip("Largest preview size, so big Cursor Sizes do not spill far over the rows around it.")]
+    [SerializeField] private float crosshairPreviewMaxSize = 44f;
     [SerializeField] private Toggle hdrToggle;
     [SerializeField] private Toggle aimAssistToggle;
     [SerializeField] private Slider aimDeadzoneSlider;
@@ -29,55 +37,57 @@ public class SettingsPanelUI : MonoBehaviour
     [SerializeField] private Slider aimSpeedSlider;
     [SerializeField] private TMP_Text aimSpeedLabel;
 
-    private void Awake()
+    private static string PercentText(float value)
     {
-        enemyHealthBarsToggle.onValueChanged.AddListener(value => GameSettings.ShowEnemyHealthBars = value);
-        screenShakeToggle.onValueChanged.AddListener(value => GameSettings.ScreenShakeEnabled = value);
-        attackPreviewToggle.onValueChanged.AddListener(value => GameSettings.ShowAttackPreview = value);
-        specialPreviewToggle.onValueChanged.AddListener(value => GameSettings.ShowSpecialPreview = value);
-        ultimatePreviewToggle.onValueChanged.AddListener(value => GameSettings.ShowUltimatePreview = value);
-        damageNumbersToggle.onValueChanged.AddListener(value => GameSettings.ShowDamageNumbers = value);
-        showFpsToggle.onValueChanged.AddListener(value => GameSettings.ShowFps = value);
-        showPingToggle.onValueChanged.AddListener(value => GameSettings.ShowPing = value);
-        hdrToggle.onValueChanged.AddListener(value => GameSettings.HdrEnabled = value);
-        aimAssistToggle.onValueChanged.AddListener(value => GameSettings.AimAssist = value);
-
-        for (int i = 0; i < qualityOptions.Length; i++)
-        {
-            int level = i;
-            qualityOptions[i].onValueChanged.AddListener(isOn => { if (isOn) GameSettings.GraphicsQuality = level; });
-        }
-
-        BindPercentSlider(deadzoneSlider, deadzoneLabel, GameSettings.StickDeadzoneMin, GameSettings.StickDeadzoneMax, GameSettings.StickDeadzoneStep, value => GameSettings.StickDeadzone = value);
-        BindPercentSlider(cameraDistanceSlider, cameraDistanceLabel, GameSettings.CameraDistanceMin, GameSettings.CameraDistanceMax, GameSettings.CameraDistanceStep, value => GameSettings.CameraDistance = value);
-        BindPercentSlider(cursorSizeSlider, cursorSizeLabel, GameSettings.CursorSizeMin, GameSettings.CursorSizeMax, GameSettings.CursorSizeStep, value => GameSettings.CursorSize = value);
-        BindPercentSlider(aimDeadzoneSlider, aimDeadzoneLabel, GameSettings.AimDeadzoneMin, GameSettings.AimDeadzoneMax, GameSettings.AimDeadzoneStep, value => GameSettings.AimDeadzone = value);
-        BindPercentSlider(mouseSensitivitySlider, mouseSensitivityLabel, GameSettings.MouseSensitivityMin, GameSettings.MouseSensitivityMax, GameSettings.MouseSensitivityStep, value => GameSettings.MouseSensitivity = value);
-        BindPercentSlider(aimSpeedSlider, aimSpeedLabel, GameSettings.GamepadAimSpeedMin, GameSettings.GamepadAimSpeedMax, GameSettings.GamepadAimSpeedStep, value => GameSettings.GamepadAimSpeed = value);
+        return Mathf.RoundToInt(value * 100f) + "%";
     }
 
-    private void OnEnable()
+    private static void BindToggle(Toggle toggle, System.Action<bool> apply)
     {
-        enemyHealthBarsToggle.SetIsOnWithoutNotify(GameSettings.ShowEnemyHealthBars);
-        screenShakeToggle.SetIsOnWithoutNotify(GameSettings.ScreenShakeEnabled);
-        attackPreviewToggle.SetIsOnWithoutNotify(GameSettings.ShowAttackPreview);
-        specialPreviewToggle.SetIsOnWithoutNotify(GameSettings.ShowSpecialPreview);
-        ultimatePreviewToggle.SetIsOnWithoutNotify(GameSettings.ShowUltimatePreview);
-        damageNumbersToggle.SetIsOnWithoutNotify(GameSettings.ShowDamageNumbers);
-        showFpsToggle.SetIsOnWithoutNotify(GameSettings.ShowFps);
-        showPingToggle.SetIsOnWithoutNotify(GameSettings.ShowPing);
-        hdrToggle.SetIsOnWithoutNotify(GameSettings.HdrEnabled);
-        aimAssistToggle.SetIsOnWithoutNotify(GameSettings.AimAssist);
+        toggle.onValueChanged.AddListener(value => apply(value));
+    }
 
-        for (int i = 0; i < qualityOptions.Length; i++)
-            qualityOptions[i].SetIsOnWithoutNotify(i == GameSettings.GraphicsQuality);
+    // Radio group: the option turned on writes its index.
+    private static void BindOption(Toggle option, int index, System.Action<int> apply)
+    {
+        option.onValueChanged.AddListener(isOn => ApplyIfOn(isOn, index, apply));
+    }
 
-        SyncPercentSlider(deadzoneSlider, deadzoneLabel, GameSettings.StickDeadzone, GameSettings.StickDeadzoneStep);
-        SyncPercentSlider(cameraDistanceSlider, cameraDistanceLabel, GameSettings.CameraDistance, GameSettings.CameraDistanceStep);
-        SyncPercentSlider(cursorSizeSlider, cursorSizeLabel, GameSettings.CursorSize, GameSettings.CursorSizeStep);
-        SyncPercentSlider(aimDeadzoneSlider, aimDeadzoneLabel, GameSettings.AimDeadzone, GameSettings.AimDeadzoneStep);
-        SyncPercentSlider(mouseSensitivitySlider, mouseSensitivityLabel, GameSettings.MouseSensitivity, GameSettings.MouseSensitivityStep);
-        SyncPercentSlider(aimSpeedSlider, aimSpeedLabel, GameSettings.GamepadAimSpeed, GameSettings.GamepadAimSpeedStep);
+    private static void ApplyIfOn(bool isOn, int index, System.Action<int> apply)
+    {
+        if (isOn)
+            apply(index);
+    }
+
+    private static void SyncOptions(Toggle[] options, int selected)
+    {
+        for (int i = 0; i < options.Length; i++)
+            options[i].SetIsOnWithoutNotify(i == selected);
+    }
+
+    // Style options show an "Icon" image of their crosshair instead of a name.
+    private static void SetStyleIcon(Toggle option, int style)
+    {
+        Transform icon = option.transform.Find("Icon");
+
+        if (icon != null)
+            icon.GetComponent<Image>().sprite = CursorManager.CrosshairSprite(style, false);
+    }
+
+    // Color options show a "Swatch" image instead of a name; its tint comes from the same palette as the crosshair.
+    private static void TintSwatch(Toggle option, int color)
+    {
+        Transform swatch = option.transform.Find("Swatch");
+
+        if (swatch == null || color >= GameSettings.CursorColorValues.Length)
+            return;
+        swatch.GetComponent<Image>().color = GameSettings.CursorColorValues[color];
+    }
+
+    private static void ApplySliderStep(float steps, float step, TMP_Text label, System.Action<float> apply)
+    {
+        apply(steps * step);
+        label.text = PercentText(steps * step);
     }
 
     // Whole-step slider showing its value as a percentage, so mouse drag and gamepad left/right land on the same values.
@@ -86,16 +96,54 @@ public class SettingsPanelUI : MonoBehaviour
         slider.wholeNumbers = true;
         slider.minValue = Mathf.Round(min / step);
         slider.maxValue = Mathf.Round(max / step);
-        slider.onValueChanged.AddListener(steps =>
-        {
-            apply(steps * step);
-            label.text = Mathf.RoundToInt(steps * step * 100f) + "%";
-        });
+        slider.onValueChanged.AddListener(steps => ApplySliderStep(steps, step, label, apply));
     }
 
     private static void SyncPercentSlider(Slider slider, TMP_Text label, float value, float step)
     {
         slider.SetValueWithoutNotify(Mathf.Round(value / step));
-        label.text = Mathf.RoundToInt(value * 100f) + "%";
+        label.text = PercentText(value);
+    }
+
+    private static void SetCrosshairImage(Image image, Sprite sprite, Color color, Vector2 size)
+    {
+        image.sprite = sprite;
+        image.color = color;
+        image.rectTransform.sizeDelta = size;
+    }
+
+    // The crosshair as it shows in game: chosen style and color, outlined, scaled by Cursor Size.
+    private void RefreshCrosshairPreview()
+    {
+        int style = GameSettings.CursorStyle;
+        Vector2 size = Vector2.one * Mathf.Min(crosshairPreviewSize * GameSettings.CursorSize, crosshairPreviewMaxSize);
+
+        if (crosshairPreviewFill == null || crosshairPreviewOutline == null)
+            return;
+        SetCrosshairImage(crosshairPreviewFill, CursorManager.CrosshairSprite(style, false), CursorManager.CrosshairColor(), size);
+        SetCrosshairImage(crosshairPreviewOutline, CursorManager.CrosshairSprite(style, true), CursorManager.CrosshairOutlineTint, size);
+    }
+
+    private void Awake()
+    {
+        BindToggles();
+        BindOptionGroups();
+        BindSliders();
+    }
+
+    private void OnEnable()
+    {
+        GameSettings.OnChanged += RefreshCrosshairPreview;
+        RefreshCrosshairPreview();
+        SyncToggles();
+        SyncOptions(qualityOptions, GameSettings.GraphicsQuality);
+        SyncOptions(cursorStyleOptions, GameSettings.CursorStyle);
+        SyncOptions(cursorColorOptions, GameSettings.CursorColor);
+        SyncSliders();
+    }
+
+    private void OnDisable()
+    {
+        GameSettings.OnChanged -= RefreshCrosshairPreview;
     }
 }

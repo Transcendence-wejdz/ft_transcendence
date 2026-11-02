@@ -5,6 +5,8 @@ using UnityEngine;
 [CustomEditor(typeof(ProceduralMapGenerator))]
 public class ProceduralMapGeneratorEditor : Editor
 {
+    private const string PrefsPrefix = "ProceduralMapGeneratorEditor.Section.";
+
     private static readonly InspectorSections.Section[] Sections =
     {
         new("", "References", "landTilemap", "waterTilemap", "waterBackgroundTilemap", "coastFoamTilemap", "player"),
@@ -16,11 +18,13 @@ public class ProceduralMapGeneratorEditor : Editor
 
     public override void OnInspectorGUI()
     {
-        serializedObject.Update();
-        InspectorSections.Draw(serializedObject, "ProceduralMapGeneratorEditor.Section.", Sections, null);
-        serializedObject.ApplyModifiedProperties();
+        bool previewOn;
 
-        if (serializedObject.FindProperty("previewInEditor").boolValue && GUILayout.Button("Regenerate Preview"))
+        serializedObject.Update();
+        InspectorSections.Draw(serializedObject, PrefsPrefix, Sections, null);
+        serializedObject.ApplyModifiedProperties();
+        previewOn = serializedObject.FindProperty("previewInEditor").boolValue;
+        if (previewOn && GUILayout.Button("Regenerate Preview"))
             ((ProceduralMapGenerator)target).GeneratePreview();
     }
 }

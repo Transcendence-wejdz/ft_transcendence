@@ -5,28 +5,38 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-// Replaces the OS cursor
-public class CursorManager : MonoBehaviour
+// Replaces the OS cursor: a crosshair (style and color from the settings) in game, the arrow in menus and over buttons; crosshair drawing lives in CursorManager.Crosshair.cs.
+public partial class CursorManager : MonoBehaviour
 {
-    private static readonly Vector2 DefaultHotspot = new Vector2(21, 16);
-    private static readonly Vector2 HoverHotspot = new Vector2(19, 16);
     private const string DefaultCursorResourcePath = "Tiny Swords/UI Elements/Cursors/Cursor_01";
     private const string HoverCursorResourcePath = "Tiny Swords/UI Elements/Cursors/Cursor_02";
     private const int CursorSortingOrder = 10000;
 
+    private static readonly Vector2 DefaultHotspot = new Vector2(21, 16);
+    private static readonly Vector2 HoverHotspot = new Vector2(19, 16);
+    private static readonly Vector2 Center = new Vector2(0.5f, 0.5f);
+
+    private static CursorManager instance;
+
     [SerializeField] private float displayScale = 0.5f;
     [SerializeField] private float clickScale = 0.5f;
+    [Tooltip("Scale the crosshair spreads to on a click, like a gun sight kicking open.")]
+    [SerializeField] private float crosshairClickScale = 1.2f;
     [SerializeField] private float clickAnimationDuration = 0.08f;
 
     private Sprite defaultSprite;
     private Sprite hoverSprite;
     private RectTransform canvasRect;
-    private RectTransform cursorRect;
-    private Image cursorImage;
+    private RectTransform pointerRect;
+    private RectTransform arrowRect;
+    private Image arrowImage;
+    private RectTransform crosshairRect;
+    private Image crosshairFill;
+    private Image crosshairOutline;
     private Coroutine activeAnimation;
     private bool isHoveringClickable;
+    private bool showingArrow = true;
     private readonly List<RaycastResult> raycastResults = new List<RaycastResult>();
-    private static CursorManager instance;
     private Vector2 virtualPosition;
     private bool virtualActive;
 
@@ -37,181 +47,116 @@ public class CursorManager : MonoBehaviour
         {
             if (instance != null && instance.virtualActive)
                 return instance.virtualPosition;
-            return Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
+            if (Mouse.current == null)
+                return Vector2.zero;
+            return Mouse.current.position.ReadValue();
         }
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap()
     {
-        var go = new GameObject("CursorManager");
+        GameObject go = new GameObject("CursorManager");
+
         DontDestroyOnLoad(go);
         go.AddComponent<CursorManager>();
     }
 
-    private void Awake()
+    // The arrow's tip sits on the pointer: its pivot is moved onto the hotspot, measured in the full texture since the sprites are not cropped.
+    private void ApplyArrowSprite(Sprite sprite, Vector2 hotspot)
     {
-        defaultSprite = Resources.Load<Sprite>(DefaultCursorResourcePath);
-        hoverSprite = Resources.Load<Sprite>(HoverCursorResourcePath);
-        if (defaultSprite == null)
-        {
-            Debug.LogWarning($"CursorManager: could not load cursor sprite at Resources/{DefaultCursorResourcePath}");
-            Destroy(gameObject);
-            return;
-        }
-
-        instance = this;
-        Cursor.visible = false;
-
-        var canvasGO = new GameObject("CursorCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
-        canvasGO.transform.SetParent(transform, false);
-        var canvas = canvasGO.GetComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = CursorSortingOrder;
-        var scaler = canvasGO.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(800f, 600f);
-        canvasRect = canvasGO.GetComponent<RectTransform>();
-
-        var imageGO = new GameObject("Cursor", typeof(RectTransform), typeof(Image));
-        imageGO.transform.SetParent(canvasGO.transform, false);
-        cursorImage = imageGO.GetComponent<Image>();
-        cursorImage.raycastTarget = false;
-        cursorRect = imageGO.GetComponent<RectTransform>();
-        cursorRect.anchorMin = cursorRect.anchorMax = new Vector2(0.5f, 0.5f);
-
-        ApplySprite(defaultSprite, DefaultHotspot);
-        GameSettings.OnChanged += ApplyCurrentSprite;
-    }
-
-    // Re-applies the shown sprite so a Cursor Size change takes effect at once.
-    private void ApplyCurrentSprite()
-    {
-        if (isHoveringClickable && hoverSprite != null)
-            ApplySprite(hoverSprite, HoverHotspot);
-        else
-            ApplySprite(defaultSprite, DefaultHotspot);
-    }
-
-    private void ApplySprite(Sprite sprite, Vector2 hotspot)
-    {
-        cursorImage.sprite = sprite;
-        cursorImage.SetNativeSize();
-        cursorRect.sizeDelta *= displayScale * GameSettings.CursorSize;
-
         Rect spriteRect = sprite.rect;
         float spriteTopFromTextureTop = sprite.texture.height - (spriteRect.y + spriteRect.height);
-        cursorRect.pivot = new Vector2(
+
+        arrowImage.sprite = sprite;
+        arrowImage.SetNativeSize();
+        arrowRect.sizeDelta *= displayScale * GameSettings.CursorSize;
+        arrowRect.pivot = new Vector2(
             (hotspot.x - spriteRect.x) / spriteRect.width,
             1f - (hotspot.y - spriteTopFromTextureTop) / spriteRect.height);
     }
 
+    private void ApplyCurrentArrow()
+    {
+        if (isHoveringClickable)
+            ApplyArrowSprite(hoverSprite, HoverHotspot);
+        else
+            ApplyArrowSprite(defaultSprite, DefaultHotspot);
+    }
+
+    private void ApplyCrosshair()
+    {
+        int style = GameSettings.CursorStyle;
+        float size = CrosshairTextureSize * displayScale * GameSettings.CursorSize;
+
+        crosshairFill.sprite = CrosshairSprite(style, false);
+        crosshairOutline.sprite = CrosshairSprite(style, true);
+        crosshairFill.rectTransform.sizeDelta = new Vector2(size, size);
+        crosshairOutline.rectTransform.sizeDelta = new Vector2(size, size);
+        crosshairOutline.color = CrosshairOutlineColor;
+        crosshairFill.color = CrosshairColor();
+    }
+
+    // Re-applies size, crosshair shape and arrow sprite so a settings change takes effect at once.
+    private void ApplySettings()
+    {
+        ApplyCurrentArrow();
+        ApplyCrosshair();
+    }
+
+    private void MovePointer(Vector2 screenPosition)
+    {
+        Vector2 localPoint;
+
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPosition, null, out localPoint))
+            pointerRect.localPosition = localPoint;
+    }
+
+    private void Awake()
+    {
+        Transform canvas;
+
+        if (!LoadSprites())
+        {
+            Destroy(gameObject);
+            return;
+        }
+        instance = this;
+        Cursor.visible = false;
+        canvas = BuildCanvas();
+        BuildPointer(canvas);
+        ApplySettings();
+        GameSettings.OnChanged += ApplySettings;
+    }
+
     private void OnDestroy()
     {
-        GameSettings.OnChanged -= ApplyCurrentSprite;
+        GameSettings.OnChanged -= ApplySettings;
         if (virtualActive)
             Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
 
+    // Hidden over the gamepad, and outside the window where the OS cursor takes over.
     private void Update()
     {
-        if (cursorRect == null || Mouse.current == null)
-            return;
+        bool osInsideWindow;
+        bool insideWindow;
+        bool visible;
 
-        Vector2 osPosition = Mouse.current.position.ReadValue();
-        bool osInsideWindow = Application.isFocused
-            && osPosition.x >= 0f && osPosition.x <= Screen.width
-            && osPosition.y >= 0f && osPosition.y <= Screen.height;
+        if (pointerRect == null || Mouse.current == null)
+            return;
+        osInsideWindow = IsInsideWindow(Mouse.current.position.ReadValue());
         UpdateVirtualCursor(osInsideWindow);
-
-        Vector2 mouseScreenPosition = PointerPosition;
-        bool insideWindow = virtualActive || osInsideWindow;
+        insideWindow = virtualActive || osInsideWindow;
         Cursor.visible = !insideWindow;
-        cursorImage.enabled = insideWindow && !InputModeTracker.UsingGamepad;
-        if (!cursorImage.enabled)
+        visible = insideWindow && !InputModeTracker.UsingGamepad;
+        pointerRect.gameObject.SetActive(visible);
+        if (!visible)
             return;
-
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, mouseScreenPosition, null, out Vector2 localPoint))
-            cursorRect.localPosition = localPoint;
-
-        if (hoverSprite != null)
-        {
-            bool nowHovering = IsPointerOverClickable(mouseScreenPosition);
-            if (nowHovering != isHoveringClickable)
-            {
-                isHoveringClickable = nowHovering;
-                ApplySprite(nowHovering ? hoverSprite : defaultSprite, nowHovering ? HoverHotspot : DefaultHotspot);
-            }
-        }
-
+        MovePointer(PointerPosition);
+        UpdateMode(PointerPosition);
         if (Mouse.current.leftButton.wasPressedThisFrame)
-        {
-            if (activeAnimation != null)
-                StopCoroutine(activeAnimation);
-            activeAnimation = StartCoroutine(AnimateClick());
-        }
-    }
-
-    // Outside menus with a non default mouse sensitivity, locks the OS cursor and moves a virtual one by mouse delta x sensitivity; menus get the OS cursor back where the virtual one was.
-    private void UpdateVirtualCursor(bool osInsideWindow)
-    {
-        bool wanted = !Mathf.Approximately(GameSettings.MouseSensitivity, 1f)
-            && !PauseManager.IsPaused && !InputModeTracker.UsingGamepad && Application.isFocused
-            && (virtualActive || osInsideWindow);
-
-        if (wanted && !virtualActive)
-        {
-            virtualPosition = Mouse.current.position.ReadValue();
-            Cursor.lockState = CursorLockMode.Locked;
-            virtualActive = true;
-            return;
-        }
-        if (!wanted && virtualActive)
-        {
-            virtualActive = false;
-            Cursor.lockState = CursorLockMode.None;
-            Mouse.current.WarpCursorPosition(virtualPosition);
-            return;
-        }
-        if (!virtualActive)
-            return;
-
-        virtualPosition += Mouse.current.delta.ReadValue() * GameSettings.MouseSensitivity;
-        virtualPosition.x = Mathf.Clamp(virtualPosition.x, 0f, Screen.width);
-        virtualPosition.y = Mathf.Clamp(virtualPosition.y, 0f, Screen.height);
-    }
-
-    private bool IsPointerOverClickable(Vector2 screenPosition)
-    {
-        if (EventSystem.current == null)
-            return false;
-
-        var pointerEventData = new PointerEventData(EventSystem.current) { position = screenPosition };
-
-        raycastResults.Clear();
-        EventSystem.current.RaycastAll(pointerEventData, raycastResults);
-        foreach (RaycastResult result in raycastResults)
-        {
-            Selectable selectable = result.gameObject.GetComponentInParent<Selectable>();
-            if (selectable != null && selectable.interactable)
-                return true;
-        }
-        return false;
-    }
-
-    private IEnumerator AnimateClick()
-    {
-        float t = 0f;
-        while (t < clickAnimationDuration)
-        {
-            t += Time.unscaledDeltaTime;
-            float pulse = Mathf.Sin(Mathf.Clamp01(t / clickAnimationDuration) * Mathf.PI);
-            cursorRect.localScale = Vector3.one * Mathf.Lerp(1f, clickScale, pulse);
-            yield return null;
-        }
-
-        cursorRect.localScale = Vector3.one;
-        activeAnimation = null;
+            PlayClick();
     }
 }

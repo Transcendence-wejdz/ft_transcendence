@@ -11,31 +11,24 @@ public class PlayerNameTag : MonoBehaviour
     private bool inSession;
     private bool hidden;
 
-    void Awake()
+    private void RefreshVisibility()
     {
-        player = GetComponentInParent<Player>();
+        bool show = inSession && !hidden;
+
+        if (gameObject.activeSelf != show)
+            gameObject.SetActive(show);
     }
 
-    void OnEnable()
+    private void ApplyColor(int classIndex, int colorIndex)
     {
-        if (player == null)
-            return;
-
-        player.OnClassOrColorChanged += ApplyColor;
-        ApplyColor(player.ClassIndex, player.ColorIndex);
-    }
-
-    void OnDisable()
-    {
-        if (player != null)
-            player.OnClassOrColorChanged -= ApplyColor;
+        if (nameLabel != null && CharacterCatalog.Instance != null)
+            nameLabel.color = CharacterCatalog.Instance.GetAccentColor(colorIndex);
     }
 
     public void SetName(string value)
     {
         if (nameLabel != null)
             nameLabel.text = value;
-
         inSession = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
         RefreshVisibility();
     }
@@ -45,21 +38,26 @@ public class PlayerNameTag : MonoBehaviour
     {
         if (hidden == value)
             return;
-
         hidden = value;
         RefreshVisibility();
     }
 
-    private void RefreshVisibility()
+    void Awake()
     {
-        bool show = inSession && !hidden;
-        if (gameObject.activeSelf != show)
-            gameObject.SetActive(show);
+        player = GetComponentInParent<Player>();
     }
 
-    private void ApplyColor(int classIndex, int colorIndex)
+    void OnEnable()
     {
-        if (nameLabel != null && CharacterCatalog.Instance != null)
-            nameLabel.color = CharacterCatalog.Instance.GetAccentColor(colorIndex);
+        if (player == null)
+            return;
+        player.OnClassOrColorChanged += ApplyColor;
+        ApplyColor(player.ClassIndex, player.ColorIndex);
+    }
+
+    void OnDisable()
+    {
+        if (player != null)
+            player.OnClassOrColorChanged -= ApplyColor;
     }
 }

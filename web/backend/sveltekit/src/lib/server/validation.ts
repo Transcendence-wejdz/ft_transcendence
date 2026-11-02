@@ -29,3 +29,8 @@ export function parseGameSettings(value: unknown): GameSettings | null {
 export function isUniqueViolation(error: unknown): boolean {
     return !!error && typeof error === 'object' && 'code' in error && error.code === 'P2002';
 }
+
+// Unity services player ids are short and URL-safe; anything else never reaches the database.
+export function isUnityPlayerId(value: unknown): value is string {
+    return typeof value === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(value);
+}

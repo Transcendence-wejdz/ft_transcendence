@@ -4,16 +4,8 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // Opens the ready-check panel on a proposal and lets the local player toggle ready.
-public class ReadyCheckUI : MonoBehaviour
+public partial class ReadyCheckUI : MonoBehaviour
 {
-    [SerializeField] private MenuPanel menuPanel;
-    [SerializeField] private RectTransform rowTemplate;
-    [SerializeField] private TextMeshProUGUI modeNameText;
-    [SerializeField] private TextMeshProUGUI readyButtonLabel;
-
-    [SerializeField] private RectTransform teamButtonContainer;
-    [SerializeField] private RectTransform teamButtonTemplate;
-
     // Per-mode display metadata keyed by scene name; no TeamNames means no team picker.
     private readonly struct ModeInfo
     {
@@ -33,13 +25,94 @@ public class ReadyCheckUI : MonoBehaviour
         { "Boss", new ModeInfo("Boss Fight") },
     };
 
+    [SerializeField] private MenuPanel menuPanel;
+    [SerializeField] private RectTransform rowTemplate;
+    [SerializeField] private TextMeshProUGUI modeNameText;
+    [SerializeField] private TextMeshProUGUI readyButtonLabel;
+
+    [SerializeField] private RectTransform teamButtonContainer;
+    [SerializeField] private RectTransform teamButtonTemplate;
+
     private bool isOpen;
     private ModeReadyCheck subscribedInstance;
-    private readonly List<Player> orderedPlayers = new List<Player>();
-    private readonly Dictionary<Player, ReadyCheckEntryUI> rows =
-        new Dictionary<Player, ReadyCheckEntryUI>();
+    private readonly Dictionary<Player, ReadyCheckEntryUI> rows = new Dictionary<Player, ReadyCheckEntryUI>();
     private readonly List<RectTransform> teamButtons = new List<RectTransform>();
     private string[] currentTeamNames;
+
+    private void UpdateReadyButtonLabel()
+    {
+        Player player = LocalPlayer.GetPlayer();
+
+        if (readyButtonLabel == null)
+            return;
+        if (player != null && player.IsReady)
+            readyButtonLabel.text = "Cancel";
+        else
+            readyButtonLabel.text = "Ready";
+    }
+
+    private void ShowModeName(string sceneName, ModeInfo modeInfo)
+    {
+        if (modeNameText == null)
+            return;
+        if (string.IsNullOrEmpty(modeInfo.DisplayName))
+            modeNameText.text = sceneName;
+        else
+            modeNameText.text = modeInfo.DisplayName;
+    }
+
+    // Closing the panel early cancels the check server-side, or proposing that mode again would do nothing.
+    private void HandlePanelClosed()
+    {
+        if (!isOpen)
+            return;
+        isOpen = false;
+        ModeReadyCheck.Instance?.RequestCancelReadyCheck();
+    }
+
+    private void OpenFor(string sceneName)
+    {
+        ModeInfo modeInfo;
+
+        ModeInfos.TryGetValue(sceneName, out modeInfo);
+        ShowModeName(sceneName, modeInfo);
+        currentTeamNames = modeInfo.TeamNames;
+        RebuildRows();
+        RebuildTeamButtons(modeInfo.TeamNames);
+        UpdateReadyButtonLabel();
+        menuPanel.Open();
+    }
+
+    private void HandlePendingSceneChanged(string sceneName)
+    {
+        isOpen = !string.IsNullOrEmpty(sceneName);
+        if (isOpen)
+        {
+            OpenFor(sceneName);
+            return;
+        }
+        currentTeamNames = null;
+        menuPanel.Close();
+    }
+
+    private void SubscribeTo(ModeReadyCheck instance)
+    {
+        if (subscribedInstance != null)
+            subscribedInstance.OnPendingSceneChanged -= HandlePendingSceneChanged;
+        subscribedInstance = instance;
+        if (subscribedInstance != null)
+            subscribedInstance.OnPendingSceneChanged += HandlePendingSceneChanged;
+    }
+
+    public void ToggleReady()
+    {
+        Player player = LocalPlayer.GetPlayer();
+
+        if (player == null)
+            return;
+        player.SetReady(!player.IsReady);
+        UpdateReadyButtonLabel();
+    }
 
     private void Awake()
     {
@@ -59,161 +132,19 @@ public class ReadyCheckUI : MonoBehaviour
 
     private void OnDisable()
     {
-        if (subscribedInstance != null)
-            subscribedInstance.OnPendingSceneChanged -= HandlePendingSceneChanged;
-        subscribedInstance = null;
+        SubscribeTo(null);
         Player.OnPlayerRegistered -= HandlePlayerRegistered;
         Player.OnPlayerUnregistered -= HandlePlayerUnregistered;
         if (menuPanel != null)
             menuPanel.OnClosed -= HandlePanelClosed;
-
         ClearRows();
         RebuildTeamButtons(null);
-    }
-
-    // Closing the panel early cancels the check server-side, or proposing that mode again would do nothing.
-    private void HandlePanelClosed()
-    {
-        if (!isOpen)
-            return;
-
-        isOpen = false;
-        ModeReadyCheck.Instance?.RequestCancelReadyCheck();
     }
 
     // Polls until the dynamically spawned ModeReadyCheck exists.
     private void Update()
     {
-        if (subscribedInstance == ModeReadyCheck.Instance)
-            return;
-
-        if (subscribedInstance != null)
-            subscribedInstance.OnPendingSceneChanged -= HandlePendingSceneChanged;
-
-        subscribedInstance = ModeReadyCheck.Instance;
-        if (subscribedInstance != null)
-            subscribedInstance.OnPendingSceneChanged += HandlePendingSceneChanged;
-    }
-
-    private void HandlePendingSceneChanged(string sceneName)
-    {
-        isOpen = !string.IsNullOrEmpty(sceneName);
-
-        if (!isOpen)
-        {
-            currentTeamNames = null;
-            menuPanel.Close();
-            return;
-        }
-
-        ModeInfos.TryGetValue(sceneName, out ModeInfo modeInfo);
-        if (modeNameText != null)
-            modeNameText.text = string.IsNullOrEmpty(modeInfo.DisplayName) ? sceneName : modeInfo.DisplayName;
-
-        currentTeamNames = modeInfo.TeamNames;
-        RebuildRows();
-        RebuildTeamButtons(modeInfo.TeamNames);
-        UpdateReadyButtonLabel();
-        menuPanel.Open();
-    }
-
-    private void RebuildTeamButtons(string[] teamNames)
-    {
-        foreach (RectTransform button in teamButtons)
-            if (button != null)
-                Destroy(button.gameObject);
-        teamButtons.Clear();
-
-        if (teamButtonContainer != null)
-            teamButtonContainer.gameObject.SetActive(teamNames != null && teamNames.Length > 0);
-
-        if (teamButtonTemplate == null || teamNames == null)
-            return;
-
-        for (int i = 0; i < teamNames.Length; i++)
-        {
-            int teamIndex = i;
-            RectTransform buttonRect = Instantiate(teamButtonTemplate, teamButtonTemplate.parent);
-            buttonRect.gameObject.SetActive(true);
-
-            TextMeshProUGUI label = buttonRect.GetComponentInChildren<TextMeshProUGUI>();
-            if (label != null)
-                label.text = teamNames[teamIndex];
-
-            Button button = buttonRect.GetComponent<Button>();
-            if (button != null)
-                button.onClick.AddListener(() => LocalPlayer.GetPlayer()?.SetTeam(teamIndex));
-
-            teamButtons.Add(buttonRect);
-        }
-    }
-
-    private void RebuildRows()
-    {
-        ClearRows();
-        foreach (Player player in Player.AllActiveInstances)
-            AddRow(player);
-    }
-
-    private void ClearRows()
-    {
-        foreach (ReadyCheckEntryUI row in rows.Values)
-            if (row != null)
-                Destroy(row.gameObject);
-        rows.Clear();
-        orderedPlayers.Clear();
-    }
-
-    // Adds a row when a player joins during a check.
-    private void HandlePlayerRegistered(Player player)
-    {
-        if (!isOpen || rows.ContainsKey(player))
-            return;
-
-        AddRow(player);
-    }
-
-    private void HandlePlayerUnregistered(Player player)
-    {
-        if (!rows.TryGetValue(player, out ReadyCheckEntryUI entry))
-            return;
-
-        if (entry != null)
-            Destroy(entry.gameObject);
-        rows.Remove(player);
-        orderedPlayers.Remove(player);
-    }
-
-    private void AddRow(Player player)
-    {
-        if (rowTemplate == null)
-            return;
-
-        GameObject rowObject = Instantiate(rowTemplate.gameObject, rowTemplate.parent);
-        rowObject.SetActive(true);
-        ReadyCheckEntryUI entry = rowObject.GetComponent<ReadyCheckEntryUI>();
-        entry.Bind(player, currentTeamNames);
-
-        rows[player] = entry;
-        orderedPlayers.Add(player);
-    }
-
-    public void ToggleReady()
-    {
-        Player player = LocalPlayer.GetPlayer();
-        if (player == null)
-            return;
-
-        player.SetReady(!player.IsReady);
-        UpdateReadyButtonLabel();
-    }
-
-    private void UpdateReadyButtonLabel()
-    {
-        if (readyButtonLabel == null)
-            return;
-
-        Player player = LocalPlayer.GetPlayer();
-        readyButtonLabel.text = player != null && player.IsReady ? "Cancel" : "Ready";
+        if (subscribedInstance != ModeReadyCheck.Instance)
+            SubscribeTo(ModeReadyCheck.Instance);
     }
 }

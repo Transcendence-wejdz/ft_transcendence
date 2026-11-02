@@ -7,15 +7,18 @@ public static class LocalPlayer
     public static GameObject Get()
     {
         NetworkManager nm = NetworkManager.Singleton;
+
         if (nm != null && nm.LocalClient != null && nm.LocalClient.PlayerObject != null)
             return nm.LocalClient.PlayerObject.gameObject;
-
         return GameObject.FindWithTag("Player");
     }
 
     public static Player GetPlayer()
     {
         GameObject player = Get();
-        return player != null ? player.GetComponent<Player>() : null;
+
+        if (player == null)
+            return null;
+        return player.GetComponent<Player>();
     }
 }

@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 923ef523106b48a58e8aa44cc0345cb0, type: 3}
+  m_Name: Pawn_Attack
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityKit
+  kind: 0
+  cooldown: 0.7
+  manaCost: 0
+  fxPrefab: {fileID: 4596642518179572039, guid: 3546e77c2e5ff01c3a75b05a8baca4df, type: 3}
+  fxDistance: 1
+  fxOrigin: {x: 0, y: 0}
+  fxFromAimIndicator: 1
+  aimMode: 0
+  maxRange: 6
+  aimAssist: 1
+  aimAssistAngle: 10
+  damage: 15
+  moveLockDuration: 0.5
+  moveSpeedMultiplier: 0.15
+  animSpeed: 1
+  size: 1
+  ignoreAimRotation: 0
+  followCaster: 1
+  glowIntensity: 1.2
+  glowSize: 1.1
+  glowDuration: 0.42

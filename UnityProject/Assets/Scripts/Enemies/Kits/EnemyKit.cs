@@ -2,10 +2,15 @@ using UnityEngine;
 
 public enum EnemyAttackShape { Cone, Lane, Circle }
 
+public enum EnemyBehaviour { Horde, Ranged, Encircle }
+
 // Per-enemy-type stats/combat tuning, so new enemy variants are pure data, not code.
 [CreateAssetMenu(fileName = "EnemyKit", menuName = "Transcendence/Enemy Kit")]
-public class EnemyKit : ScriptableObject
+public partial class EnemyKit : ScriptableObject
 {
+    private const float MinDirectionSqr = 0.0001f;
+    private const float JoinDistanceMargin = 2f;
+
     [Range(1, 10)]
     [Tooltip("Difficulty tier: decides from which wave this enemy can spawn.")]
     [SerializeField] private int tier = 1;
@@ -64,6 +69,32 @@ public class EnemyKit : ScriptableObject
     [Range(0f, 5f)]
     [Tooltip("Height of the lobbed arc (0 = straight shot).")]
     [SerializeField] private float projectileArcHeight = 0.8f;
+    [Tooltip("Horde runs straight at the nearest player. Ranged stops at Attack Range and backs off below Keep Away Distance. Encircle circles to the player's side or back before charging, and only circles again after landing an attack.")]
+    [SerializeField] private EnemyBehaviour behaviour;
+    [Range(0f, 20f)]
+    [Tooltip("Ranged only: closer than this to its target, the enemy backs away instead of shooting.")]
+    [SerializeField] private float keepAwayDistance = 3f;
+    [Range(0.1f, 1.5f)]
+    [Tooltip("Ranged only: speed multiplier while backing away.")]
+    [SerializeField] private float retreatSpeedMultiplier = 0.8f;
+    [Range(0f, 8f)]
+    [Tooltip("Ranged only: the enemy steps away from other enemies closer than this, also sideways between shots, so shooters spread out instead of packing.")]
+    [SerializeField] private float rangedSpacing = 2.5f;
+    [Range(1f, 15f)]
+    [Tooltip("Encircle only: distance at which the enemy circles around its target; the target breaking further away after a hit sends it circling again.")]
+    [SerializeField] private float encircleRadius = 4f;
+    [Range(1f, 30f)]
+    [Tooltip("Encircle only: closer than this to its target, the enemy stops chasing straight and circles to its place (always at least Encircle Radius + 2).")]
+    [SerializeField] private float encircleJoinDistance = 9f;
+    [Range(5f, 90f)]
+    [Tooltip("Encircle only: within this many degrees of its place around the target, the enemy charges.")]
+    [SerializeField] private float encircleSlotTolerance = 20f;
+    [Range(0.5f, 10f)]
+    [Tooltip("Encircle only: the enemy charges anyway after circling this long, so a turning target cannot keep it circling.")]
+    [SerializeField] private float encircleMaxFlankTime = 2.5f;
+    [Range(0f, 1f)]
+    [Tooltip("Encircle only: chance after each attack that the enemy backs off and circles again, even if the target stays close.")]
+    [SerializeField] private float encircleRegroupChance = 0.5f;
     [Range(0.05f, 2f)]
     [Tooltip("Seconds between target re-evaluations.")]
     [SerializeField] private float retargetInterval = 0.25f;
@@ -83,9 +114,9 @@ public class EnemyKit : ScriptableObject
     [Tooltip("Seconds between leash distance checks.")]
     [SerializeField] private float leashCheckInterval = 2f;
 
-    // Variant of the base Enemy prefab with this type's sprite and Animator.
+    [Tooltip("Variant of the base Enemy prefab with this type's sprite and Animator.")]
     [SerializeField] private GameObject enemyPrefab;
-    // Aseprite controllers name states after clip tags (e.g. "Shoot", "Walk"), so they are set per kit.
+    [Tooltip("Aseprite controllers name states after clip tags (e.g. \"Shoot\", \"Walk\"), so they are set per kit.")]
     [SerializeField] private string idleStateName = "Idle";
     [SerializeField] private string runStateName = "Run";
     [SerializeField] private string attackStateName = "Attack";
@@ -112,6 +143,15 @@ public class EnemyKit : ScriptableObject
     public float ProjectileMaxDistance => projectileMaxDistance;
     public float ProjectileArcHeight => projectileArcHeight;
     public float RetargetInterval => retargetInterval;
+    public EnemyBehaviour Behaviour => behaviour;
+    public float KeepAwayDistance => keepAwayDistance;
+    public float RetreatSpeedMultiplier => retreatSpeedMultiplier;
+    public float RangedSpacing => rangedSpacing;
+    public float EncircleRadius => encircleRadius;
+    public float EncircleJoinDistance => Mathf.Max(encircleJoinDistance, encircleRadius + JoinDistanceMargin);
+    public float EncircleSlotTolerance => encircleSlotTolerance;
+    public float EncircleMaxFlankTime => encircleMaxFlankTime;
+    public float EncircleRegroupChance => encircleRegroupChance;
     public float SteerInterval => steerInterval;
     public float DirectChaseRange => directChaseRange;
     public float LineOfSightInterval => lineOfSightInterval;
@@ -122,47 +162,4 @@ public class EnemyKit : ScriptableObject
     public string RunStateName => runStateName;
     public string AttackStateName => attackStateName;
 
-    // Attack origin in world space: the body center moved by attackOrigin, expressed in the swing's own frame.
-    public Vector2 AttackOriginWorld(Vector2 bodyCenter, Vector2 direction)
-    {
-        Vector2 forward = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.right;
-        Vector2 left = new Vector2(-forward.y, forward.x);
-        return bodyCenter + forward * attackOrigin.x + left * attackOrigin.y;
-    }
-
-    // The zone the telegraph shows, from the attack origin along the swing direction.
-    public bool HitZoneContains(Vector2 bodyCenter, Vector2 direction, Vector2 point)
-    {
-        Vector2 toPoint = point - AttackOriginWorld(bodyCenter, direction);
-        float reach = HitReach;
-        switch (attackShape)
-        {
-            case EnemyAttackShape.Lane:
-                Vector2 forward = direction.normalized;
-                float along = Vector2.Dot(toPoint, forward);
-                float side = Mathf.Abs(forward.x * toPoint.y - forward.y * toPoint.x);
-                return along >= 0f && along <= reach && side <= attackWidth * 0.5f;
-            case EnemyAttackShape.Circle:
-                return toPoint.sqrMagnitude <= reach * reach;
-            default:
-                return toPoint.sqrMagnitude <= reach * reach && Vector2.Angle(direction, toPoint) <= attackAngle * 0.5f;
-        }
-    }
-
-    public void ShowTelegraph(Transform anchor, Vector2 bodyCenter, Vector2 direction, float duration)
-    {
-        Vector2 origin = AttackOriginWorld(bodyCenter, direction);
-        switch (attackShape)
-        {
-            case EnemyAttackShape.Lane:
-                AttackTelegraph.ShowLane(anchor, origin, direction, HitReach, attackWidth, duration);
-                break;
-            case EnemyAttackShape.Circle:
-                AttackTelegraph.Show(anchor, origin, Vector2.right, 360f, HitReach, duration);
-                break;
-            default:
-                AttackTelegraph.Show(anchor, origin, direction, attackAngle, HitReach, duration);
-                break;
-        }
-    }
 }

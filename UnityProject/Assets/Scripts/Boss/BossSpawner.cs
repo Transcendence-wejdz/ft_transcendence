@@ -10,21 +10,16 @@ public class BossSpawner : MonoBehaviour
 
     private bool spawned;
 
-    void Start()
+    private void Spawn(bool isNetworked)
     {
-        NetworkManager network = NetworkManager.Singleton;
-        bool isNetworked = network != null && network.IsListening;
-        if (!isNetworked)
-            Spawn(false);
-        else if (network.IsServer && network.SceneManager != null)
-            network.SceneManager.OnLoadEventCompleted += HandleLoadEventCompleted;
-    }
+        GameObject instance;
 
-    void OnDestroy()
-    {
-        NetworkManager network = NetworkManager.Singleton;
-        if (network != null && network.SceneManager != null)
-            network.SceneManager.OnLoadEventCompleted -= HandleLoadEventCompleted;
+        if (spawned || bossPrefab == null)
+            return;
+        spawned = true;
+        instance = Instantiate(bossPrefab, transform.position, Quaternion.identity);
+        if (isNetworked)
+            instance.GetComponent<NetworkObject>().Spawn(true);
     }
 
     private void HandleLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
@@ -33,14 +28,28 @@ public class BossSpawner : MonoBehaviour
         Spawn(true);
     }
 
-    private void Spawn(bool isNetworked)
+    // Subscribed in Awake because a solo host's scene load can complete before Start.
+    void Awake()
     {
-        if (spawned || bossPrefab == null)
-            return;
+        NetworkManager network = NetworkManager.Singleton;
 
-        spawned = true;
-        GameObject instance = Instantiate(bossPrefab, transform.position, Quaternion.identity);
-        if (isNetworked)
-            instance.GetComponent<NetworkObject>().Spawn(true);
+        if (network != null && network.IsListening && network.IsServer && network.SceneManager != null)
+            network.SceneManager.OnLoadEventCompleted += HandleLoadEventCompleted;
+    }
+
+    void Start()
+    {
+        NetworkManager network = NetworkManager.Singleton;
+
+        if (network == null || !network.IsListening)
+            Spawn(false);
+    }
+
+    void OnDestroy()
+    {
+        NetworkManager network = NetworkManager.Singleton;
+
+        if (network != null && network.SceneManager != null)
+            network.SceneManager.OnLoadEventCompleted -= HandleLoadEventCompleted;
     }
 }

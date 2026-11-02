@@ -3,6 +3,8 @@ using UnityEngine;
 // Physics2D queries against the static colliders enemies path around.
 public static class ObstacleQuery
 {
+    private const float MinDistance = 0.01f;
+
     private static readonly Collider2D[] overlapBuffer = new Collider2D[16];
     private static readonly RaycastHit2D[] castBuffer = new RaycastHit2D[16];
     private static ContactFilter2D filter;
@@ -11,13 +13,14 @@ public static class ObstacleQuery
     // True when nothing static blocks the circle's path.
     public static bool IsClear(Vector2 from, Vector2 to, float radius)
     {
-        EnsureFilter();
         Vector2 delta = to - from;
         float distance = delta.magnitude;
-        if (distance < 0.01f)
-            return true;
+        int count;
 
-        int count = Physics2D.CircleCast(from, radius, delta / distance, filter, castBuffer, distance);
+        EnsureFilter();
+        if (distance < MinDistance)
+            return true;
+        count = Physics2D.CircleCast(from, radius, delta / distance, filter, castBuffer, distance);
         for (int i = 0; i < count; i++)
         {
             if (IsObstacle(castBuffer[i].collider))
@@ -29,21 +32,10 @@ public static class ObstacleQuery
     // True when a static collider overlaps the circle.
     public static bool IsBlocked(Vector2 point, float radius)
     {
-        EnsureFilter();
-        int count = Physics2D.OverlapCircle(point, radius, filter, overlapBuffer);
-        for (int i = 0; i < count; i++)
-        {
-            if (IsObstacle(overlapBuffer[i]))
-                return true;
-        }
-        return false;
-    }
+        int count;
 
-    // True when a static collider touches the whole square, catching thin trunks.
-    public static bool IsAreaBlocked(Vector2 center, float size)
-    {
         EnsureFilter();
-        int count = Physics2D.OverlapBox(center, new Vector2(size, size), 0f, filter, overlapBuffer);
+        count = Physics2D.OverlapCircle(point, radius, filter, overlapBuffer);
         for (int i = 0; i < count; i++)
         {
             if (IsObstacle(overlapBuffer[i]))
@@ -54,10 +46,11 @@ public static class ObstacleQuery
 
     private static bool IsObstacle(Collider2D collider)
     {
+        Rigidbody2D body;
+
         if (collider == null || collider.isTrigger)
             return false;
-
-        Rigidbody2D body = collider.attachedRigidbody;
+        body = collider.attachedRigidbody;
         return body == null || body.bodyType == RigidbodyType2D.Static;
     }
 
@@ -65,7 +58,6 @@ public static class ObstacleQuery
     {
         if (filterReady)
             return;
-
         filter = ContactFilter2D.noFilter;
         filter.useTriggers = false;
         filterReady = true;

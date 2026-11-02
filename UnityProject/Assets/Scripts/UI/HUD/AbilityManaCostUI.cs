@@ -14,31 +14,51 @@ public class AbilityManaCostUI : MonoBehaviour
     private float shownSpecial = -1f;
     private float shownUltimate = -1f;
 
-    void Update()
+    private static float ManaCost(Player player, AbilityType ability)
     {
-        Player player = LocalPlayer.GetPlayer();
-        ClassKit kit = player != null ? player.ActiveKit : null;
-        if (kit == null)
-            return;
+        AbilityKit kit = player.Ability(ability);
 
-        Refresh(specialCost, specialIcon, kit.SpecialManaCost, player.CurrentMana, ref shownSpecial);
-        Refresh(ultimateCost, ultimateIcon, kit.UltimateManaCost, player.CurrentMana, ref shownUltimate);
+        if (kit == null)
+            return 0f;
+        return kit.ManaCost;
     }
 
     // Text only changes with the cost, so nothing allocates per frame.
+    private static string CostText(float cost)
+    {
+        if (cost > 0f)
+            return Mathf.CeilToInt(cost).ToString();
+        return string.Empty;
+    }
+
+    private void DimIcon(Image icon, bool affordable)
+    {
+        Color color = icon.color;
+
+        color.a = dimmedAlpha;
+        if (affordable)
+            color.a = 1f;
+        icon.color = color;
+    }
+
     private void Refresh(TMP_Text label, Image icon, float cost, float mana, ref float shown)
     {
         if (label != null && !Mathf.Approximately(cost, shown))
         {
             shown = cost;
-            label.text = cost > 0f ? Mathf.CeilToInt(cost).ToString() : string.Empty;
+            label.text = CostText(cost);
         }
-
         if (icon != null)
-        {
-            Color color = icon.color;
-            color.a = mana >= cost ? 1f : dimmedAlpha;
-            icon.color = color;
-        }
+            DimIcon(icon, mana >= cost);
+    }
+
+    void Update()
+    {
+        Player player = LocalPlayer.GetPlayer();
+
+        if (player == null || player.ActiveKit == null)
+            return;
+        Refresh(specialCost, specialIcon, ManaCost(player, AbilityType.Special), player.CurrentMana, ref shownSpecial);
+        Refresh(ultimateCost, ultimateIcon, ManaCost(player, AbilityType.Ultimate), player.CurrentMana, ref shownUltimate);
     }
 }

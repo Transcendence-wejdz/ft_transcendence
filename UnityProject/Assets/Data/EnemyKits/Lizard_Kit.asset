@@ -33,6 +33,12 @@ MonoBehaviour:
   projectileSpeed: 12
   projectileMaxDistance: 8
   projectileArcHeight: 0.8
+  behaviour: 2
+  keepAwayDistance: 3
+  retreatSpeedMultiplier: 0.8
+  encircleRadius: 4
+  encircleJoinDistance: 9
+  encircleSlotTolerance: 20
   retargetInterval: 0.25
   steerInterval: 0.1
   directChaseRange: 8

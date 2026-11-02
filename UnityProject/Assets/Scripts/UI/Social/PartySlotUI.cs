@@ -21,84 +21,43 @@ public class PartySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private bool isLocal;
     private Selectable slotSelectable;
 
+    // Raised with this slot and its player when another player's slot is clicked.
+    public event System.Action<PartySlotUI, Player> Clicked;
+
     // Another player's slot is a gamepad stop (empty and local slots have no menu); created on first use since Bind can run before Awake.
     private Selectable SlotSelectable
     {
         get
         {
+            if (slotSelectable != null)
+                return slotSelectable;
+            slotSelectable = GetComponent<Selectable>();
             if (slotSelectable == null)
-            {
-                slotSelectable = GetComponent<Selectable>();
-                if (slotSelectable == null)
-                    slotSelectable = gameObject.AddComponent<Selectable>();
-                slotSelectable.transition = Selectable.Transition.None;
-                slotSelectable.interactable = false;
-            }
+                slotSelectable = gameObject.AddComponent<Selectable>();
+            slotSelectable.transition = Selectable.Transition.None;
+            slotSelectable.interactable = false;
             return slotSelectable;
         }
     }
 
-    private void Awake() => _ = SlotSelectable;
-
-    // Raised with this slot and its player when another player's slot is clicked.
-    public event System.Action<PartySlotUI, Player> Clicked;
-
-    public void Bind(Player player, bool local)
+    private string FriendsTagShown()
     {
-        Unbind();
-        bound = player;
-        isLocal = local;
-        player.OnDisplayNameChanged += SetName;
-        player.OnClassOrColorChanged += SetPortrait;
+        string tag = bound.FriendsTag;
 
-        SlotSelectable.interactable = !local;
-        filledRoot.SetActive(true);
-        emptyRoot.SetActive(false);
-        ring.color = local ? localRingColor : otherRingColor;
-        SetName(player.CurrentDisplayName);
-        SetPortrait(player.ClassIndex, player.ColorIndex);
+        if (isLocal)
+            tag = FriendsManager.OwnName;
+        if (string.IsNullOrEmpty(tag))
+            return "Unknown";
+        return tag;
     }
-
-    public void OnPointerEnter(PointerEventData eventData) => ShowTooltip();
-
-    public void OnSelect(BaseEventData eventData) => ShowTooltip();
-
-    public void OnDeselect(BaseEventData eventData) => tooltip.SetActive(false);
-
-    public void OnSubmit(BaseEventData eventData) => OnPointerClick(null);
 
     // Read when shown rather than cached, since a teammate's tag can arrive after they join.
     private void ShowTooltip()
     {
         if (bound == null)
             return;
-
-        string tag = isLocal ? FriendsManager.OwnName : bound.FriendsTag;
-        tooltipText.text = string.IsNullOrEmpty(tag) ? "Unknown" : tag;
+        tooltipText.text = FriendsTagShown();
         tooltip.SetActive(true);
-    }
-
-    public void OnPointerExit(PointerEventData eventData) => tooltip.SetActive(false);
-
-    public void OnPointerClick(PointerEventData eventData)
-    {
-        if (bound != null && !isLocal)
-            Clicked?.Invoke(this, bound);
-    }
-
-    private void OnDisable()
-    {
-        tooltip.SetActive(false);
-    }
-
-    public void SetEmpty()
-    {
-        Unbind();
-        SlotSelectable.interactable = false;
-        tooltip.SetActive(false);
-        filledRoot.SetActive(false);
-        emptyRoot.SetActive(true);
-        nameText.text = string.Empty;
     }
 
     private void Unbind()
@@ -111,18 +70,25 @@ public class PartySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         bound = null;
     }
 
-    private void OnDestroy() => Unbind();
-
     // The offline player has no deduped display name yet, so fall back to its raw name, then the friends name.
-    private void SetName(string displayName)
+    private string NameShown(string displayName)
     {
         string shown = displayName;
+
         if (string.IsNullOrEmpty(shown) && bound != null)
             shown = bound.PlayerName;
         if (string.IsNullOrEmpty(shown) && isLocal)
             shown = FriendsManager.ShortName(FriendsManager.OwnName);
-        if (string.IsNullOrEmpty(shown))
-            shown = isLocal ? "You" : "Player";
+        if (!string.IsNullOrEmpty(shown))
+            return shown;
+        if (isLocal)
+            return "You";
+        return "Player";
+    }
+
+    private void SetName(string displayName)
+    {
+        string shown = NameShown(displayName);
 
         nameText.text = shown;
         initialText.text = char.ToUpperInvariant(shown[0]).ToString();
@@ -131,9 +97,91 @@ public class PartySlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private void SetPortrait(int classIndex, int colorIndex)
     {
         CharacterCatalog catalog = CharacterCatalog.Instance;
-        Sprite sprite = catalog != null ? catalog.GetPortrait(classIndex, colorIndex) : null;
+        Sprite sprite = null;
+
+        if (catalog != null)
+            sprite = catalog.GetPortrait(classIndex, colorIndex);
         portrait.sprite = sprite;
         portrait.enabled = sprite != null;
         initialText.enabled = sprite == null;
+    }
+
+    private void SetRing(bool local)
+    {
+        if (local)
+            ring.color = localRingColor;
+        else
+            ring.color = otherRingColor;
+    }
+
+    public void Bind(Player player, bool local)
+    {
+        Unbind();
+        bound = player;
+        isLocal = local;
+        player.OnDisplayNameChanged += SetName;
+        player.OnClassOrColorChanged += SetPortrait;
+        SlotSelectable.interactable = !local;
+        filledRoot.SetActive(true);
+        emptyRoot.SetActive(false);
+        SetRing(local);
+        SetName(player.CurrentDisplayName);
+        SetPortrait(player.ClassIndex, player.ColorIndex);
+    }
+
+    public void SetEmpty()
+    {
+        Unbind();
+        SlotSelectable.interactable = false;
+        tooltip.SetActive(false);
+        filledRoot.SetActive(false);
+        emptyRoot.SetActive(true);
+        nameText.text = string.Empty;
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        ShowTooltip();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        tooltip.SetActive(false);
+    }
+
+    public void OnSelect(BaseEventData eventData)
+    {
+        ShowTooltip();
+    }
+
+    public void OnDeselect(BaseEventData eventData)
+    {
+        tooltip.SetActive(false);
+    }
+
+    public void OnSubmit(BaseEventData eventData)
+    {
+        OnPointerClick(null);
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (bound != null && !isLocal)
+            Clicked?.Invoke(this, bound);
+    }
+
+    private void Awake()
+    {
+        _ = SlotSelectable;
+    }
+
+    private void OnDisable()
+    {
+        tooltip.SetActive(false);
+    }
+
+    private void OnDestroy()
+    {
+        Unbind();
     }
 }

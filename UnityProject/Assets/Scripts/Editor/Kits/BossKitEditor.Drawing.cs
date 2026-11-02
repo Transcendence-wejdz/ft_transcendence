@@ -2,12 +2,18 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-// Draws a boss preview: range rings, telegraphs and hits of the current step, summons and the animated boss sprite.
+// Draws a boss preview: options, timeline, range rings and the telegraphs and hits of the current step.
 public partial class BossKitEditor
 {
     private const float PreviewHeight = 260f;
     private const float FlashSeconds = 0.15f;
     private const float PlayerRadius = 0.3f;
+    private const float MinExtent = 2f;
+    private const float FitMargin = 1.1f;
+    private const float ZoneAlpha = 0.15f;
+    private const float ProgressAlpha = 0.4f;
+    private const float EdgeThickness = 2f;
+    private const string PreviewCaption = "Rings: charge min range (white), slam max range (blue), around the boss start. Blue dot: target. Red: telegraph then hit; purple: summon area and spawns. Timeline: step starts (white), hits (red/purple spans). Scroll to zoom, drag to pan.";
     private static readonly Color ZoneFill = new Color(1f, 0.25f, 0.15f, 0.15f);
     private static readonly Color ProgressFill = new Color(1f, 0.25f, 0.15f, 0.4f);
     private static readonly Color FlashFill = new Color(1f, 0.92f, 0.8f, 0.6f);
@@ -15,140 +21,140 @@ public partial class BossKitEditor
     private static readonly Color MeleeColor = new Color(0.35f, 0.75f, 1f, 0.6f);
     private static readonly Color SummonColor = new Color(0.75f, 0.45f, 1f, 0.9f);
     private static readonly Color PhaseColor = new Color(1f, 1f, 1f, 0.6f);
-    private static readonly Color SpriteTint = new Color(1f, 1f, 1f, 0.85f);
 
-    private void DrawPreview(Preview preview)
+    private void DrawOptions(Preview preview)
     {
-        if (!InspectorSections.Foldout("BossKitEditor.Preview." + preview, preview + " Preview"))
-            return;
-
-        PreviewPanel panel = previews[(int)preview];
         using (new EditorGUILayout.HorizontalScope())
         {
             enraged = EditorGUILayout.ToggleLeft($"Enraged (x{Kit.EnrageTempo:0.##})", enraged, GUILayout.Width(140f));
             if (preview == Preview.Combo)
                 combo = (Combo)GUILayout.Toolbar((int)combo, ComboLabels);
         }
+    }
 
-        List<Step> steps = BuildSteps(preview);
-        var markers = new List<(float, Color)>();
-        var spans = new List<(float, float, Color)>();
+    // Red span over each hit (the whole run for a charge), purple for summons.
+    private static (float, float, Color) HitSpan(Step step)
+    {
+        float hitStart = step.Start + step.Windup;
+
+        if (step.Pattern == BossPattern.Charge)
+            return (hitStart, hitStart + step.Active, PreviewColors.HitEdge);
+        if (step.Pattern == BossPattern.Summon)
+            return (hitStart, hitStart + FlashSeconds, SummonColor);
+        return (hitStart, hitStart + FlashSeconds, PreviewColors.HitEdge);
+    }
+
+    private static void DrawTimeline(PreviewPanel panel, List<Step> steps)
+    {
+        List<(float, Color)> markers = new List<(float, Color)>();
+        List<(float, float, Color)> spans = new List<(float, float, Color)>();
+
         foreach (Step step in steps)
         {
             markers.Add((step.Start, PhaseColor));
-            spans.Add((step.Start + step.Windup, step.Start + step.Windup + (step.Pattern == BossPattern.Charge ? step.Active : FlashSeconds), step.Pattern == BossPattern.Summon ? SummonColor : PreviewColors.HitEdge));
+            spans.Add(HitSpan(step));
         }
         panel.DrawTimeline(TimelineLength(steps), markers, spans);
-
-        Rect rect = PreviewPanel.Reserve(PreviewHeight, "Rings: charge min range (white), slam max range (blue), around the boss start. Blue dot: target. Red: telegraph then hit; purple: summon area and spawns. Timeline: step starts (white), hits (red/purple spans). Scroll to zoom, drag to pan.");
-        Vector2 target = TargetFor(preview);
-        float extent = Mathf.Max(Kit.SlamRadius, Kit.SummonRadius, Kit.ChargeMinRange, target.magnitude, 2f);
-        foreach (Step step in steps)
-            extent = Mathf.Max(extent, (step.From + step.Direction * step.Length).magnitude + ChargeHitWidth * 0.5f);
-
-        if (!panel.Begin(rect, rect.center, PreviewPanel.FitCentered(rect, extent * 1.1f), Repaint, out PreviewCanvas canvas))
-            return;
-
-        canvas.WireDisc(Vector2.zero, Kit.ChargeMinRange, RangeColor);
-        canvas.WireDisc(Vector2.zero, Kit.SlamMaxRange, MeleeColor);
-
-        float time = panel.Time;
-        Step current = StepAt(steps, time);
-        Vector2 body = BodyAt(steps, time);
-        DrawStep(canvas, current, time, body);
-        DrawBoss(canvas, current, time, body, steps.Count > 0 && time < steps[steps.Count - 1].End);
-        canvas.Disc(target, PlayerRadius, PreviewColors.Player);
-        PreviewPanel.End();
     }
 
-    private void DrawStep(PreviewCanvas canvas, Step step, float time, Vector2 body)
+    private float PreviewExtent(List<Step> steps, Vector2 target)
     {
-        float local = time - step.Start;
-        if (local < 0f || local > step.Windup + step.Active + FlashSeconds)
-            return;
-        bool windup = local < step.Windup;
-        float progress = step.Windup > 0f ? Mathf.Clamp01(local / step.Windup) : 1f;
-        Vector2 center = step.From;
+        float extent = Mathf.Max(Kit.SlamRadius, Kit.SummonRadius, Kit.ChargeMinRange, target.magnitude, MinExtent);
 
-        switch (step.Pattern)
-        {
-            case BossPattern.Charge:
-            {
-                float width = ChargeHitWidth;
-                Vector2 side = new Vector2(-step.Direction.y, step.Direction.x) * width * 0.5f;
-                Vector2 length = step.Direction * step.Length;
-                canvas.Outline(new[] { center - side, center + side, center + side + length, center - side + length }, true, ZoneFill, PreviewColors.HitEdge);
-                if (windup)
-                {
-                    Vector2 reach = length * progress;
-                    canvas.Outline(new[] { center - side, center + side, center + side + reach, center - side + reach }, true, ProgressFill, Color.clear);
-                }
-                else if (local < step.Windup + step.Active)
-                {
-                    canvas.Disc(body, width * 0.5f, FlashFill);
-                }
-                break;
-            }
-            case BossPattern.Slam:
-                DrawCircle(canvas, center, Kit.SlamRadius, windup, progress, local - step.Windup, PreviewColors.HitEdge);
-                break;
-            case BossPattern.Summon:
-                DrawCircle(canvas, center, Kit.SummonRadius, windup, progress, local - step.Windup, SummonColor);
-                if (!windup)
-                    DrawSummons(canvas, center);
-                break;
-        }
+        foreach (Step step in steps)
+            extent = Mathf.Max(extent, (step.From + step.Direction * step.Length).magnitude + ChargeHitWidth * 0.5f);
+        return extent;
+    }
+
+    private static Color WithAlpha(Color color, float alpha)
+    {
+        return new Color(color.r, color.g, color.b, alpha);
     }
 
     // Area, telegraph fill during the windup, then a short flash when it lands.
     private static void DrawCircle(PreviewCanvas canvas, Vector2 center, float radius, bool windup, float progress, float sinceHit, Color edge)
     {
-        canvas.Disc(center, radius, new Color(edge.r, edge.g, edge.b, 0.15f));
-        canvas.WireDisc(center, radius, edge, 2f);
+        canvas.Disc(center, radius, WithAlpha(edge, ZoneAlpha));
+        canvas.WireDisc(center, radius, edge, EdgeThickness);
         if (windup)
-            canvas.Disc(center, radius * progress, new Color(edge.r, edge.g, edge.b, 0.4f));
+            canvas.Disc(center, radius * progress, WithAlpha(edge, ProgressAlpha));
         else if (sinceHit < FlashSeconds)
             canvas.Disc(center, radius, FlashFill);
     }
 
-    // Spawn spots are random in game; a fixed golden-angle spread shows the count and area, with each summoned kit's sprite.
-    private void DrawSummons(PreviewCanvas canvas, Vector2 center)
+    private static Vector2[] Lane(Vector2 center, Vector2 side, Vector2 length)
     {
-        EnemyKit[] kits = Kit.SummonKits;
-        for (int i = 0; i < Kit.SummonCount; i++)
+        return new[] { center - side, center + side, center + side + length, center - side + length };
+    }
+
+    // Lane, filled up to the windup progress, then a flash on the body while it runs.
+    private void DrawCharge(PreviewCanvas canvas, Step step, float local, float progress, Vector2 body)
+    {
+        float width = ChargeHitWidth;
+        Vector2 side = new Vector2(-step.Direction.y, step.Direction.x) * width * 0.5f;
+        Vector2 length = step.Direction * step.Length;
+
+        canvas.Outline(Lane(step.From, side, length), true, ZoneFill, PreviewColors.HitEdge);
+        if (local < step.Windup)
+            canvas.Outline(Lane(step.From, side, length * progress), true, ProgressFill, Color.clear);
+        else if (local < step.Windup + step.Active)
+            canvas.Disc(body, width * 0.5f, FlashFill);
+    }
+
+    private void DrawStep(PreviewCanvas canvas, Step step, float time, Vector2 body)
+    {
+        float local = time - step.Start;
+        float progress = 1f;
+        bool windup;
+
+        if (local < 0f || local > step.Windup + step.Active + FlashSeconds)
+            return;
+        windup = local < step.Windup;
+        if (step.Windup > 0f)
+            progress = Mathf.Clamp01(local / step.Windup);
+        if (step.Pattern == BossPattern.Charge)
+            DrawCharge(canvas, step, local, progress, body);
+        else if (step.Pattern == BossPattern.Slam)
+            DrawCircle(canvas, step.From, Kit.SlamRadius, windup, progress, local - step.Windup, PreviewColors.HitEdge);
+        else if (step.Pattern == BossPattern.Summon)
         {
-            float angle = i * 2.39996f;
-            float distance = Kit.SummonRadius * Mathf.Sqrt((i + 0.5f) / Mathf.Max(1, Kit.SummonCount));
-            Vector2 spot = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * distance;
-            EnemyKit summon = kits != null && kits.Length > 0 ? kits[i % kits.Length] : null;
-            SpriteRenderer spriteRenderer = summon != null && summon.EnemyPrefab != null ? summon.EnemyPrefab.GetComponentInChildren<SpriteRenderer>(true) : null;
-            if (spriteRenderer != null && spriteRenderer.sprite != null)
-                canvas.Sprite(spriteRenderer.sprite, spot, spriteRenderer.transform.lossyScale, 0f, false, SpriteTint);
-            else
-                canvas.Disc(spot, 0.2f, SummonColor);
+            DrawCircle(canvas, step.From, Kit.SummonRadius, windup, progress, local - step.Windup, SummonColor);
+            if (!windup)
+                DrawSummons(canvas, step.From);
         }
     }
 
-    // State per phase as Boss.PlayPhaseVisual: windup and recovery clips fit their duration, the charge runs Walk at its own speed, slam/summon fit Attack; Idle otherwise.
-    private void DrawBoss(PreviewCanvas canvas, Step step, float time, Vector2 body, bool inCombo)
+    private void DrawScene(PreviewCanvas canvas, List<Step> steps, float time, Vector2 target)
     {
-        GameObject prefab = BossPrefab();
-        float local = time - step.Start;
-        Sprite sprite;
-        if (!inCombo || local < 0f)
-            sprite = PreviewAnimation.SampleFrames(Frames(Kit.IdleState), time, true);
-        else if (local < step.Windup)
-            sprite = PreviewAnimation.SampleFitted(Frames(Kit.WindupState), local, step.Windup);
-        else if (local < step.Windup + step.Active)
-            sprite = step.Pattern == BossPattern.Charge
-                ? PreviewAnimation.SampleFrames(Frames(Kit.WalkState), (local - step.Windup) * Kit.ChargeAnimationSpeed, true)
-                : PreviewAnimation.SampleFitted(Frames(Kit.AttackState), local - step.Windup, step.Active);
-        else
-            sprite = PreviewAnimation.SampleFitted(Frames(Kit.RecoveryState), local - step.Windup - step.Active, step.Recovery);
+        Step current = StepAt(steps, time);
+        Vector2 body = BodyAt(steps, time);
+        bool inCombo = steps.Count > 0 && time < steps[steps.Count - 1].End;
 
-        PreviewShapes.PrefabBody(prefab, 0.5f, out Vector2 bodyOffset, out _);
-        canvas.PrefabSprite(prefab, sprite, body - bodyOffset, step.Direction.x < -0.01f, Color.white);
+        canvas.WireDisc(Vector2.zero, Kit.ChargeMinRange, RangeColor);
+        canvas.WireDisc(Vector2.zero, Kit.SlamMaxRange, MeleeColor);
+        DrawStep(canvas, current, time, body);
+        DrawBoss(canvas, current, time, body, inCombo);
+        canvas.Disc(target, PlayerRadius, PreviewColors.Player);
     }
 
-    private ObjectReferenceKeyframe[] Frames(string state) => PreviewAnimation.SpriteKeys(PreviewAnimation.StateClip(BossPrefab(), state, Vector2.right));
+    private void DrawPreview(Preview preview)
+    {
+        PreviewPanel panel = previews[(int)preview];
+        List<Step> steps;
+        Vector2 target;
+        Rect rect;
+        PreviewCanvas canvas;
+
+        if (!InspectorSections.Foldout("BossKitEditor.Preview." + preview, preview + " Preview"))
+            return;
+        DrawOptions(preview);
+        steps = BuildSteps(preview);
+        DrawTimeline(panel, steps);
+        rect = PreviewPanel.Reserve(PreviewHeight, PreviewCaption);
+        target = TargetFor(preview);
+        if (!panel.Begin(rect, rect.center, PreviewPanel.FitCentered(rect, PreviewExtent(steps, target) * FitMargin), Repaint, out canvas))
+            return;
+        DrawScene(canvas, steps, panel.Time, target);
+        PreviewPanel.End();
+    }
 }

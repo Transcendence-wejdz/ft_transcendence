@@ -11,14 +11,16 @@ public class ProductNameGuard : IPostprocessBuildWithReport
 
     public int callbackOrder => int.MaxValue;
 
-    static ProductNameGuard()
+    private static void Restore()
     {
-        EditorApplication.playModeStateChanged += state =>
-        {
-            if (state == PlayModeStateChange.EnteredEditMode)
-                Restore();
-        };
-        EditorApplication.delayCall += Restore;
+        if (PlayerSettings.productName == ProductName + ScenarioSuffix)
+            PlayerSettings.productName = ProductName;
+    }
+
+    private static void HandlePlayModeStateChanged(PlayModeStateChange state)
+    {
+        if (state == PlayModeStateChange.EnteredEditMode)
+            Restore();
     }
 
     // Deferred so it runs after the scenario tooling finishes its own post-build steps.
@@ -27,9 +29,9 @@ public class ProductNameGuard : IPostprocessBuildWithReport
         EditorApplication.delayCall += Restore;
     }
 
-    private static void Restore()
+    static ProductNameGuard()
     {
-        if (PlayerSettings.productName == ProductName + ScenarioSuffix)
-            PlayerSettings.productName = ProductName;
+        EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
+        EditorApplication.delayCall += Restore;
     }
 }

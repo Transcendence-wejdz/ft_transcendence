@@ -5,10 +5,15 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+// Health (owner-written, replicated) and mana (local), with regen, damage, healing and revive.
 public partial class Player
 {
+    private const float DefaultMaxHealth = 100f;
+    private const float DefaultMaxMana = 50f;
+
     private float maxHealth;
     private float maxMana;
+    private bool healthReported;
 
     private readonly NetworkVariable<float> currentHealth = new OfflineSafeNetworkVariable<float>(
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
@@ -18,6 +23,8 @@ public partial class Player
     public float CurrentHealth => currentHealth.Value;
     public float CurrentMana { get; private set; }
     public bool IsDead => currentHealth.Value <= 0f;
+    // A player who just spawned reads 0 health until their owner's first write arrives, which isn't a death.
+    public bool IsHealthPending => IsSpawned && !healthReported;
 
     public static bool DeathProtected { get; set; }
 
@@ -33,16 +40,26 @@ public partial class Player
         RefreshActiveKit();
         RefreshStatsFromKit();
         CurrentMana = MaxMana;
-        currentHealth.OnValueChanged += (previousValue, newValue) =>
-        {
-            if (previousValue > 0f && newValue <= 0f)
-                OnPlayerDied?.Invoke(this);
-            OnHealthReplicated?.Invoke(newValue, MaxHealth);
-            if (this.IsLocallyControlled())
-                OnHealthChanged?.Invoke(newValue, MaxHealth);
-        };
-        OnClassOrColorChanged += (_, _) => HandleClassChanged();
+        currentHealth.OnValueChanged += HandleHealthValueChanged;
+        OnClassOrColorChanged += HandleClassOrColorChanged;
         StartCoroutine(InitializeHealthNextFrame());
+    }
+
+    private void HandleHealthValueChanged(float previousValue, float newValue)
+    {
+        healthReported = true;
+        if (newValue > 0f)
+            arrivalHealthPending = false;
+        if (previousValue > 0f && newValue <= 0f)
+            OnPlayerDied?.Invoke(this);
+        OnHealthReplicated?.Invoke(newValue, MaxHealth);
+        if (this.IsLocallyControlled())
+            OnHealthChanged?.Invoke(newValue, MaxHealth);
+    }
+
+    private void HandleClassOrColorChanged(int classIndex, int colorIndex)
+    {
+        HandleClassChanged();
     }
 
     private IEnumerator InitializeHealthNextFrame()
@@ -56,7 +73,6 @@ public partial class Player
     {
         if (!this.IsLocallyControlled())
             return;
-
         OnHealthChanged?.Invoke(CurrentHealth, MaxHealth);
         OnManaChanged?.Invoke(CurrentMana, MaxMana);
     }
@@ -82,7 +98,6 @@ public partial class Player
     {
         if (!this.IsLocallyControlled())
             return;
-
         currentHealth.Value = MaxHealth;
         CurrentMana = MaxMana;
         OnManaChanged?.Invoke(CurrentMana, MaxMana);
@@ -92,7 +107,6 @@ public partial class Player
     {
         if (!this.IsLocallyControlled() || activeKit == null || IsDead)
             return;
-
         if (CurrentHealth < MaxHealth)
             Heal((activeKit.HealthRegenPerSecond + LevelUpHealthRegenBonus) * Time.deltaTime);
         if (CurrentMana < MaxMana)
@@ -110,96 +124,18 @@ public partial class Player
 
     private void RefreshStatsFromKit()
     {
-        maxHealth = activeKit != null ? activeKit.MaxHealth : 100f;
-        maxMana = activeKit != null ? activeKit.MaxMana : 50f;
-    }
-
-    public void TakeDamage(float amount)
-    {
-        if (!this.IsLocallyControlled() || IsDodging)
+        maxHealth = DefaultMaxHealth;
+        maxMana = DefaultMaxMana;
+        if (activeKit == null)
             return;
-
-        float minHealth = DeathProtected ? 1f : 0f;
-        currentHealth.Value = Mathf.Clamp(currentHealth.Value - amount, Mathf.Min(minHealth, currentHealth.Value), MaxHealth);
-    }
-
-    public void RequestDamage(float amount)
-    {
-        if (!NetworkObject.IsSpawned)
-        {
-            TakeDamage(amount);
-            return;
-        }
-        RequestDamageServerRpc(amount);
-    }
-
-    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-    private void RequestDamageServerRpc(float amount)
-    {
-        ApplyDamageClientRpc(amount, new ClientRpcParams
-        {
-            Send = new ClientRpcSendParams { TargetClientIds = new[] { OwnerClientId } }
-        });
-    }
-
-    [ClientRpc]
-    private void ApplyDamageClientRpc(float amount, ClientRpcParams rpcParams = default)
-    {
-        TakeDamage(amount);
-    }
-
-    // Mirrors a local dummy hit onto the other players' copies of that non-networked dummy.
-    public void BroadcastDummyHit(Vector2 position, float amount)
-    {
-        if (NetworkObject.IsSpawned && IsOwner)
-            DummyHitRpc(position, amount);
-    }
-
-    [Rpc(SendTo.NotMe)]
-    private void DummyHitRpc(Vector2 position, float amount)
-    {
-        DummyStats.ApplyRemoteHit(position, amount);
-    }
-
-    // Called by a rider once the mount channel completes; routed to the downed player's owner, like damage.
-    public void RequestRevive()
-    {
-        if (!NetworkObject.IsSpawned)
-        {
-            Revive();
-            return;
-        }
-        RequestReviveServerRpc();
-    }
-
-    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-    private void RequestReviveServerRpc()
-    {
-        ApplyReviveClientRpc(new ClientRpcParams
-        {
-            Send = new ClientRpcSendParams { TargetClientIds = new[] { OwnerClientId } }
-        });
-    }
-
-    [ClientRpc]
-    private void ApplyReviveClientRpc(ClientRpcParams rpcParams = default)
-    {
-        Revive();
-    }
-
-    private void Revive()
-    {
-        if (!this.IsLocallyControlled())
-            return;
-
-        currentHealth.Value = MaxHealth;
+        maxHealth = activeKit.MaxHealth;
+        maxMana = activeKit.MaxMana;
     }
 
     public void Heal(float amount)
     {
         if (!this.IsLocallyControlled())
             return;
-
         currentHealth.Value = Mathf.Clamp(currentHealth.Value + amount, 0f, MaxHealth);
     }
 
@@ -211,7 +147,6 @@ public partial class Player
                 OnNotEnoughMana?.Invoke();
             return false;
         }
-
         CurrentMana -= amount;
         if (this.IsLocallyControlled())
             OnManaChanged?.Invoke(CurrentMana, MaxMana);

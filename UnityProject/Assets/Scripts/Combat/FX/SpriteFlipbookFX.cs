@@ -10,34 +10,35 @@ public class SpriteFlipbookFX : MonoBehaviour
     private float timer;
     private int frameIndex;
 
+    private bool HasFrames => frames != null && frames.Length > 0;
+
     void Awake()
     {
         if (spriteRenderer == null)
             spriteRenderer = GetComponent<SpriteRenderer>();
-        if (spriteRenderer != null && frames != null && frames.Length > 0)
+        if (spriteRenderer != null && HasFrames)
             spriteRenderer.sprite = frames[0];
     }
 
     void Update()
     {
-        if (frames == null || frames.Length == 0 || frameRate <= 0f)
+        int next;
+
+        if (!HasFrames || frameRate <= 0f)
         {
             Destroy(gameObject);
             return;
         }
-
         timer += Time.deltaTime;
-        int next = Mathf.FloorToInt(timer * frameRate);
+        next = Mathf.FloorToInt(timer * frameRate);
         if (next >= frames.Length)
         {
             Destroy(gameObject);
             return;
         }
-
-        if (next != frameIndex)
-        {
-            frameIndex = next;
-            spriteRenderer.sprite = frames[frameIndex];
-        }
+        if (next == frameIndex)
+            return;
+        frameIndex = next;
+        spriteRenderer.sprite = frames[frameIndex];
     }
 }

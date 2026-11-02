@@ -4,55 +4,14 @@ using System.Threading.Tasks;
 using UnityEngine;
 
 // Receives the signed-in web user's profile via unityInstance.SendMessage("WebProfileBridge", "SetProfile", json) and pushes in-game changes back.
-public class WebProfileBridge : MonoBehaviour
+public partial class WebProfileBridge : MonoBehaviour
 {
-    [Serializable]
-    private class WebProfile
-    {
-        public string userId;
-        public string displayName;
-        public string playerClass;
-        public string color;
-        public string settingsJson;
-        public int gold;
-        public string upgradesJson;
-    }
-
-    [Serializable]
-    private class WebSettings
-    {
-        public bool showEnemyHealthBars;
-        public bool screenShake;
-        public bool showDamageNumbers;
-        public bool showFps;
-        public bool showPing;
-        public string keybinds;
-    }
-
-    [Serializable]
-    private class SelectionPatch
-    {
-        public string @class;
-        public string color;
-    }
-
-    [Serializable]
-    private class NamePatch
-    {
-        public string display_name;
-    }
-
-    [Serializable]
-    private class SettingsPatch
-    {
-        public WebSettings settings;
-    }
+    private const float SettingsPushDelay = 0.5f;
+    private const int MaxAuthProfileLength = 30;
 
     // Same order as CharacterCatalog.kitsByClass and colorVariants.
     private static readonly string[] ClassNames = { "Archer", "Monk", "Lancer", "Pawn", "Warrior" };
     private static readonly string[] ColorNames = { "Black", "Blue", "Purple", "Red", "Yellow" };
-
-    private const float SettingsPushDelay = 0.5f;
 
     public static bool HasProfile { get; private set; }
     public static string UserId { get; private set; } = string.Empty;
@@ -70,7 +29,10 @@ public class WebProfileBridge : MonoBehaviour
         get
         {
             string id = "u" + UserId.Replace("-", "");
-            return id.Length > 30 ? id.Substring(0, 30) : id;
+
+            if (id.Length <= MaxAuthProfileLength)
+                return id;
+            return id.Substring(0, MaxAuthProfileLength);
         }
     }
 
@@ -78,61 +40,56 @@ public class WebProfileBridge : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Create()
     {
+        GameObject go;
+
         if (FindAnyObjectByType<WebProfileBridge>() != null)
             return;
-
-        GameObject go = new GameObject("WebProfileBridge");
+        go = new GameObject("WebProfileBridge");
         go.AddComponent<WebProfileBridge>();
         DontDestroyOnLoad(go);
-    }
-
-    private void OnEnable()
-    {
-        GameSettings.OnChanged += QueueSettingsPush;
-        KeybindOverrides.OnSaved += QueueSettingsPush;
-    }
-
-    private void OnDisable()
-    {
-        GameSettings.OnChanged -= QueueSettingsPush;
-        KeybindOverrides.OnSaved -= QueueSettingsPush;
     }
 
     // Waits (unscaled) until the web page has sent the profile, or the timeout elapses.
     public static async Task<bool> WaitForProfileAsync(float timeoutSeconds)
     {
         float deadline = Time.realtimeSinceStartup + timeoutSeconds;
+
         while (!HasProfile && Time.realtimeSinceStartup < deadline)
             await Awaitable.NextFrameAsync();
         return HasProfile;
     }
 
     // Saves the profile so later spawns load it, then applies it to the current local player.
-    public void SetProfile(string json)
+    private static WebProfile ParseProfile(string json)
     {
-        WebProfile profile;
         try
         {
-            profile = JsonUtility.FromJson<WebProfile>(json);
+            return JsonUtility.FromJson<WebProfile>(json);
         }
         catch (Exception e)
         {
             Debug.LogWarning($"WebProfileBridge: invalid profile JSON. {e.Message}");
-            return;
+            return null;
         }
-        if (profile == null)
-            return;
+    }
 
-        PlayerProfileStore.TryLoad(out int classIndex, out int colorIndex, out string playerName);
+    // The web values win; anything the account doesn't set keeps the local save.
+    private static void MergeWithLocal(WebProfile profile, out int classIndex, out int colorIndex, out string playerName)
+    {
         int webClass = Array.IndexOf(ClassNames, profile.playerClass);
         int webColor = Array.IndexOf(ColorNames, profile.color);
+
+        PlayerProfileStore.TryLoad(out classIndex, out colorIndex, out playerName);
         if (webClass >= 0)
             classIndex = webClass;
         if (webColor >= 0)
             colorIndex = webColor;
         if (!string.IsNullOrWhiteSpace(profile.displayName))
             playerName = profile.displayName.Trim();
+    }
 
+    private static void Confirm(WebProfile profile, int classIndex, int colorIndex, string playerName)
+    {
         UserId = profile.userId ?? string.Empty;
         ConfirmedName = playerName;
         confirmedClass = classIndex;
@@ -140,17 +97,17 @@ public class WebProfileBridge : MonoBehaviour
         HasProfile = true;
         GoldWallet.SetFromServer(profile.gold);
         PermanentUpgrades.SetFromServer(profile.upgradesJson);
+    }
 
-        PlayerProfileStore.Save(classIndex, colorIndex, playerName);
-
+    // Flagged as remote so the changes it triggers aren't pushed straight back to the backend.
+    private static void ApplyRemote(WebProfile profile, int classIndex, int colorIndex, string playerName)
+    {
         applyingRemote = true;
         try
         {
             ApplySettings(profile.settingsJson);
-
             if (LocalPlayer.Get() == null)
                 return;
-
             LocalCharacterLook.ApplyProfile(classIndex, colorIndex);
             if (!string.IsNullOrEmpty(playerName))
                 LocalCharacterLook.SetPlayerName(playerName);
@@ -161,13 +118,30 @@ public class WebProfileBridge : MonoBehaviour
         }
     }
 
+    // Saves the profile so later spawns load it, then applies it to the current local player.
+    public void SetProfile(string json)
+    {
+        WebProfile profile = ParseProfile(json);
+        int classIndex;
+        int colorIndex;
+        string playerName;
+
+        if (profile == null)
+            return;
+        MergeWithLocal(profile, out classIndex, out colorIndex, out playerName);
+        Confirm(profile, classIndex, colorIndex, playerName);
+        PlayerProfileStore.Save(classIndex, colorIndex, playerName);
+        ApplyRemote(profile, classIndex, colorIndex, playerName);
+    }
+
     // Overwrites local settings with the account's saved ones; missing keys keep their current value.
     private static void ApplySettings(string json)
     {
+        WebSettings settings;
+
         if (string.IsNullOrEmpty(json))
             return;
-
-        WebSettings settings = CurrentSettings();
+        settings = CurrentSettings();
         try
         {
             JsonUtility.FromJsonOverwrite(json, settings);
@@ -177,7 +151,12 @@ public class WebProfileBridge : MonoBehaviour
             Debug.LogWarning($"WebProfileBridge: invalid settings JSON. {e.Message}");
             return;
         }
+        WriteSettings(settings);
+    }
 
+    // Only touches values that differ, so unchanged settings don't fire OnChanged.
+    private static void WriteSettings(WebSettings settings)
+    {
         if (GameSettings.ShowEnemyHealthBars != settings.showEnemyHealthBars)
             GameSettings.ShowEnemyHealthBars = settings.showEnemyHealthBars;
         if (GameSettings.ScreenShakeEnabled != settings.screenShake)
@@ -205,60 +184,15 @@ public class WebProfileBridge : MonoBehaviour
         };
     }
 
-    // Saves a class/color change made in-game to the account, skipping values the backend already has.
-    public static void PushSelection(int classIndex, int colorIndex)
+    private void OnEnable()
     {
-        if (!HasProfile || applyingRemote || (classIndex == confirmedClass && colorIndex == confirmedColor))
-            return;
-        if (classIndex < 0 || classIndex >= ClassNames.Length || colorIndex < 0 || colorIndex >= ColorNames.Length)
-            return;
-
-        string body = JsonUtility.ToJson(new SelectionPatch { @class = ClassNames[classIndex], color = ColorNames[colorIndex] });
-        WebBackend.Patch(body, status =>
-        {
-            if (status < 200 || status >= 300)
-                return;
-            confirmedClass = classIndex;
-            confirmedColor = colorIndex;
-        });
+        GameSettings.OnChanged += QueueSettingsPush;
+        KeybindOverrides.OnSaved += QueueSettingsPush;
     }
 
-    // Saves an in-game rename to the account; a rejected name (taken/invalid) reverts to the account's name.
-    public static void PushName(string playerName)
+    private void OnDisable()
     {
-        if (!HasProfile || applyingRemote || string.IsNullOrEmpty(playerName) || playerName == ConfirmedName)
-            return;
-
-        WebBackend.Patch(JsonUtility.ToJson(new NamePatch { display_name = playerName }), status =>
-        {
-            if (status >= 200 && status < 300)
-            {
-                ConfirmedName = playerName;
-                _ = ServicesAuth.SyncPlayerNameAsync();
-            }
-            else if (status == 400 || status == 409)
-            {
-                Debug.LogWarning($"WebProfileBridge: name \"{playerName}\" rejected by the server (HTTP {status}), reverting.");
-                LocalCharacterLook.SetPlayerName(ConfirmedName);
-            }
-        });
-    }
-
-    // Debounced so a burst of rebinds/toggles sends a single request.
-    private void QueueSettingsPush()
-    {
-        if (!HasProfile || applyingRemote)
-            return;
-
-        if (settingsPush != null)
-            StopCoroutine(settingsPush);
-        settingsPush = StartCoroutine(PushSettingsAfterDelay());
-    }
-
-    private IEnumerator PushSettingsAfterDelay()
-    {
-        yield return new WaitForSecondsRealtime(SettingsPushDelay);
-        settingsPush = null;
-        WebBackend.Patch(JsonUtility.ToJson(new SettingsPatch { settings = CurrentSettings() }));
+        GameSettings.OnChanged -= QueueSettingsPush;
+        KeybindOverrides.OnSaved -= QueueSettingsPush;
     }
 }

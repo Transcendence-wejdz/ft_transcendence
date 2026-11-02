@@ -6,6 +6,12 @@ public class AvatarUI : MonoBehaviour
 {
     private Image avatarImage;
 
+    private void SetAvatar(Sprite portrait)
+    {
+        if (portrait != null)
+            avatarImage.sprite = portrait;
+    }
+
     void Awake()
     {
         avatarImage = GetComponent<Image>();
@@ -20,11 +26,5 @@ public class AvatarUI : MonoBehaviour
     void OnDisable()
     {
         LocalCharacterLook.OnPortraitChanged -= SetAvatar;
-    }
-
-    private void SetAvatar(Sprite portrait)
-    {
-        if (portrait != null)
-            avatarImage.sprite = portrait;
     }
 }

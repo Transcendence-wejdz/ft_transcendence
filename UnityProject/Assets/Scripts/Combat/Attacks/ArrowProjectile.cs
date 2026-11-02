@@ -110,6 +110,7 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
         FxGlow.Setup(gameObject, attacker, ability);
         damage = ability.Damage * damageMultiplier;
         ReadAbility(ability);
+        pierceCount += Player.BonusPierceOf(attacker);
         rb.linearVelocity = transform.right * speed;
     }
 

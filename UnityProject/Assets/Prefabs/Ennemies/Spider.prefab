@@ -68,13 +68,17 @@ PrefabInstance:
       propertyPath: m_Offset.y
       value: 0.9
       objectReference: {fileID: 0}
+    - target: {fileID: 5103145015877556344, guid: 80684958157020e5b9d23c35045e0a68, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 1.48
+      objectReference: {fileID: 0}
     - target: {fileID: 8760497899193580633, guid: 80684958157020e5b9d23c35045e0a68, type: 3}
       propertyPath: m_Name
       value: Spider
       objectReference: {fileID: 0}
     - target: {fileID: 8795917144580053198, guid: 80684958157020e5b9d23c35045e0a68, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 3324238440
+      value: 3406608742
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -17,19 +17,19 @@ public struct OfferedBonusSet
     }
 }
 
-// Per-player stacks in one NetworkVariable, so a new type keeps the NetworkVariable layout.
+// Per-player stacks in one NetworkVariable, so a new type keeps the NetworkVariable layout; normal stats are floats since permanent levels grant fractions.
 public struct LevelUpBonusStacks : INetworkSerializable
 {
-    public int attackSpeed;
-    public int specialCooldown;
-    public int damage;
-    public int health;
-    public int moveSpeed;
-    public int healthRegen;
-    public int manaMax;
-    public int manaRegen;
-    public int size;
-    public int attackMobility;
+    public float attackSpeed;
+    public float specialCooldown;
+    public float damage;
+    public float health;
+    public float moveSpeed;
+    public float healthRegen;
+    public float manaMax;
+    public float manaRegen;
+    public float size;
+    public float attackMobility;
     public int dodgeCharge;
     public int dodgeRecharge;
     public int lifesteal;
@@ -38,8 +38,9 @@ public struct LevelUpBonusStacks : INetworkSerializable
     public int thorns;
     public int dashDamage;
     public int dodgeInvulnerability;
+    public int piercing;
 
-    public int Get(LevelUpBonusType type)
+    public float Get(LevelUpBonusType type)
     {
         switch (type)
         {
@@ -61,6 +62,7 @@ public struct LevelUpBonusStacks : INetworkSerializable
             case LevelUpBonusType.Thorns: return thorns;
             case LevelUpBonusType.DashDamage: return dashDamage;
             case LevelUpBonusType.DodgeInvulnerability: return dodgeInvulnerability;
+            case LevelUpBonusType.Piercing: return piercing;
             default: return 0;
         }
     }
@@ -87,6 +89,25 @@ public struct LevelUpBonusStacks : INetworkSerializable
             case LevelUpBonusType.Thorns: thorns++; break;
             case LevelUpBonusType.DashDamage: dashDamage++; break;
             case LevelUpBonusType.DodgeInvulnerability: dodgeInvulnerability++; break;
+            case LevelUpBonusType.Piercing: piercing++; break;
+        }
+    }
+
+    // Normal stats only: the permanent upgrades' starting amount.
+    public void Add(LevelUpBonusType type, float amount)
+    {
+        switch (type)
+        {
+            case LevelUpBonusType.AttackSpeed: attackSpeed += amount; break;
+            case LevelUpBonusType.SpecialCooldown: specialCooldown += amount; break;
+            case LevelUpBonusType.Damage: damage += amount; break;
+            case LevelUpBonusType.Health: health += amount; break;
+            case LevelUpBonusType.MoveSpeed: moveSpeed += amount; break;
+            case LevelUpBonusType.HealthRegen: healthRegen += amount; break;
+            case LevelUpBonusType.ManaMax: manaMax += amount; break;
+            case LevelUpBonusType.ManaRegen: manaRegen += amount; break;
+            case LevelUpBonusType.Size: size += amount; break;
+            case LevelUpBonusType.AttackMobility: attackMobility += amount; break;
         }
     }
 
@@ -110,5 +131,6 @@ public struct LevelUpBonusStacks : INetworkSerializable
         serializer.SerializeValue(ref thorns);
         serializer.SerializeValue(ref dashDamage);
         serializer.SerializeValue(ref dodgeInvulnerability);
+        serializer.SerializeValue(ref piercing);
     }
 }

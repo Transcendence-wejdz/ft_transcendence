@@ -127,8 +127,13 @@ public partial class Player
         if (ability == AbilityType.Attack && IsAimingSpecialOrUltimate)
             return;
         kit = Ability(ability);
-        if (kit == null || !IsCastableNow(ability, kit))
+        if (kit == null)
             return;
+        if (!IsCastableNow(ability, kit))
+        {
+            WarnIfOutOfMana(ability, kit);
+            return;
+        }
         CancelAim();
         aimingAbility = ability;
         aimDistance = kit.FxDistance;

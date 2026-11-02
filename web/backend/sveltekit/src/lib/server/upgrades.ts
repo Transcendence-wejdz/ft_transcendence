@@ -10,12 +10,12 @@ export const UPGRADE_TYPES = new Set([
     'Size',
     'AttackMobility'
 ]);
-export const MAX_UPGRADE_LEVEL = 5;
-export const UPGRADE_BASE_COST = 50;
+export const MAX_UPGRADE_LEVEL = 10;
+export const UPGRADE_COST_STEP = 30;
 
 // Gold needed to go from this level to the next (must match PermanentUpgrades.CostFor in Unity).
 export function upgradeCost(level: number): number {
-    return UPGRADE_BASE_COST * 2 ** level;
+    return UPGRADE_COST_STEP * (level + 1);
 }
 
 // Keeps only known types with a level in range, so a malformed column never breaks a purchase.

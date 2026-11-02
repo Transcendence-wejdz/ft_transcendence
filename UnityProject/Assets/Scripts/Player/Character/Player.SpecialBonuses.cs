@@ -14,6 +14,8 @@ public partial class Player
 
     private bool IsInvulnerable => Time.time < invulnerableEndTime;
 
+    public bool HasProjectile => IsProjectile(AbilityType.Attack) || IsProjectile(AbilityType.Special) || IsProjectile(AbilityType.Ultimate);
+
     private int DodgeChargeBonus => levelUpBonusStacks.Value.dodgeCharge * LevelUpBonusCatalog.DodgeChargesPerStack;
 
     private float DodgeRechargeTime =>
@@ -72,6 +74,18 @@ public partial class Player
         count = Physics2D.OverlapCircle(Center, DashStrikeRadius, ContactFilter2D.noFilter, DashStrikeBuffer);
         for (int i = 0; i < count; i++)
             StrikeDashTarget(DashStrikeBuffer[i], damage);
+    }
+
+    // Extra targets a player's projectile goes through; an enemy attacker has no stacks.
+    public static int BonusPierceOf(GameObject attacker)
+    {
+        Player player = null;
+
+        if (attacker != null)
+            player = attacker.GetComponent<Player>();
+        if (player == null)
+            return 0;
+        return player.levelUpBonusStacks.Value.piercing * LevelUpBonusCatalog.PiercePerStack;
     }
 
     // Attacker's machine only: every player attack passes here, so crits and lifesteal apply to all.

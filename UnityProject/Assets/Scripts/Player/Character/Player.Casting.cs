@@ -14,6 +14,19 @@ public partial class Player
         return TrySpendMana(kit.ManaCost);
     }
 
+    // Hold kits stop at BeginAim, before TrySpendMana, so a refused aim warns too; a cooldown stays silent, as on an instant cast.
+    private void WarnIfOutOfMana(AbilityType ability, AbilityKit kit)
+    {
+        float readyTime = specialReadyTime;
+
+        if (ability == AbilityType.Attack)
+            return;
+        if (ability == AbilityType.Ultimate)
+            readyTime = ultimateReadyTime;
+        if (Time.time >= readyTime && CurrentMana < kit.ManaCost)
+            OnNotEnoughMana?.Invoke();
+    }
+
     // A placed distance of -1 keeps the kit's FX distance.
     private void CastSpecial(float distance)
     {

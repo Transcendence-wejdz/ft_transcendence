@@ -2,11 +2,12 @@ using System;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
-// Roguelite meta upgrades bought with gold at the Lobby's upgrade NPC: each level is one free stack of that level-up bonus at the start of every run.
+// Roguelite meta upgrades bought with gold at the Lobby's upgrade NPC: each level is a fraction of a level-up stack, granted at the start of every run.
 public static class PermanentUpgrades
 {
-    public const int MaxLevel = 5;
-    public const int BaseCost = 50;
+    public const int MaxLevel = 10;
+    public const int CostStep = 30;
+    public const float StacksPerLevel = 0.2f;
 
     [Serializable]
     private class PurchaseRequest
@@ -19,10 +20,13 @@ public static class PermanentUpgrades
 
     public static event Action OnChanged;
 
+    // Special bonuses aren't sold, so they have no level.
     public static int GetLevel(LevelUpBonusType type)
     {
         int index = (int)type;
 
+        if (index >= serverLevels.Length)
+            return 0;
         if (GoldWallet.UsesServer)
             return serverLevels[index];
         return Mathf.Clamp(LocalProgressStore.GetUpgradeLevel(index), 0, MaxLevel);
@@ -31,7 +35,7 @@ public static class PermanentUpgrades
     // Must match upgradeCost in the web app's upgrades.ts.
     public static int CostFor(int level)
     {
-        return BaseCost << level;
+        return CostStep * (level + 1);
     }
 
     public static int NextCost(LevelUpBonusType type)
@@ -120,15 +124,17 @@ public static class PermanentUpgrades
         OnChanged?.Invoke();
     }
 
+    public static float PermanentStacks(LevelUpBonusType type)
+    {
+        return GetLevel(type) * StacksPerLevel;
+    }
+
     public static LevelUpBonusStacks StartingStacks()
     {
         LevelUpBonusStacks stacks = default;
 
         foreach (LevelUpBonusType type in LevelUpBonusCatalog.NormalTypes)
-        {
-            for (int i = GetLevel(type); i > 0; i--)
-                stacks.Increment(type);
-        }
+            stacks.Add(type, PermanentStacks(type));
         return stacks;
     }
 }

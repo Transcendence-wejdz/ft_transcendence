@@ -22,7 +22,7 @@ public partial class LevelUpManager
         foreach (Player player in Player.ActivePlayers)
         {
             if (!player.HasChosenLevelUpBonus)
-                player.ForceLevelUpBonus(GetOfferedBonusType(Random.Range(0, BonusOptionCount), player.OwnerClientId));
+                player.ForceLevelUpBonus(GetOfferedBonusType(Random.Range(0, BonusOptionCount), player));
         }
     }
 
@@ -102,10 +102,10 @@ public partial class LevelUpManager
         SetFrozen(true);
     }
 
-    // A chained level goes straight to its own choice; the countdown only comes before the game actually resumes.
+    // Solo and chained levels go straight on; the countdown only lets a group resume together.
     private void EndSequence()
     {
-        if (HasNextLevelWaiting())
+        if (!IsTimed || HasNextLevelWaiting())
             FinishSequence();
         else
             StartResumeCountdown();

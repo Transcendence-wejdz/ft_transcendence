@@ -52,15 +52,6 @@ public partial class LevelUpUI : MonoBehaviour
         return $"<size=125%>{displayName}</size>";
     }
 
-    private static ulong LocalOfferId()
-    {
-        Player local = LocalPlayer.GetPlayer();
-
-        if (local == null)
-            return 0;
-        return local.OwnerClientId;
-    }
-
     private string BonusText(LevelUpBonusType type)
     {
         return $"<color=#{ColorUtility.ToHtmlStringRGB(LevelUpBonusCatalog.GetColor(type))}>{BonusTitle(type)}</color>\n<color=#9E9C94>{LevelUpBonusCatalog.GetDescription(type)}</color>";
@@ -86,7 +77,7 @@ public partial class LevelUpUI : MonoBehaviour
         local = LocalPlayer.GetPlayer();
         if (local == null)
             return;
-        local.ChooseLevelUpBonus(manager.GetOfferedBonusType(bonusIndex, local.OwnerClientId));
+        local.ChooseLevelUpBonus(manager.GetOfferedBonusType(bonusIndex, local));
         localChosen = true;
         SetButtonsInteractable(false);
     }
@@ -147,6 +138,8 @@ public partial class LevelUpUI : MonoBehaviour
     private void SetInputBlocked(bool blocked)
     {
         IsShowing = blocked;
+        if (blocked)
+            PauseManager.CloseMenu();
         PauseManager.SetExternalPause(blocked);
     }
 

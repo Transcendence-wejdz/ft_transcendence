@@ -25,7 +25,7 @@ public class GameModeLoader : MonoBehaviour
             ModeReadyCheck.Instance.RequestReadyCheck(sceneName);
             return;
         }
-        Time.timeScale = 1f;
+        TimeFreeze.Clear();
         PauseManager.SetExternalPause(false);
         LoadingScreenManager.LoadScene(sceneName);
     }

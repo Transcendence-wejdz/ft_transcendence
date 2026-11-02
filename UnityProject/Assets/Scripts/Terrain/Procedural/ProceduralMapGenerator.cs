@@ -142,6 +142,8 @@ public partial class ProceduralMapGenerator : MonoBehaviour
         InitDecorOffsets();
         InitCells();
         AllocateChunkBuffers();
+        if (Application.isPlaying)
+            FindMainland();
     }
 
     // Same point on every peer (the scene's spawn altar, else the generator), so host and clients clear the same decor; the local player's position differs per machine.

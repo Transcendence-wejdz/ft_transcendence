@@ -105,20 +105,10 @@ public partial class GameOverCheck
     // A level-up choice open under the pause keeps its own freeze once the pause ends.
     private void ApplyPauseFreeze(bool frozen)
     {
-        LevelUpManager levelUp;
-
-        if (frozen)
-        {
-            frozeForPlayers = true;
-            Time.timeScale = 0f;
+        if (!frozen && !frozeForPlayers)
             return;
-        }
-        if (!frozeForPlayers)
-            return;
-        frozeForPlayers = false;
-        levelUp = FindAnyObjectByType<LevelUpManager>();
-        if (levelUp == null || !levelUp.SequenceActive)
-            Time.timeScale = 1f;
+        frozeForPlayers = frozen;
+        TimeFreeze.Set(this, frozen);
     }
 
     private void HandlePauseActiveChanged(bool previous, bool current)

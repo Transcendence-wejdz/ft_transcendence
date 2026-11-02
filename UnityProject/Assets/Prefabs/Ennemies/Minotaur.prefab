@@ -82,7 +82,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8795917144580053198, guid: 80684958157020e5b9d23c35045e0a68, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 2510554411
+      value: 564431871
       objectReference: {fileID: 0}
     - target: {fileID: 9091742250040184774, guid: 80684958157020e5b9d23c35045e0a68, type: 3}
       propertyPath: sortPivotOffset.y

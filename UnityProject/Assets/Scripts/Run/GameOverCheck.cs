@@ -161,7 +161,7 @@ public partial class GameOverCheck : NetworkBehaviour
         Player.OnPlayerUnregistered -= HandlePlayerLeft;
         Player.OnServicesIdClaimed -= HandleServicesIdClaimed;
         if (frozeForPlayers)
-            Time.timeScale = 1f;
+            TimeFreeze.Set(this, false);
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= HandleLoadEventCompleted;
         base.OnDestroy();

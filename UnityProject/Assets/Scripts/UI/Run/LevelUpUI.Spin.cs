@@ -29,14 +29,20 @@ public partial class LevelUpUI
 
     private LevelUpBonusType RandomBonus()
     {
-        LevelUpBonusType[] types = LevelUpBonusCatalog.OfferPool(manager.SequenceLevel);
+        Player local = LocalPlayer.GetPlayer();
+        LevelUpBonusType[] types = LevelUpBonusCatalog.OfferPool(manager.SequenceLevel, local != null && local.HasProjectile);
 
         return types[Random.Range(0, types.Length)];
     }
 
+    // The reels are only cosmetic until a choice is made, and choosing needs the local player anyway.
     private LevelUpBonusType LocalOffer(int slot)
     {
-        return manager.GetOfferedBonusType(slot, LocalOfferId());
+        Player local = LocalPlayer.GetPlayer();
+
+        if (local == null)
+            return RandomBonus();
+        return manager.GetOfferedBonusType(slot, local);
     }
 
     private void CreateReels()

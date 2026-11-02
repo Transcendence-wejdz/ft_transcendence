@@ -48,6 +48,8 @@ public partial class Player
     private void HandleHealthValueChanged(float previousValue, float newValue)
     {
         healthReported = true;
+        if (newValue > 0f)
+            arrivalHealthPending = false;
         if (previousValue > 0f && newValue <= 0f)
             OnPlayerDied?.Invoke(this);
         OnHealthReplicated?.Invoke(newValue, MaxHealth);

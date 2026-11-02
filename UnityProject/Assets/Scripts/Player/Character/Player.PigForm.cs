@@ -43,7 +43,7 @@ public partial class Player
     {
         bool dead;
 
-        if (pigPrefab == null || Time.frameCount < startFrame + StartupGraceFrames)
+        if (pigPrefab == null || arrivalHealthPending || Time.frameCount < startFrame + StartupGraceFrames)
             return;
         dead = IsDead;
         if (dead != isPig)

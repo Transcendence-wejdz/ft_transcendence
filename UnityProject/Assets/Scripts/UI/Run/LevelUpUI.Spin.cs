@@ -27,9 +27,9 @@ public partial class LevelUpUI
         return reelFirstCardCount + slot * reelExtraCardsPerSlot;
     }
 
-    private static LevelUpBonusType RandomBonus()
+    private LevelUpBonusType RandomBonus()
     {
-        LevelUpBonusType[] types = (LevelUpBonusType[])System.Enum.GetValues(typeof(LevelUpBonusType));
+        LevelUpBonusType[] types = LevelUpBonusCatalog.OfferPool(manager.SequenceLevel);
 
         return types[Random.Range(0, types.Length)];
     }

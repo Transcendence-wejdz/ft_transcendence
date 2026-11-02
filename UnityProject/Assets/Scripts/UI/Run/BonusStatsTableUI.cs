@@ -43,6 +43,11 @@ public class BonusStatsTableUI : MonoBehaviour
         builder.Clear();
         foreach (LevelUpBonusType type in LevelUpBonusCatalog.DisplayOrder)
             AppendRow(type, player.BonusStacks);
+        foreach (LevelUpBonusType type in LevelUpBonusCatalog.SpecialTypes)
+        {
+            if (player.BonusStacks.Get(type) > 0)
+                AppendRow(type, player.BonusStacks);
+        }
         rowsText.text = builder.ToString();
     }
 

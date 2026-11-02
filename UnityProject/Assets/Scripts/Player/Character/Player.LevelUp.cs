@@ -66,6 +66,8 @@ public partial class Player
             Heal(LevelUpBonusCatalog.HealthBonusPerStack);
         else if (type == LevelUpBonusType.ManaMax)
             RestoreMana(LevelUpBonusCatalog.ManaBonusPerStack);
+        else if (type == LevelUpBonusType.DodgeCharge && dodgeCharges >= 0)
+            dodgeCharges += LevelUpBonusCatalog.DodgeChargesPerStack;
     }
 
     private void ResetLevelUpChoiceLocal()

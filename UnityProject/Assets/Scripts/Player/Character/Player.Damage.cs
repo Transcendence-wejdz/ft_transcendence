@@ -11,12 +11,16 @@ public partial class Player
     public void TakeDamage(float amount)
     {
         float minHealth = 0f;
+        float health;
 
-        if (!this.IsLocallyControlled() || IsDodging)
+        if (!this.IsLocallyControlled() || IsInvulnerable)
             return;
         if (DeathProtected)
             minHealth = 1f;
-        currentHealth.Value = Mathf.Clamp(currentHealth.Value - amount, Mathf.Min(minHealth, currentHealth.Value), MaxHealth);
+        health = Mathf.Clamp(currentHealth.Value - amount, Mathf.Min(minHealth, currentHealth.Value), MaxHealth);
+        if (health <= 0f && currentHealth.Value > 0f && TryConsumeExtraLife())
+            health = MaxHealth * LevelUpBonusCatalog.ExtraLifeHealthFraction;
+        currentHealth.Value = health;
     }
 
     public void RequestDamage(float amount)

@@ -33,7 +33,7 @@ public partial class Player
         return aimAssistMeleeRange;
     }
 
-    // Only solid damageable non-player targets can pull the aim.
+    // Only solid damageable targets that fight back can pull the aim, so never a player or a tree.
     private static bool IsAssistTarget(Collider2D hit)
     {
         Component target;
@@ -41,7 +41,7 @@ public partial class Player
         if (hit.isTrigger)
             return false;
         target = hit.GetComponentInParent<IDamageable>() as Component;
-        return target != null && !(target is Player);
+        return target != null && !(target is Player) && !(target is DestructibleDecor);
     }
 
     // Bends the aim toward the target closest to it within the assist cone and reach.

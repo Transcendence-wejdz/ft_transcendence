@@ -83,7 +83,7 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
         if (!hitTargets.Add(damageable))
             return;
         if (hasHitbox)
-            damageable.RequestDamage(damage);
+            Player.DealAttackDamage(owner, damageable, damage);
         enemiesHit++;
         if (enemiesHit >= pierceCount)
             Destroy(gameObject);
@@ -141,11 +141,26 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
         CheckShieldBlock();
     }
 
+    // Decor takes the hit without using up a pierce: a bush lets the arrow through, a tree stops it.
+    private void HitDecor(DestructibleDecor decor, bool solid)
+    {
+        if (hasHitbox)
+            Player.DealAttackDamage(owner, decor, damage);
+        if (solid)
+            Destroy(gameObject);
+    }
+
     // Stops on the first non-damageable solid thing it hits, but pierces up to pierceCount damageables before despawning; trigger-only zones are ignored.
     void OnTriggerEnter2D(Collider2D other)
     {
         IDamageable damageable;
+        DestructibleDecor decor = other.GetComponentInParent<DestructibleDecor>();
 
+        if (decor != null)
+        {
+            HitDecor(decor, !other.isTrigger);
+            return;
+        }
         if (other.isTrigger)
             return;
         damageable = other.GetComponentInParent<IDamageable>();

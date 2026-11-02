@@ -27,7 +27,7 @@ public partial class Player
         {
             if (activeKit == null)
                 return 0;
-            return Mathf.Max(0, activeKit.DodgeCharges);
+            return Mathf.Max(0, activeKit.DodgeCharges + DodgeChargeBonus);
         }
     }
 
@@ -48,7 +48,7 @@ public partial class Player
         {
             if (activeKit == null || DodgeCharges >= MaxDodgeCharges || activeKit.DodgeRechargeSeconds <= 0f)
                 return 0f;
-            return Mathf.Clamp01(dodgeRechargeElapsed / activeKit.DodgeRechargeSeconds);
+            return Mathf.Clamp01(dodgeRechargeElapsed / DodgeRechargeTime);
         }
     }
     public bool IsDodging => Time.time < dodgeEndTime;
@@ -99,6 +99,7 @@ public partial class Player
         direction = DodgeDirection();
         dodgeCharges = DodgeCharges - 1;
         dodgeEndTime = Time.time + activeKit.DodgeDuration;
+        StartDashStrike();
         dodgeVelocity = direction * (activeKit.DodgeDistance / activeKit.DodgeDuration);
         dashDustEndTime = dodgeEndTime;
         if (NetworkObject.IsSpawned)
@@ -155,7 +156,7 @@ public partial class Player
             return;
         }
         dodgeRechargeElapsed += Time.deltaTime;
-        if (dodgeRechargeElapsed < activeKit.DodgeRechargeSeconds)
+        if (dodgeRechargeElapsed < DodgeRechargeTime)
             return;
         dodgeCharges = current + 1;
         dodgeRechargeElapsed = 0f;
@@ -168,6 +169,7 @@ public partial class Player
         if (moveInput.sqrMagnitude > MinMoveInputSqr)
             lastMoveDirection = moveInput.normalized;
         RechargeDodge();
+        UpdateDashStrike();
     }
 
     // True while the dodge owns this frame's movement.

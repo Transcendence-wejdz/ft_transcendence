@@ -14,8 +14,7 @@ public static class PermanentUpgrades
         public string type;
     }
 
-    private static readonly LevelUpBonusType[] AllTypes = (LevelUpBonusType[])Enum.GetValues(typeof(LevelUpBonusType));
-    private static readonly int[] serverLevels = new int[AllTypes.Length];
+    private static readonly int[] serverLevels = new int[LevelUpBonusCatalog.NormalTypes.Length];
     private static bool purchasePending;
 
     public static event Action OnChanged;
@@ -116,7 +115,7 @@ public static class PermanentUpgrades
     {
         if (!GoldWallet.UsesServer)
             return;
-        foreach (LevelUpBonusType type in AllTypes)
+        foreach (LevelUpBonusType type in LevelUpBonusCatalog.NormalTypes)
             serverLevels[(int)type] = ParseServerLevel(json, type);
         OnChanged?.Invoke();
     }
@@ -125,7 +124,7 @@ public static class PermanentUpgrades
     {
         LevelUpBonusStacks stacks = default;
 
-        foreach (LevelUpBonusType type in AllTypes)
+        foreach (LevelUpBonusType type in LevelUpBonusCatalog.NormalTypes)
         {
             for (int i = GetLevel(type); i > 0; i--)
                 stacks.Increment(type);

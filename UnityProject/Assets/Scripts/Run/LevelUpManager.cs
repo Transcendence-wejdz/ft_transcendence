@@ -95,19 +95,20 @@ public partial class LevelUpManager : NetworkBehaviour
         return xpManager != null;
     }
 
+    // One round per level, so a burst of XP can't jump over a special level.
     private void CheckForLevelUp()
     {
         int level;
 
         xpManager.GetProgress(out level, out _, out _);
         if (level > processedLevel)
-            StartSequence(level);
+            StartSequence(processedLevel + 1);
     }
 
     // Each player gets their own offers: every peer derives the same ones from the round's seed and that player's id.
     public LevelUpBonusType GetOfferedBonusType(int slot, ulong clientId)
     {
-        return PickOffers(OfferSeed, clientId).Get(slot);
+        return PickOffers(OfferSeed, clientId, LevelUpBonusCatalog.OfferPool(SequenceLevel)).Get(slot);
     }
 
     public override void OnNetworkSpawn()

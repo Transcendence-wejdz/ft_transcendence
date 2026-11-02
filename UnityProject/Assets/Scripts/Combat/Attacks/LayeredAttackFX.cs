@@ -137,6 +137,6 @@ public class LayeredAttackFX : MonoBehaviour, IAttackFX
         hitTargets.Add(damageable);
         if (Player.TryBlockAttack(owner, damageable, damage))
             return;
-        damageable.RequestDamage(damage);
+        Player.DealAttackDamage(owner, damageable, damage);
     }
 }

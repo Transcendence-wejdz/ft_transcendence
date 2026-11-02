@@ -87,6 +87,7 @@ public partial class Player : NetworkBehaviour, IDamageable
         SpawnMovement();
         SpawnStats();
         SpawnCustomization();
+        SpawnDecorSync();
     }
 
     public override void OnNetworkDespawn()

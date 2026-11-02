@@ -59,7 +59,7 @@ public partial class Enemy
             ResolveHitOnVictimRpc(center, direction, swingTarget.NetworkObject,
                 RpcTarget.Single(swingTarget.OwnerClientId, RpcTargetUse.Temp));
         else if (inZone)
-            swingTarget.RequestDamage(Kit.Damage);
+            swingTarget.TakeMeleeHit(Kit.Damage, this);
     }
 
     // The angle travels with the trigger, so remote telegraphs never reuse the previous swing's direction.
@@ -82,7 +82,7 @@ public partial class Enemy
         if (!targetObject.TryGetComponent(out victim) || victim.IsDead)
             return;
         if (Kit.HitZoneContains(center, direction, victim.Center))
-            victim.TakeDamage(Kit.Damage);
+            victim.TakeMeleeHit(Kit.Damage, this);
     }
 
     // Melee damage lands AttackHitDelay later; ranged shots hit on contact, the delay only holds the shooter still.

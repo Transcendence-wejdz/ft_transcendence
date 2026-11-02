@@ -111,8 +111,11 @@ public partial class Enemy : IDamageable, IHealthStats
             Destroy(gameObject);
     }
 
+    // A dead enemy lives until the end of the frame, and a second hit must not count as a second kill.
     private void ApplyDamage(float amount, ulong attackerClientId)
     {
+        if (currentHealth.Value <= 0f)
+            return;
         currentHealth.Value = Mathf.Max(0f, currentHealth.Value - amount);
         if (currentHealth.Value <= 0f)
             Die(attackerClientId);

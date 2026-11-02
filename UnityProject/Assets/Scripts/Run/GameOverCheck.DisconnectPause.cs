@@ -126,8 +126,11 @@ public partial class GameOverCheck
         ApplyPauseFreeze(current);
     }
 
+    // Waits for every client's scene load; subscribed here since a solo host's load can beat Start.
     public override void OnNetworkSpawn()
     {
+        if (IsServer && NetworkManager.SceneManager != null)
+            NetworkManager.SceneManager.OnLoadEventCompleted += HandleLoadEventCompleted;
         pauseActive.OnValueChanged += HandlePauseActiveChanged;
         ApplyPauseFreeze(IsFrozenForPlayers);
     }

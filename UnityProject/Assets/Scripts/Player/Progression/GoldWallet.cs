@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 // Lobby currency: on the website the account holds it and the server checks each run against its own clock; desktop builds and the Editor keep it in a local file.
-public static class GoldWallet
+public static partial class GoldWallet
 {
     public const int ScorePerGold = 1000;
     public const int CheckpointEveryWaves = 5;
@@ -10,6 +10,7 @@ public static class GoldWallet
 
     public const int Offline = -1;
     public const int Refused = -2;
+    public const int Pending = -3;
 
     [Serializable]
     private class RunStart
@@ -87,34 +88,12 @@ public static class GoldWallet
         };
     }
 
-    private static void HandleRewardResponse(int status, int earned, Action<int> onDone)
-    {
-        if (status < 200 || status >= 300)
-        {
-            onDone?.Invoke(Refused);
-            return;
-        }
-        Credit(earned);
-        onDone?.Invoke(earned);
-    }
-
     private static void ClaimLocal(RunResult result, Action<int> onDone)
     {
         int earned = GoldForScore(result.score.Total);
 
         Credit(earned);
         onDone?.Invoke(earned);
-    }
-
-    // The token is spent on the first claim, so a run can only be rewarded once.
-    private static void ClaimOnServer(RunResult result, Action<int> onDone)
-    {
-        RunReport report = BuildReport(result);
-        int earned = GoldForScore(report.score);
-
-        runToken = null;
-        PlayerPrefs.DeleteKey(RunTokenKey);
-        WebBackend.Post("/api/game/reward", JsonUtility.ToJson(report), status => HandleRewardResponse(status, earned, onDone));
     }
 
     public static int GoldForScore(int score)
@@ -130,7 +109,7 @@ public static class GoldWallet
         runToken = Guid.NewGuid().ToString();
         PlayerPrefs.SetString(RunTokenKey, runToken);
         PlayerPrefs.Save();
-        WebBackend.Post("/api/game/run/start", JsonUtility.ToJson(new RunStart { runToken = runToken, mode = mode }));
+        StartRunOnServer(JsonUtility.ToJson(new RunStart { runToken = runToken, mode = mode }));
     }
 
     // A rejoining player picks the run back up, since a restart lost the token kept in memory.
@@ -148,7 +127,7 @@ public static class GoldWallet
         WebBackend.Post("/api/game/run/checkpoint", JsonUtility.ToJson(new RunCheckpoint { runToken = runToken, wave = wave, kills = score.kills, score = score.Total }));
     }
 
-    // onDone gets the gold credited, Offline on the website without an account, or Refused when the server rejects the run.
+    // onDone gets the gold credited, Offline without an account, Refused if the server rejects the run, or Pending if it can't be reached.
     public static void ClaimRunReward(RunResult result, Action<int> onDone)
     {
         if (!UsesServer)
@@ -176,6 +155,7 @@ public static class GoldWallet
             return;
         serverBalance = Mathf.Max(0, gold);
         OnChanged?.Invoke(serverBalance);
+        ResendPendingReward();
     }
 
     // Desktop/Editor only: takes the gold from the local save, or returns false when there isn't enough.

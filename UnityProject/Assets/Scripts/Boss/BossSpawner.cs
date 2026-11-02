@@ -28,14 +28,21 @@ public class BossSpawner : MonoBehaviour
         Spawn(true);
     }
 
+    // Subscribed in Awake because a solo host's scene load can complete before Start.
+    void Awake()
+    {
+        NetworkManager network = NetworkManager.Singleton;
+
+        if (network != null && network.IsListening && network.IsServer && network.SceneManager != null)
+            network.SceneManager.OnLoadEventCompleted += HandleLoadEventCompleted;
+    }
+
     void Start()
     {
         NetworkManager network = NetworkManager.Singleton;
 
         if (network == null || !network.IsListening)
             Spawn(false);
-        else if (network.IsServer && network.SceneManager != null)
-            network.SceneManager.OnLoadEventCompleted += HandleLoadEventCompleted;
     }
 
     void OnDestroy()

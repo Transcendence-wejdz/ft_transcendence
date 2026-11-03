@@ -67,6 +67,7 @@ public class BossSceneTransition : MonoBehaviour
         yield return new WaitUntil(() => IsDue(levelUp));
         if (gameOver != null && gameOver.IsGameOver)
             yield break;
+        spawner.CancelPendingSpawns();
         CaptureRun(levelUp);
         GameModeLoader.LoadNow(bossSceneName);
     }

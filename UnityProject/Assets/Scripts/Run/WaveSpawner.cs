@@ -16,6 +16,8 @@ public partial class WaveSpawner : NetworkBehaviour
     [SerializeField] private float clearCheckInterval = 0.5f;
     [SerializeField] private int maxSpawnPointAttempts = 30;
     [SerializeField] private float spawnClearance = 1f;
+    [SerializeField] private int spawnBatchSize = 10;
+    [SerializeField] private float spawnBatchInterval = 0.5f;
 
     [SerializeField] private bool spawnWaves = true;
     [Tooltip("Off for scenes that continue a run (the boss scene), so reaching them doesn't open a new gold run.")]
@@ -31,6 +33,8 @@ public partial class WaveSpawner : NetworkBehaviour
     private bool wavesStarted;
     private ProceduralMapGenerator cachedMapGenerator;
     private readonly List<int> unlockedKitIndices = new List<int>();
+    private int pendingSpawns;
+    private bool spawningBatches;
 
     public int CurrentWave
     {
@@ -140,10 +144,10 @@ public partial class WaveSpawner : NetworkBehaviour
     {
         if (GameOverCheck.IsRunOver)
             return true;
-        return FindObjectsByType<Enemy>(FindObjectsInactive.Exclude).Length == 0;
+        return pendingSpawns == 0 && Enemy.ActiveCount == 0;
     }
 
-    // Waits out timeBetweenWaves, but ends early the moment every enemy from the current wave is dead.
+    // Waits out timeBetweenWaves, but ends early the moment every enemy from the current wave has spawned and died.
     private IEnumerator WaitForNextWave()
     {
         WaitForSeconds checkDelay = new WaitForSeconds(clearCheckInterval);

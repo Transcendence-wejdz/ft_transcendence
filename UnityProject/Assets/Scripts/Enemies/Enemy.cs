@@ -33,7 +33,7 @@ public partial class Enemy : NetworkBehaviour
         networkTransform = GetComponent<NetworkTransform>();
     }
 
-    // Body size comes from the collider, shared with the flow field so its cells match an enemy body.
+    // Body size comes from the collider; the flow field picks its size class from the radius.
     private void InitBody()
     {
         CircleCollider2D circle = GetComponent<CircleCollider2D>();
@@ -47,7 +47,6 @@ public partial class Enemy : NetworkBehaviour
             bodyOffset = circle.offset * (Vector2)transform.lossyScale;
         }
         EnemyFlowFieldManager.BodyOffset = bodyOffset;
-        EnemyFlowFieldManager.BodyRadius = bodyRadius;
     }
 
     private WaveSpawner GetWaveSpawner()

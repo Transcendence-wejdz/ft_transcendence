@@ -28,7 +28,7 @@ public partial class Enemy
     private void FireProjectile()
     {
         EnemyProjectile.Fire(Kit.ProjectilePrefab, BodyCenter, SwingDirection, Kit.ProjectileSpeed,
-            Kit.ProjectileMaxDistance, Kit.ProjectileArcHeight, Kit.Damage, this.HasServerAuthority());
+            Kit.ProjectileMaxDistance, Kit.ProjectileArcHeight, Damage, this.HasServerAuthority());
     }
 
     private void PlayAttack()
@@ -53,13 +53,13 @@ public partial class Enemy
         center = BodyCenter;
         direction = SwingDirection;
         inZone = Kit.HitZoneContains(center, direction, swingTarget.Center);
-        if (inZone && Player.TryAbsorbWithShield(center, swingTarget.Center, Kit.Damage))
+        if (inZone && Player.TryAbsorbWithShield(center, swingTarget.Center, Damage))
             return;
         if (IsRemoteVictim(swingTarget))
             ResolveHitOnVictimRpc(center, direction, swingTarget.NetworkObject,
                 RpcTarget.Single(swingTarget.OwnerClientId, RpcTargetUse.Temp));
         else if (inZone)
-            swingTarget.TakeMeleeHit(Kit.Damage, this);
+            swingTarget.TakeMeleeHit(Damage, this);
     }
 
     // The angle travels with the trigger, so remote telegraphs never reuse the previous swing's direction.
@@ -82,7 +82,7 @@ public partial class Enemy
         if (!targetObject.TryGetComponent(out victim) || victim.IsDead)
             return;
         if (Kit.HitZoneContains(center, direction, victim.Center))
-            victim.TakeMeleeHit(Kit.Damage, this);
+            victim.TakeMeleeHit(Damage, this);
     }
 
     // Melee damage lands AttackHitDelay later; ranged shots hit on contact, the delay only holds the shooter still.

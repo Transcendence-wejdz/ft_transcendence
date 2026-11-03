@@ -35,11 +35,11 @@ public partial class EnemyFlowFieldManager
     // Fills ringScratch with the ring sorted by the angle each enemy stands at around the target.
     private void SortRingByAngle(Vector2 center, List<Enemy> ring)
     {
-        ringScratch.Clear();
-        ringScratch.AddRange(ring);
-        foreach (Enemy enemy in ringScratch)
+        ringSortedByAngle.Clear();
+        ringSortedByAngle.AddRange(ring);
+        foreach (Enemy enemy in ringSortedByAngle)
             enemy.RingAngle = AngleAround(center, enemy.BodyCenter);
-        ringScratch.Sort((a, b) => a.RingAngle.CompareTo(b.RingAngle));
+        ringSortedByAngle.Sort((a, b) => a.RingAngle.CompareTo(b.RingAngle));
     }
 
     // Shifted half a spacing from where the enemies stand (straight behind for a lone one) so each has to go around.
@@ -48,9 +48,9 @@ public partial class EnemyFlowFieldManager
         Vector2 offsetSum = Vector2.zero;
         float offset;
 
-        for (int i = 0; i < ringScratch.Count; i++)
+        for (int i = 0; i < ringSortedByAngle.Count; i++)
         {
-            offset = (ringScratch[i].RingAngle - i * spacing) * Mathf.Deg2Rad;
+            offset = (ringSortedByAngle[i].RingAngle - i * spacing) * Mathf.Deg2Rad;
             offsetSum += new Vector2(Mathf.Cos(offset), Mathf.Sin(offset));
         }
         return Mathf.Atan2(offsetSum.y, offsetSum.x) * Mathf.Rad2Deg + spacing * 0.5f;
@@ -62,7 +62,7 @@ public partial class EnemyFlowFieldManager
 
         if (!ringSizes.TryGetValue(target, out previousSize))
             return true;
-        if (previousSize != ringScratch.Count)
+        if (previousSize != ringSortedByAngle.Count)
             return true;
         return !ringBaseAngles.ContainsKey(target);
     }
@@ -74,15 +74,15 @@ public partial class EnemyFlowFieldManager
         float baseAngle;
 
         SortRingByAngle(target.Center, ring);
-        spacing = 360f / ringScratch.Count;
+        spacing = 360f / ringSortedByAngle.Count;
         if (RingSizeChanged(target))
         {
             ringBaseAngles[target] = ComputeRingBaseAngle(spacing);
-            ringSizes[target] = ringScratch.Count;
+            ringSizes[target] = ringSortedByAngle.Count;
         }
         baseAngle = ringBaseAngles[target];
-        for (int i = 0; i < ringScratch.Count; i++)
-            ringScratch[i].RingSlotAngle = baseAngle + i * spacing;
+        for (int i = 0; i < ringSortedByAngle.Count; i++)
+            ringSortedByAngle[i].RingSlotAngle = baseAngle + i * spacing;
     }
 
     private void AssignRingSlots()

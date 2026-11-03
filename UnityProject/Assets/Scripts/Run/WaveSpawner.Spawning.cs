@@ -3,32 +3,9 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
-// Where and what enemies spawn: kits unlocked by tier, valid land points around the players, summons.
+// Where enemies spawn: valid land points around the players, summons.
 public partial class WaveSpawner
 {
-    private int UnlockWaveForTier(int tier)
-    {
-        if (tier > tierUnlockWave.Length)
-            return int.MaxValue;
-        return tierUnlockWave[tier - 1];
-    }
-
-    // Tier N unlocks at wave tierUnlockWave[N-1]; falls back to kit 0 while none is unlocked.
-    private void RefreshUnlockedKitIndices()
-    {
-        int tier;
-
-        unlockedKitIndices.Clear();
-        for (int i = 0; i < enemyKits.Length; i++)
-        {
-            tier = Mathf.Max(1, enemyKits[i].Tier);
-            if (waveNumber >= UnlockWaveForTier(tier))
-                unlockedKitIndices.Add(i);
-        }
-        if (unlockedKitIndices.Count == 0)
-            unlockedKitIndices.Add(0);
-    }
-
     // The kit index is set before Spawn() so remote clients get it in the spawn payload.
     private void SpawnEnemy(int kitIndex, Vector3 position)
     {
@@ -37,18 +14,44 @@ public partial class WaveSpawner
         Enemy enemy = instance.GetComponent<Enemy>();
 
         enemy.Initialize(kit);
+        ApplyStatScale(enemy);
         if (!IsNetworked())
             return;
         enemy.SetNetworkedKitIndex(kitIndex);
         instance.GetComponent<NetworkObject>().Spawn(true);
     }
 
-    // Each enemy rolls a random kit among the tiers unlocked this wave.
+    // Queues the wave; a wave overlapping the previous one adds to the same queue, so the spawn rate stays capped.
     private void SpawnWave(int count)
     {
         RefreshUnlockedKitIndices();
-        for (int i = 0; i < count; i++)
-            SpawnEnemy(unlockedKitIndices[Random.Range(0, unlockedKitIndices.Count)], FindSpawnPosition());
+        pendingSpawns += count;
+        if (!spawningBatches)
+            StartCoroutine(SpawnPendingEnemies());
+    }
+
+    // Spreads spawns over several frames to avoid a lag spike on every peer; each enemy rolls a random kit among the tiers unlocked this wave.
+    private IEnumerator SpawnPendingEnemies()
+    {
+        WaitForSeconds delay = new WaitForSeconds(spawnBatchInterval);
+        int batch;
+
+        spawningBatches = true;
+        while (pendingSpawns > 0 && !GameOverCheck.IsRunOver)
+        {
+            batch = Mathf.Min(spawnBatchSize, pendingSpawns, RoomForEnemies());
+            pendingSpawns -= batch;
+            for (int i = 0; i < batch; i++)
+                SpawnEnemy(unlockedKitIndices[Random.Range(0, unlockedKitIndices.Count)], FindSpawnPosition());
+            yield return delay;
+        }
+        spawningBatches = false;
+    }
+
+    // Called before leaving the scene, so queued enemies don't spawn during the load.
+    public void CancelPendingSpawns()
+    {
+        pendingSpawns = 0;
     }
 
     // Spawns just off a random living player's screen.
@@ -57,7 +60,7 @@ public partial class WaveSpawner
         EnemyFlowFieldManager manager = EnemyFlowFieldManager.Instance;
         IReadOnlyList<Player> living;
 
-        manager.RefreshPlayers();
+        manager.RefreshLivingPlayers();
         living = manager.LivingPlayers;
         if (living.Count == 0)
             return transform.position;

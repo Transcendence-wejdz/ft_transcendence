@@ -39,6 +39,13 @@ public struct LevelUpBonusStacks : INetworkSerializable
     public int dashDamage;
     public int dodgeInvulnerability;
     public int piercing;
+    public bool extraLifeSpent;
+
+    // Special bonuses are offered once per run, and a spent extra life has no stack left to show it was taken.
+    public bool IsTaken(LevelUpBonusType type)
+    {
+        return Get(type) > 0f || (type == LevelUpBonusType.ExtraLife && extraLifeSpent);
+    }
 
     public float Get(LevelUpBonusType type)
     {
@@ -132,5 +139,6 @@ public struct LevelUpBonusStacks : INetworkSerializable
         serializer.SerializeValue(ref dashDamage);
         serializer.SerializeValue(ref dodgeInvulnerability);
         serializer.SerializeValue(ref piercing);
+        serializer.SerializeValue(ref extraLifeSpent);
     }
 }

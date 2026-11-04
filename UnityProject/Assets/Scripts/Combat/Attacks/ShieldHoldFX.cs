@@ -168,6 +168,13 @@ public class ShieldHoldFX : MonoBehaviour, IAttackFX, IHealthStats
         SortOverAttacker(attacker);
     }
 
+    // Sits on the attacker, so a preview shield would show it in the world.
+    public void RemoveHealthBar()
+    {
+        if (healthBarRoot != null)
+            Destroy(healthBarRoot.gameObject);
+    }
+
     void Awake()
     {
         if (spriteRenderer == null)

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -55,7 +56,7 @@ public partial class LevelUpManager
             EndSequence();
     }
 
-    // Shuffles the round's pool and offers the first 3; same seed, same result on every peer.
+    // Shuffles the round's pool and offers the first 3, specials first when normal bonuses fill in; same seed, same result on every peer.
     private static OfferedBonusSet PickOffers(int seed, ulong clientId, LevelUpBonusType[] pool)
     {
         LevelUpBonusType[] types = (LevelUpBonusType[])pool.Clone();
@@ -67,6 +68,7 @@ public partial class LevelUpManager
             j = random.Next(0, i + 1);
             (types[i], types[j]) = (types[j], types[i]);
         }
+        types = types.OrderByDescending(type => LevelUpBonusCatalog.IsSpecial(type)).ToArray();
         return new OfferedBonusSet { first = types[0], second = types[1], third = types[2] };
     }
 

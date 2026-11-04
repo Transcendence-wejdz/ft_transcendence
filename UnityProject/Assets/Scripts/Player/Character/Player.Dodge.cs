@@ -78,7 +78,7 @@ public partial class Player
     // Always keyboard-driven: the held direction, else the last one moved in (never the mouse); the owner moves itself, NetworkTransform replicates it.
     private bool CanDodge()
     {
-        if (!this.IsLocallyControlled() || IsBlocked || IsDead || isMounted || IsDodging || activeKit == null)
+        if (!this.IsLocallyControlled() || IsBlocked || IsDead || isMounted || IsDodging || IsDiving || activeKit == null)
             return false;
         return DodgeCharges > 0 && activeKit.DodgeDuration > 0f;
     }

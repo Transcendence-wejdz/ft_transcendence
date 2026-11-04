@@ -52,7 +52,7 @@ public class PlayerSpawner : MonoBehaviour
         return CharacterCatalog.Instance.GetFxLightColor(player.ColorIndex);
     }
 
-    private static void TintSpawnFx(GameObject fx, Color color)
+    public static void TintSpawnFx(GameObject fx, Color color)
     {
         ParticleSystem.MainModule main;
 

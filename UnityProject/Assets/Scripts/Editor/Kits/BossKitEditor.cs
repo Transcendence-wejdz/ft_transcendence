@@ -19,6 +19,7 @@ public partial class BossKitEditor : KitPreviewEditor
         new("", "Charge", "chargeMinRange", "chargeCooldown", "chargeLeadSeconds", "chargeChainCount", "chargeWindup", "chargeSpeed", "chargeDistance", "chargeWidth", "chargeDamage"),
         new("", "Slam", "slamMaxRange", "slamCooldown", "slamWindup", "slamRadius", "slamDamage", "slamActiveDuration"),
         new("", "Summon", "summonKits", "summonCount", "summonInterval", "summonWindup", "summonRadius", "summonActiveDuration", "summonFxPrefabs", "summonFxOffset"),
+        new("", "Phase 2", "enrageRecoveryDuration", "roarWindup", "roarActiveDuration", "roarRadius", "roarPushSpeed", "roarPushDuration", "slamWaveWindup", "slamWaveRadius", "slamWaveDamage", "firePatchPrefab", "fireSpacing", "fireLifetime", "fireDamagePerSecond"),
         new("", "Animator States", "idleState", "walkState", "windupState", "attackState", "recoveryState", "chargeAnimationSpeed"),
     };
 

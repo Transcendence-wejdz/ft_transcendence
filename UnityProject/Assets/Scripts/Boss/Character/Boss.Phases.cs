@@ -27,6 +27,10 @@ public partial class Boss
             ResolveSlam();
         else if (pattern == BossPattern.Summon)
             Summon();
+        else if (pattern == BossPattern.SlamWave)
+            ResolveSlamWave();
+        else if (pattern == BossPattern.Roar)
+            StartRoarPush();
     }
 
     // Applies the phase's gameplay effect here (server), then replays its visuals on every peer with the same duration and lane length.
@@ -65,7 +69,19 @@ public partial class Boss
     private float BaseDuration(BossPattern p, BossPhase ph)
     {
         if (ph == BossPhase.Recovery)
-            return kit.RecoveryDuration;
+            return RecoveryDuration();
+        if (p == BossPattern.Roar)
+        {
+            if (ph == BossPhase.Windup)
+                return kit.RoarWindup;
+            return kit.RoarActiveDuration;
+        }
+        if (p == BossPattern.SlamWave)
+        {
+            if (ph == BossPhase.Windup)
+                return kit.SlamWaveWindup;
+            return kit.SlamActiveDuration;
+        }
         if (p == BossPattern.Charge)
             return kit.ChargeWindup;
         if (p == BossPattern.Slam)
@@ -87,6 +103,8 @@ public partial class Boss
         if (p == BossPattern.Charge && ph == BossPhase.Active)
             return chargeLength / Mathf.Max(MinChargeSpeed, kit.ChargeSpeed);
         duration = BaseDuration(p, ph);
+        if (p == BossPattern.Roar && ph != BossPhase.Recovery)
+            return duration;
         if (ph == BossPhase.Windup && chained)
             duration *= ChainWindupFraction;
         return duration / Tempo;
@@ -101,6 +119,10 @@ public partial class Boss
             return;
         if (p == BossPattern.Slam)
             JudgeLocalHit(kit.SlamRadius, kit.SlamDamage);
+        else if (p == BossPattern.SlamWave)
+            JudgeLocalHit(kit.SlamWaveRadius, kit.SlamWaveDamage);
+        else if (p == BossPattern.Roar)
+            StartRoarPush();
         else if (p == BossPattern.Charge)
         {
             localChargeEndTime = Time.time + duration;

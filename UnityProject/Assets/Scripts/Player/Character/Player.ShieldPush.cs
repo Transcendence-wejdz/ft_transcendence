@@ -165,7 +165,7 @@ public partial class Player
             ApplyPush(transform.position, shieldFacingAngle.Value, onSpawn);
     }
 
-    // Server/offline only, every frame of a raised shield: enemies touching the wall slide with it.
+    // Server/offline only, every frame of a raised shield: enemies touching the wall slide with it, without cutting short a push already under way.
     private void UpdateShieldContactPush()
     {
         CapsuleCollider2D template;
@@ -190,7 +190,7 @@ public partial class Player
         for (int i = 0; i < count; i++)
         {
             enemy = ShieldPushBuffer[i].GetComponent<Enemy>();
-            if (enemy == null)
+            if (enemy == null || enemy.IsKnockedBack)
                 continue;
             displacement = WallFrontPushOut(BodyCenterNow(ShieldPushBuffer[i]), ShieldPushBuffer[i], shieldCenter, facing, wallSize);
             if (displacement != Vector2.zero)

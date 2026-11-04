@@ -19,9 +19,11 @@ public partial class AbilityKitEditor : KitPreviewEditor
     {
         new("ABILITY", "Type", "kind"),
         new("ABILITY", "Use", "cooldown", "manaCost", "moveLockDuration", "moveSpeedMultiplier", "animSpeed"),
-        new("ABILITY", "FX", "fxPrefab", "fxDistance", "fxOrigin", "fxFromAimIndicator", "size", "ignoreAimRotation", "followCaster"),
+        new("ABILITY", "FX", "fxPrefab", "icon", "fxDistance", "fxOrigin", "fxFromAimIndicator", "size", "ignoreAimRotation", "followCaster"),
         new("ABILITY", "Aim", "aimMode", "maxRange", "aimAssist", "aimAssistAngle"),
         new("ABILITY", "Damage", "damage"),
+        new("ABILITY", "Charge", "chargeFxPrefab", "chargeFxDistance", "chargeFxOrigin", "chargeFxFromAimIndicator", "chargeSeconds", "chargeDamageMultiplier", "chargeSizeMultiplier"),
+        new("ABILITY", "Dive", "takeoffFxPrefab", "diveAirSeconds", "diveKnockbackForce", "diveKnockbackDuration"),
         new("ABILITY", "Glow", "glowIntensity", "glowSize", "glowDuration"),
         new("ABILITY", "Projectile", ProjectileFields),
         new("ABILITY", "Shield", ShieldFields),
@@ -62,6 +64,8 @@ public partial class AbilityKitEditor : KitPreviewEditor
             return serializedObject.FindProperty("aimMode").enumValueIndex != (int)AbilityAimMode.HoldFree;
         if (name == "fxOrigin")
             return BoolField("fxFromAimIndicator");
+        if (name == "chargeFxOrigin")
+            return BoolField("chargeFxFromAimIndicator");
         return false;
     }
 

@@ -37,6 +37,8 @@ public partial class Player
         {
             if (isShieldActive.Value)
                 return ShieldMoveSpeedMultiplier();
+            if (IsCharging)
+                return ApplyAttackMobilityBonus(chargingKit.MoveSpeedMultiplier);
             if (Time.time < moveLockEndTime)
                 return moveLockSpeedMultiplier;
             return 1f;
@@ -44,13 +46,13 @@ public partial class Player
     }
 
     // Dead players (pigs) can still move but not fight.
-    private bool CanFight => !IsBlocked && !IsDead;
+    private bool CanFight => !IsBlocked && !IsDead && !IsDiving;
 
     private bool CanAutofire
     {
         get
         {
-            if (!isAttackHeld || !this.IsLocallyControlled() || !CanFight)
+            if (!isAttackHeld || !this.IsLocallyControlled() || !CanFight || IsCharging)
                 return false;
             return Time.time >= attackReadyTime && Ability(AbilityType.Attack) != null;
         }
@@ -104,6 +106,7 @@ public partial class Player
     {
         RefreshActiveKit();
         OnClassOrColorChanged += HandleKitClassChanged;
+        isDiving.OnValueChanged += HandleDivingChanged;
     }
 
     private void StartMoveLock(AbilityKit kit)

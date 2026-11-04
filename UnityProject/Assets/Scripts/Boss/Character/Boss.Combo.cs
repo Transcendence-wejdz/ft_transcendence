@@ -38,13 +38,16 @@ public partial class Boss
             combo.Enqueue(step);
     }
 
-    // Melee: charge through the target then slam, or slam alone.
+    // Melee: charge through the target then slam, or slam alone; enraged, a wider shockwave follows the slam.
     private void QueueMeleeCombo(bool chargeReady)
     {
         if (chargeReady)
             combo.Enqueue(BossPattern.Charge);
-        if (chargeReady || Time.time >= nextSlamTime)
-            combo.Enqueue(BossPattern.Slam);
+        if (!chargeReady && Time.time < nextSlamTime)
+            return;
+        combo.Enqueue(BossPattern.Slam);
+        if (IsEnraged)
+            combo.Enqueue(BossPattern.SlamWave);
     }
 
     // Far: chained charges finished by a summon, or a single charge.

@@ -12,9 +12,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d09c957d3a2f1904b16b6c4dc5f2c56, type: 3}
   m_Name: Troll_Kit
   m_EditorClassIdentifier: Assembly-CSharp::BossKit
+  enrageRecoveryDuration: 0.55
+  roarWindup: 1.2
+  roarActiveDuration: 0.8
+  roarRadius: 8
+  roarPushSpeed: 8
+  roarPushDuration: 0.6
+  slamWaveWindup: 1.2
+  slamWaveRadius: 8
+  slamWaveDamage: 50
+  firePatchPrefab: {fileID: 5944396231977613112, guid: 78df91cce5d6de19dbc3e030d5d597fd, type: 3}
+  fireSpacing: 1.2
+  fireLifetime: 4
+  fireDamagePerSecond: 20
   displayName: Troll
-  maxHealth: 1500
-  healthPerExtraPlayer: 0.5
+  maxHealth: 5000
+  healthPerExtraPlayer: 0.25
   scoreReward: 10000
   moveSpeed: 1.8
   retargetInterval: 0.5
@@ -31,12 +44,12 @@ MonoBehaviour:
   chargeSpeed: 14
   chargeDistance: 15
   chargeWidth: 3
-  chargeDamage: 30
+  chargeDamage: 60
   slamMaxRange: 4
   slamCooldown: 2.5
   slamWindup: 0.9
   slamRadius: 5
-  slamDamage: 40
+  slamDamage: 80
   slamActiveDuration: 0.6
   summonKits:
   - {fileID: 11400000, guid: bbd9cf17077cc906186e5fbc9d196fd8, type: 2}

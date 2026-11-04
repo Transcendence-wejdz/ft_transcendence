@@ -73,6 +73,8 @@ public partial class EnemyFlowFieldManager : MonoBehaviour
 
         foreach (Player player in livingPlayers)
         {
+            if (player.IsDiving)
+                continue;
             distSq = ((Vector2)player.transform.position - position).sqrMagnitude;
             if (distSq < nearestDistSq)
             {

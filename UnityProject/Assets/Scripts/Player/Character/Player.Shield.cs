@@ -102,7 +102,7 @@ public partial class Player
     {
         if (!CanFight || Time.time < ultimateReadyTime)
             return false;
-        return TrySpendMana(ShieldKit.ManaCost);
+        return TrySpendMana(ManaCostOf(ShieldKit));
     }
 
     // Called from Ultimate() for shield kits: a press raises it, a second press lowers it early.

@@ -1,10 +1,16 @@
+using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
 // Effects of the special level-up bonuses.
 public partial class Player
 {
     private const float DashStrikeRadius = 1f;
+    private const float ExtraLifeBlinkInterval = 0.12f;
+    private const float ExtraLifeBlinkAlpha = 0.35f;
+
+    [SerializeField] private GameObject extraLifeFxPrefab;
 
     private static readonly Collider2D[] DashStrikeBuffer = new Collider2D[32];
 
@@ -44,9 +50,40 @@ public partial class Player
         if (stacks.extraLife <= 0)
             return false;
         stacks.extraLife--;
+        stacks.extraLifeSpent = true;
         levelUpBonusStacks.Value = stacks;
         invulnerableEndTime = Time.time + LevelUpBonusCatalog.ExtraLifeInvulnerableSeconds;
+        PlayExtraLifeFeedback();
+        if (NetworkObject.IsSpawned)
+            ExtraLifeFeedbackRpc();
         return true;
+    }
+
+    // Blinks on scaled time like the invulnerability it shows; a disabled player gets its alpha back from StopSpawnFade.
+    private IEnumerator ExtraLifeBlinkRoutine()
+    {
+        WaitForSeconds delay = new WaitForSeconds(ExtraLifeBlinkInterval);
+
+        for (float t = 0f; t < LevelUpBonusCatalog.ExtraLifeInvulnerableSeconds; t += ExtraLifeBlinkInterval * 2f)
+        {
+            SetSpriteAlpha(ExtraLifeBlinkAlpha);
+            yield return delay;
+            SetSpriteAlpha(1f);
+            yield return delay;
+        }
+    }
+
+    private void PlayExtraLifeFeedback()
+    {
+        if (extraLifeFxPrefab != null)
+            PlayerSpawner.TintSpawnFx(Instantiate(extraLifeFxPrefab, BodyCenter() + (Vector3)transformFxOffset, Quaternion.identity), LevelUpBonusCatalog.GetColor(LevelUpBonusType.ExtraLife));
+        StartCoroutine(ExtraLifeBlinkRoutine());
+    }
+
+    [Rpc(SendTo.NotMe)]
+    private void ExtraLifeFeedbackRpc()
+    {
+        PlayExtraLifeFeedback();
     }
 
     private void StartDashStrike()
@@ -89,6 +126,13 @@ public partial class Player
     }
 
     // Attacker's machine only: every player attack passes here, so crits and lifesteal apply to all.
+    public static bool IsProtectedAlly(GameObject attacker, IDamageable target)
+    {
+        if (RunOptions.Current.friendlyFire || !(target is Player))
+            return false;
+        return attacker != null && attacker.GetComponent<Player>() != null;
+    }
+
     public static void DealAttackDamage(GameObject attacker, IDamageable target, float damage)
     {
         Player player = null;

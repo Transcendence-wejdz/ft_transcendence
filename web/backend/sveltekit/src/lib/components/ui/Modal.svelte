@@ -32,7 +32,7 @@
 <AlertDialog.Root bind:open>
 	<AlertDialog.Portal>
 		<AlertDialog.Overlay class="modal-overlay" />
-		<AlertDialog.Content class="modal">
+		<AlertDialog.Content class="modal" escapeKeydownBehavior={busy ? 'ignore' : 'close'}>
 			<AlertDialog.Title class="modal-title">{title}</AlertDialog.Title>
 			<AlertDialog.Description class="modal-description">{description}</AlertDialog.Description>
 			<div class="modal-actions">

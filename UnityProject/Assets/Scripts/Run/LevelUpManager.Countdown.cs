@@ -4,7 +4,10 @@ using UnityEngine;
 // Countdown between the last level-up choice and the game resuming: time stays frozen and the sequence stays active until it runs out.
 public partial class LevelUpManager
 {
-    [SerializeField] private float resumeCountdownSeconds = 3f;
+    private const int ResumeCountdownNumbers = 3;
+
+    [Tooltip("Total length of the 3-2-1, whatever its value.")]
+    [SerializeField] private float resumeCountdownSeconds = 1.8f;
 
     private readonly NetworkVariable<double> resumeServerTime = new OfflineSafeNetworkVariable<double>(
         0d, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -33,6 +36,9 @@ public partial class LevelUpManager
             return Mathf.Max(0f, offlineResumeAt - Time.unscaledTime);
         }
     }
+
+    // The time left on the 3-2-1's own scale, one unit per number.
+    public float ResumeCountLeft => ResumeSecondsLeft * ResumeCountdownNumbers / resumeCountdownSeconds;
 
     public bool IsChoosing => SequenceActive && !IsResuming;
 

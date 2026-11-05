@@ -5,7 +5,7 @@ using UnityEngine;
 public class ResumeCountdownUI : MonoBehaviour
 {
     [SerializeField] private TMP_Text countdownText;
-    [SerializeField] private float pulseScale = 1.5f;
+    [SerializeField] private float pulseScale = 1.3f;
     [SerializeField] private float pulseEndAlpha = 0.35f;
 
     private LevelUpManager levelUp;
@@ -24,7 +24,7 @@ public class ResumeCountdownUI : MonoBehaviour
             levelUp = FindAnyObjectByType<LevelUpManager>();
         if (levelUp == null || !levelUp.IsResuming)
             return false;
-        secondsLeft = levelUp.ResumeSecondsLeft;
+        secondsLeft = levelUp.ResumeCountLeft;
         return true;
     }
 

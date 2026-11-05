@@ -74,6 +74,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LevelUpManager
   ShowTopMostFoldoutHeaderGroup: 1
   multiplayerChoiceSeconds: 20
+  resumeCountdownSeconds: 1.8
 --- !u!1 &446113791828117760
 GameObject:
   m_ObjectHideFlags: 0

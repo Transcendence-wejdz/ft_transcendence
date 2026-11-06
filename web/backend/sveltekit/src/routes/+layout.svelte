@@ -2,72 +2,71 @@
     import { page } from '$app/state';
 
     let { data, children } = $props();
-    const HEARTBEAT_INTERVAL_MS = 5_000;
     let onlineAlerts = $state<{ id: string; name: string }[]>([]);
 
     $effect(() => {
         if (!data.user) return;
 
-        let previousOnline = new Set<string>();
-        let hasInitialSnapshot = false;
-        let polling = false;
+        let webSocket: WebSocket | undefined;
+        let reconnectTimeout: ReturnType<typeof setTimeout> | undefined;
+        let reconnectDelayMs = 1_000;
+        let stopped = false;
+        let hasConnectedBefore = false;
 
-        async function sendHeartbeat() {
-            try {
-                const response = await fetch('/api/friends-list/presence', {
-                    method: 'POST'
-                });
+        function scheduleWebSocketReconnect() {
+            if (stopped || reconnectTimeout) return;
 
-                if (!response.ok) {
-                    console.error('Heartbeat request failed.');
-                }
-            } catch (cause) {
-                console.error('Heartbeat network error:', cause);
-            }
+            reconnectTimeout = setTimeout(() => {
+                reconnectTimeout = undefined;
+                connectWebSocket();
+            }, reconnectDelayMs);
+            reconnectDelayMs = Math.min(reconnectDelayMs * 2, 30_000);
         }
 
-        void sendHeartbeat();
-        const intervalId = setInterval(() => {
-            void sendHeartbeat();
-        }, HEARTBEAT_INTERVAL_MS);
+        function connectWebSocket() {
+            if (stopped) return;
 
-        async function checkFriends() {
-            if (polling) return;
-            polling = true;
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             try {
-                const response = await fetch('/api/friends-list', { cache: 'no-store' });
-                if (!response.ok) return;
-                const result = await response.json();
-                if (!result.success || !Array.isArray(result.friends)) return;
-
-                const onlineFriends = result.friends.filter((friend: { online?: boolean }) => friend.online);
-                const currentOnline = new Set<string>(onlineFriends.map((friend: { id: string }) => friend.id));
-                if (hasInitialSnapshot) {
-                    for (const friend of onlineFriends) {
-                        if (!previousOnline.has(friend.id)) {
-                            const alert = { id: `${friend.id}-${Date.now()}`, name: friend.displayName };
+                const connection = new WebSocket(`${protocol}//${window.location.host}/ws`);
+                webSocket = connection;
+                connection.onopen = () => {
+                    reconnectDelayMs = 1_000;
+                    if (hasConnectedBefore) {
+                        window.dispatchEvent(new Event('friends-presence-resync'));
+                    }
+                    hasConnectedBefore = true;
+                };
+                connection.onmessage = (event) => {
+                    try {
+                        const update = JSON.parse(event.data);
+                        if (update.type !== 'friend-presence' || typeof update.userId !== 'string' || typeof update.online !== 'boolean') return;
+                        window.dispatchEvent(new CustomEvent('friend-presence', { detail: update }));
+                        if (update.online) {
+                            const alert = { id: `${update.userId}-${Date.now()}`, name: update.displayName ?? 'A friend' };
                             onlineAlerts = [...onlineAlerts, alert];
                             setTimeout(() => {
                                 onlineAlerts = onlineAlerts.filter((item) => item.id !== alert.id);
                             }, 5_000);
                         }
+                    } catch (cause) {
+                        console.error('Invalid WebSocket message:', cause);
                     }
-                }
-                previousOnline = currentOnline;
-                hasInitialSnapshot = true;
+                };
+                connection.onclose = scheduleWebSocketReconnect;
+                connection.onerror = () => connection.close();
             } catch (cause) {
-                console.error('Friends presence check failed:', cause);
-            } finally {
-                polling = false;
+                console.error('WebSocket connection failed:', cause);
+                scheduleWebSocketReconnect();
             }
         }
 
-        void checkFriends();
-        const friendsIntervalId = setInterval(() => void checkFriends(), HEARTBEAT_INTERVAL_MS);
+        connectWebSocket();
 
         return () => {
-            clearInterval(intervalId);
-            clearInterval(friendsIntervalId);
+            stopped = true;
+            if (reconnectTimeout) clearTimeout(reconnectTimeout);
+            webSocket?.close();
         };
     });
 

@@ -22,6 +22,12 @@
         displayName: string;
     };
 
+    type PresenceUpdate = {
+        userId: string;
+        online: boolean;
+        lastSeen: string | null;
+    };
+
     let search = $state('');
     let identifier = $state('');
     let error = $state('');
@@ -30,6 +36,7 @@
     let friends = $state<Friend[]>([]);
     let requests = $state<FriendRequest[]>([]);
     let blockedPlayers = $state<BlockedPlayer[]>([]);
+    const latestPresence = new Map<string, PresenceUpdate>();
 
     function formatLastSeen(value: string | null) {
         if (!value) return 'Last seen: unknown';
@@ -48,7 +55,12 @@
         const response = await fetch('/api/friends-list');
         const result = await response.json();
         if (!response.ok) throw new Error(result.error ?? 'Could not load friends.');
-        friends = result.friends;
+        friends = result.friends.map((friend: Friend) => {
+            const update = latestPresence.get(friend.id);
+            return update
+                ? { ...friend, online: update.online, lastSeen: update.lastSeen ?? friend.lastSeen }
+                : friend;
+        });
         requests = result.requests;
     }
 
@@ -58,9 +70,6 @@
         if (!response.ok) throw new Error(result.error ?? 'Could not load blocked players.');
         blockedPlayers = result.blockedPlayers;
     }
-    const PRESENCE_REFRESH_INTERVAL_MS = 5_000;
-    let intervalId: ReturnType<typeof setInterval> | undefined;
-
     async function refreshFriends() {
         try {
             await loadFriends();
@@ -71,18 +80,30 @@
         }
     }
 
+    function handlePresenceUpdate(event: Event) {
+        const update = (event as CustomEvent<PresenceUpdate>).detail;
+        if (!update || typeof update.userId !== 'string' || typeof update.online !== 'boolean') return;
+        latestPresence.set(update.userId, update);
+        friends = friends.map((friend) => friend.id === update.userId
+            ? { ...friend, online: update.online, lastSeen: update.lastSeen ?? friend.lastSeen }
+            : friend);
+    }
+
+    function handlePresenceResync() {
+        void refreshFriends();
+    }
+
     onMount(() => {
+        window.addEventListener('friend-presence', handlePresenceUpdate);
+        window.addEventListener('friends-presence-resync', handlePresenceResync);
         loading = true;
         Promise.all([loadFriends(), loadBlockedPlayers()])
             .catch((cause: unknown) => { error = cause instanceof Error ? cause.message : 'Could not load friends.'; })
             .finally(() => { loading = false; });
 
-        intervalId = setInterval(() => {
-            void refreshFriends();
-        }, PRESENCE_REFRESH_INTERVAL_MS);
-
         return () => {
-            if (intervalId !== undefined) clearInterval(intervalId);
+            window.removeEventListener('friend-presence', handlePresenceUpdate);
+            window.removeEventListener('friends-presence-resync', handlePresenceResync);
         };
     });
 

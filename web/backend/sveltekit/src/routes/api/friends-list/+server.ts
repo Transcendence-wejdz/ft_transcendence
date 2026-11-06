@@ -38,7 +38,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 		}));
 
 	const friendIds = friends.map((friend) => friend.id);
-	const onlineSince = new Date(Date.now() - 10_000);
+	const onlineSince = new Date(Date.now() - 60_000);
 
 	const activeSessions = await prisma.session.findMany({
 		where: {
@@ -117,14 +117,20 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				where: { userLowId_userHighId: { userLowId, userHighId } },
 				select: { relationStatus: true, requesterId: true }
 			});
-        if (existing?.relationStatus === 'PENDING' && existing.requesterId !== locals.user.id) {
-                await prisma.friendship.update({
-                    where: { userLowId_userHighId: { userLowId, userHighId } },
-                    data: { relationStatus: 'ACCEPTED' }
-                });
-					return json({ success: true }, { status: 200 });
+			if (existing?.relationStatus === 'PENDING' && existing.requesterId !== locals.user.id) {
+				await prisma.friendship.update({
+					where: { userLowId_userHighId: { userLowId, userHighId } },
+					data: { relationStatus: 'ACCEPTED' }
+				});
+				return json({ success: true }, { status: 200 });
 			}
-			return json({ success: false, error: existing?.relationStatus === 'ACCEPTED' ? 'Already friends' : 'Request already sent' }, { status: 409 });
+			return json(
+				{
+					success: false,
+					error: existing?.relationStatus === 'ACCEPTED' ? 'Already friends' : 'Request already sent'
+				},
+				{ status: 409 }
+			);
 		}
 		throw error;
 	}

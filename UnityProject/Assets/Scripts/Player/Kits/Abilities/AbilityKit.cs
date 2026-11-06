@@ -24,6 +24,8 @@ public class AbilityKit : ScriptableObject
     [SerializeField] private bool fxFromAimIndicator;
     [Tooltip("Instant fires on press. Hold Fixed previews the hitbox at FX Distance while held (an Attack keeps autofiring, others cast on release). Hold Free also lets the player place it within Max Range (mouse distance, or right stick tilt).")]
     [SerializeField] private AbilityAimMode aimMode;
+    [Tooltip("Hold modes only: draws the hitbox preview while held. The player's preview setting can still hide it.")]
+    [SerializeField] private bool showHitboxPreview = true;
     [Range(0.5f, 20f)]
     [Tooltip("Farthest a Hold Free action can be placed from its FX origin.")]
     [SerializeField] private float maxRange = 6f;
@@ -143,6 +145,7 @@ public class AbilityKit : ScriptableObject
             return aimMode;
         }
     }
+    public bool ShowHitboxPreview => showHitboxPreview;
     public float MaxRange => maxRange;
     public bool AimAssist => aimAssist;
     public float AimAssistAngle => aimAssistAngle;

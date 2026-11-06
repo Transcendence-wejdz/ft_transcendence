@@ -42,7 +42,7 @@ MonoBehaviour:
   chargeFxFromAimIndicator: 1
   chargeSeconds: 2
   chargeDamageMultiplier: 3
-  chargeSizeMultiplier: 2
+  chargeSizeMultiplier: 3
   takeoffFxPrefab: {fileID: 0}
   diveAirSeconds: 0.6
   diveKnockbackForce: 14

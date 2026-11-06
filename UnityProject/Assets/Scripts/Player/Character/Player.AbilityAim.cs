@@ -191,7 +191,7 @@ public partial class Player
             aimDistance = PlacedDistance(ability);
         if (AimPreview == null)
             return;
-        if (GameSettings.ShowAimPreview(ability))
+        if (Ability(ability).ShowHitboxPreview && GameSettings.ShowAimPreview(ability))
             ShowAimPreview(ability);
         else
             AimPreview.Hide();

@@ -60,7 +60,8 @@ public partial class Player
         }
     }
 
-    private bool ShouldDropShield => !CanFight || Time.time >= shieldEndTime || ShieldKit == null;
+    // A rider is kinematic, so a wall carried on a pig would shove enemies (even the boss) through water; mounting drops it.
+    private bool ShouldDropShield => !CanFight || isMounted || Time.time >= shieldEndTime || ShieldKit == null;
 
     private void PlayShieldAnimation(AbilityKit kit)
     {
@@ -100,7 +101,7 @@ public partial class Player
 
     private bool CanRaiseShield()
     {
-        if (!CanFight || Time.time < ultimateReadyTime)
+        if (!CanFight || isMounted || Time.time < ultimateReadyTime)
             return false;
         return TrySpendMana(ManaCostOf(ShieldKit));
     }

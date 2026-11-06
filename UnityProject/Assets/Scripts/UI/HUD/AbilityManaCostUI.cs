@@ -20,7 +20,7 @@ public class AbilityManaCostUI : MonoBehaviour
 
         if (kit == null)
             return 0f;
-        return kit.ManaCost;
+        return player.ManaCostOf(kit);
     }
 
     // Text only changes with the cost, so nothing allocates per frame.

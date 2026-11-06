@@ -16,6 +16,7 @@ MonoBehaviour:
   cooldown: 30
   manaCost: 40
   fxPrefab: {fileID: 6264129738211242944, guid: 6bae8e1f3902671f1964d24e72a0c78c, type: 3}
+  icon: {fileID: 21300000, guid: 1467dfe940ebf0556be13507235f77b2, type: 3}
   fxDistance: 3
   fxOrigin: {x: 0, y: -0.6}
   fxFromAimIndicator: 1

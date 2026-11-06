@@ -92,6 +92,23 @@ public static class KeybindOverrides
         return null;
     }
 
+    // Display string for an action's first mouse or keyboard binding, rebinds included ("LMB", "R").
+    public static string GetPrimaryDisplay(string actionName)
+    {
+        InputAction action = FindLocalAction(actionName);
+        string path;
+
+        if (action == null)
+            return null;
+        for (int i = 0; i < action.bindings.Count; i++)
+        {
+            path = action.bindings[i].effectivePath;
+            if (IsSingleBinding(action.bindings[i], "<Mouse>", path) || IsSingleBinding(action.bindings[i], "<Keyboard>", path))
+                return action.GetBindingDisplayString(i, InputBinding.DisplayStringOptions.DontIncludeInteractions);
+        }
+        return null;
+    }
+
     // Display string for an action's keyboard binding, falling back to the raw path for keys Unity can't render as text.
     public static string GetKeyboardDisplay(string actionName)
     {

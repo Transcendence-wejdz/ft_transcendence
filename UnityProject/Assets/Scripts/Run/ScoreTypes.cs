@@ -1,5 +1,6 @@
 using Unity.Collections;
 using Unity.Netcode;
+using UnityEngine;
 
 // Run score split by source, so the Game Over screen can show where the points came from.
 public struct ScoreBreakdown : INetworkSerializeByMemcpy
@@ -8,8 +9,20 @@ public struct ScoreBreakdown : INetworkSerializeByMemcpy
     public int killPoints;
     public int wavePoints;
     public int bossPoints;
+    public float scoreMultiplier;
 
-    public int Total => killPoints + wavePoints + bossPoints;
+    // Zero is a breakdown from before any mode option was applied.
+    public float Multiplier
+    {
+        get
+        {
+            if (scoreMultiplier <= 0f)
+                return 1f;
+            return scoreMultiplier;
+        }
+    }
+
+    public int Total => Mathf.RoundToInt((killPoints + wavePoints + bossPoints) * Multiplier);
 }
 
 // One player's own kills, kept by client id so it survives the move to the boss scene.

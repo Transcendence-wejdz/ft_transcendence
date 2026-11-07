@@ -96,7 +96,7 @@ public partial class ScoreManager : NetworkBehaviour
     {
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             return;
-        offlineBreakdown = default;
+        offlineBreakdown = new ScoreBreakdown { scoreMultiplier = RunOptions.Current.ScoreMultiplier() };
         offlinePlayerKills = default;
         if (RunCarryOver.IsForActiveScene)
         {
@@ -110,6 +110,7 @@ public partial class ScoreManager : NetworkBehaviour
     {
         if (!IsServer)
             return;
+        breakdown.Value = new ScoreBreakdown { scoreMultiplier = RunOptions.Current.ScoreMultiplier() };
         if (RunCarryOver.IsForActiveScene)
         {
             breakdown.Value = RunCarryOver.Score;

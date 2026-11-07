@@ -49,4 +49,25 @@ public partial class ProceduralMapGenerator
         previousSeed = resolved;
         return resolved;
     }
+
+    // The closest seed whose modulo picks that biome; the rolled seed when the map has no such biome.
+    public int SeedForBiome(int rolled, string biomeName)
+    {
+        int index = -1;
+        int current;
+
+        if (biomes == null || biomes.Length == 0)
+            return rolled;
+        for (int i = 0; i < biomes.Length; i++)
+        {
+            if (biomes[i].name == biomeName)
+                index = i;
+        }
+        if (index < 0)
+            return rolled;
+        current = ((rolled % biomes.Length) + biomes.Length) % biomes.Length;
+        if (rolled > int.MaxValue - biomes.Length)
+            rolled -= biomes.Length;
+        return rolled + ((index - current + biomes.Length) % biomes.Length);
+    }
 }

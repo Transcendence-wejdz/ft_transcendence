@@ -16,15 +16,22 @@ public class GameModeLoader : MonoBehaviour
             LoadingScreenManager.LoadScene(sceneName);
     }
 
+    // Default options: the mode's own button can stay a plain scene name.
     public void LoadScene(string sceneName)
+    {
+        LoadScene(sceneName, RunOptions.Default);
+    }
+
+    public void LoadScene(string sceneName, RunOptions options)
     {
         bool isMultiplayerSession = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
         if (isMultiplayerSession && ModeReadyCheck.Instance != null)
         {
-            ModeReadyCheck.Instance.RequestReadyCheck(sceneName);
+            ModeReadyCheck.Instance.RequestReadyCheck(sceneName, options);
             return;
         }
+        RunOptions.Current = options;
         TimeFreeze.Clear();
         PauseManager.SetExternalPause(false);
         LoadingScreenManager.LoadScene(sceneName);

@@ -61,7 +61,7 @@ public partial class LevelUpUI : MonoBehaviour
     {
         localChosen = false;
         levelText.text = $"Level {manager.SequenceLevel}";
-        if (LevelUpBonusCatalog.IsSpecialLevel(manager.SequenceLevel))
+        if (LevelUpBonusCatalog.IsSpecial(LocalOffer(0)))
             levelText.text += ": special bonus";
         waitingText.gameObject.SetActive(false);
         SetButtonsInteractable(true);

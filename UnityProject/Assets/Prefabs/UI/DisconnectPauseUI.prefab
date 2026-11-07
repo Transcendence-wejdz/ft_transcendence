@@ -501,8 +501,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 180
-  m_fontSizeBase: 180
+  m_fontSize: 140
+  m_fontSizeBase: 140
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -878,7 +878,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ResumeCountdownUI
   countdownText: {fileID: 510576697042616324}
-  pulseScale: 1.5
+  pulseScale: 1.3
   pulseEndAlpha: 0.35
 --- !u!1 &5225546132578565621
 GameObject:

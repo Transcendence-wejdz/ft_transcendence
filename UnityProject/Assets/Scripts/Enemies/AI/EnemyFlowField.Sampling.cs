@@ -4,105 +4,169 @@ using UnityEngine;
 // Reading the field: downhill direction at a position, and the cached walkability queries behind it.
 public partial class EnemyFlowField
 {
-    // Downhill direction at a position; false if outside the grid or unreachable.
-    public bool TryGetDirection(Vector2 world, out Vector2 direction)
+    // Direction toward cheaper cells (downhill) at a position; false if outside the grid or unreachable.
+    public bool TryGetPathDirection(Vector2 world, out Vector2 direction)
     {
-        Vector2Int cell = ToCell(world);
-        int x = cell.x - origin.x + Radius;
-        int y = cell.y - origin.y + Radius;
-        float here;
+        Vector2Int cell = WorldToCell(world);
+        int x = cell.x - goalCell.x + GridRadius;
+        int y = cell.y - goalCell.y + GridRadius;
+        Vector2 escapeStep;
+        float hereCost;
 
         direction = Vector2.zero;
-        if (!InWindow(x, y))
+        if (!IsInGrid(x, y))
             return false;
-        here = cost[y * Size + x];
-        if (here == Unreachable)
-            here = LowestNeighborCost(x, y) + StraightCost;
-        if (here >= Unreachable)
+        hereCost = costToGoal[y * GridSide + x];
+        if (hereCost == Unreachable)
+            hereCost = CheapestNeighborIgnoringCorners(x, y, out escapeStep) + StraightStepCost;
+        if (hereCost >= Unreachable)
             return false;
-        direction = SumDownhill(x, y, here);
+        direction = BlendedDownhillDirection(x, y, hereCost);
+        if (!PointsToCheaperCell(x, y, hereCost, direction))
+            direction = DirectionToCheapestNeighbor(x, y, hereCost);
+        if (direction.sqrMagnitude < MinDirectionSqr && hereCost > 0f && CheapestNeighborIgnoringCorners(x, y, out escapeStep) < hereCost)
+            direction = escapeStep;
         if (direction.sqrMagnitude < MinDirectionSqr)
             return false;
         direction.Normalize();
         return true;
     }
 
-    // Each cheaper neighbor pulls toward itself, weighted by how steep the drop is.
-    private Vector2 SumDownhill(int x, int y, float here)
+    // Cost of a neighbor the body can step to and that is cheaper than here; Unreachable otherwise.
+    private int CheaperNeighborCost(int x, int y, int stepIndex, float hereCost)
     {
-        Vector2 direction = Vector2.zero;
-        int nx;
-        int ny;
+        int neighborX = x + StepX[stepIndex];
+        int neighborY = y + StepY[stepIndex];
         int neighborCost;
 
-        for (int d = 0; d < 8; d++)
+        if (!IsInGrid(neighborX, neighborY))
+            return Unreachable;
+        if (stepIndex >= 4 && (WasCellFoundBlocked(neighborX, y) || WasCellFoundBlocked(x, neighborY)))
+            return Unreachable;
+        neighborCost = costToGoal[neighborY * GridSide + neighborX];
+        if (neighborCost >= hereCost)
+            return Unreachable;
+        return neighborCost;
+    }
+
+    // The averaged pull is only trusted when the cell it points at is cheaper: behind an obstacle both sides cancel and it would point back and forth.
+    private bool PointsToCheaperCell(int x, int y, float hereCost, Vector2 direction)
+    {
+        Vector2 aim;
+
+        if (direction.sqrMagnitude < MinDirectionSqr)
+            return false;
+        aim = direction.normalized;
+        for (int stepIndex = 0; stepIndex < 8; stepIndex++)
         {
-            nx = x + StepX[d];
-            ny = y + StepY[d];
-            if (!InWindow(nx, ny))
+            if (RoundToStep(aim.x) == StepX[stepIndex] && RoundToStep(aim.y) == StepY[stepIndex])
+                return CheaperNeighborCost(x, y, stepIndex, hereCost) != Unreachable;
+        }
+        return false;
+    }
+
+    private static int RoundToStep(float value)
+    {
+        if (value > StepAxisThreshold)
+            return 1;
+        if (value < -StepAxisThreshold)
+            return -1;
+        return 0;
+    }
+
+    // Steepest neighbor, first one on a tie: the cost strictly drops at each cell, so the path can never loop.
+    private Vector2 DirectionToCheapestNeighbor(int x, int y, float hereCost)
+    {
+        Vector2 direction = Vector2.zero;
+        int lowest = Unreachable;
+        int neighborCost;
+
+        for (int stepIndex = 0; stepIndex < 8; stepIndex++)
+        {
+            neighborCost = CheaperNeighborCost(x, y, stepIndex, hereCost);
+            if (neighborCost >= lowest)
                 continue;
-            if (d >= 4 && (IsKnownBlocked(nx, y) || IsKnownBlocked(x, ny)))
-                continue;
-            neighborCost = cost[ny * Size + nx];
-            if (neighborCost == Unreachable || neighborCost >= here)
-                continue;
-            direction += new Vector2(StepX[d], StepY[d]).normalized * ((here - neighborCost) / StepCost(d));
+            lowest = neighborCost;
+            direction = new Vector2(StepX[stepIndex], StepY[stepIndex]);
         }
         return direction;
     }
 
-    private float LowestNeighborCost(int x, int y)
+    // Each cheaper neighbor pulls toward itself, weighted by how steep the drop is.
+    private Vector2 BlendedDownhillDirection(int x, int y, float hereCost)
+    {
+        Vector2 direction = Vector2.zero;
+        int neighborCost;
+
+        for (int stepIndex = 0; stepIndex < 8; stepIndex++)
+        {
+            neighborCost = CheaperNeighborCost(x, y, stepIndex, hereCost);
+            if (neighborCost == Unreachable)
+                continue;
+            direction += new Vector2(StepX[stepIndex], StepY[stepIndex]).normalized * ((hereCost - neighborCost) / StepCost(stepIndex));
+        }
+        return direction;
+    }
+
+    // Cheapest neighbor whatever the corners, for a body already overlapping a blocked cell.
+    private float CheapestNeighborIgnoringCorners(int x, int y, out Vector2 step)
     {
         float lowest = Unreachable;
-        int nx;
-        int ny;
+        int neighborX;
+        int neighborY;
 
-        for (int d = 0; d < 8; d++)
+        step = Vector2.zero;
+        for (int stepIndex = 0; stepIndex < 8; stepIndex++)
         {
-            nx = x + StepX[d];
-            ny = y + StepY[d];
-            if (InWindow(nx, ny))
-                lowest = Mathf.Min(lowest, cost[ny * Size + nx]);
+            neighborX = x + StepX[stepIndex];
+            neighborY = y + StepY[stepIndex];
+            if (!IsInGrid(neighborX, neighborY) || costToGoal[neighborY * GridSide + neighborX] >= lowest)
+                continue;
+            lowest = costToGoal[neighborY * GridSide + neighborX];
+            step = new Vector2(StepX[stepIndex], StepY[stepIndex]);
         }
         return lowest;
     }
 
-    // Window cells outside the grid count as blocked; each cell is queried at most once per rebuild.
-    private bool IsBlocked(int x, int y)
+    // Cells outside the grid count as blocked; each cell is queried at most once per rebuild.
+    private bool IsCellBlocked(int x, int y)
     {
-        int index = y * Size + x;
+        int cellIndex = y * GridSide + x;
 
-        if (!InWindow(x, y))
+        if (!IsInGrid(x, y))
             return true;
-        if (walkable[index] == Unknown)
+        if (cellStates[cellIndex] == CellUnknown)
         {
-            walkable[index] = Free;
-            if (QueryBlocked(origin.x + x - Radius, origin.y + y - Radius))
-                walkable[index] = Blocked;
+            cellStates[cellIndex] = CellFree;
+            if (IsWorldCellBlockedCached(goalCell.x + x - GridRadius, goalCell.y + y - GridRadius))
+                cellStates[cellIndex] = CellBlocked;
         }
-        return walkable[index] == Blocked;
+        return cellStates[cellIndex] == CellBlocked;
     }
 
     // Sampling never queries physics: cells the rebuild did not reach count as open.
-    private bool IsKnownBlocked(int x, int y)
+    private bool WasCellFoundBlocked(int x, int y)
     {
-        if (!InWindow(x, y))
+        if (!IsInGrid(x, y))
             return false;
-        return walkable[y * Size + x] == Blocked;
+        return cellStates[y * GridSide + x] == CellBlocked;
     }
 
     // Short-lived world cache shared by every field, in a wrapped 512x512 array so lookups never allocate.
-    private static bool QueryBlocked(int cellX, int cellY)
+    private bool IsWorldCellBlockedCached(int cellX, int cellY)
     {
         int slot = (cellY & CacheMask) << CacheBits | (cellX & CacheMask);
         float now = Time.time;
         bool blocked;
 
-        if (cacheCellX[slot] == cellX && cacheCellY[slot] == cellY && cacheExpires[slot] > now)
+        if (largeBody)
+            slot ^= LargeCacheSalt;
+        if (cacheCellX[slot] == cellX && cacheCellY[slot] == cellY && cacheLarge[slot] == largeBody && cacheExpires[slot] > now)
             return cacheBlocked[slot];
-        blocked = ObstacleQuery.IsBlocked(new Vector2(cellX, cellY) * CellSize, EnemyFlowFieldManager.BodyRadius);
+        blocked = ObstacleQuery.IsBlocked(new Vector2(cellX, cellY) * CellSize, queryRadius);
         cacheCellX[slot] = cellX;
         cacheCellY[slot] = cellY;
+        cacheLarge[slot] = largeBody;
         cacheExpires[slot] = now + Random.Range(CacheMinLifetime, CacheMaxLifetime);
         cacheBlocked[slot] = blocked;
         return blocked;
@@ -112,12 +176,12 @@ public partial class EnemyFlowField
     private static int StepCost(int step)
     {
         if (step >= 4)
-            return DiagonalCost;
-        return StraightCost;
+            return DiagonalStepCost;
+        return StraightStepCost;
     }
 
-    private static bool InWindow(int x, int y)
+    private static bool IsInGrid(int x, int y)
     {
-        return x >= 0 && y >= 0 && x < Size && y < Size;
+        return x >= 0 && y >= 0 && x < GridSide && y < GridSide;
     }
 }

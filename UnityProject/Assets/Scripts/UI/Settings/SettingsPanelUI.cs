@@ -11,6 +11,7 @@ public partial class SettingsPanelUI : MonoBehaviour
     [SerializeField] private Toggle specialPreviewToggle;
     [SerializeField] private Toggle ultimatePreviewToggle;
     [SerializeField] private Toggle damageNumbersToggle;
+    [SerializeField] private Toggle projectileOutlineToggle;
     [SerializeField] private Toggle showFpsToggle;
     [SerializeField] private Toggle showPingToggle;
     [SerializeField] private Toggle[] qualityOptions;

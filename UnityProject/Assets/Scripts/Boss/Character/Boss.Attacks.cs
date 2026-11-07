@@ -113,6 +113,13 @@ public partial class Boss
             HitPlayer(player, kit.SlamDamage);
     }
 
+    private void ResolveSlamWave()
+    {
+        CollectVictims(kit.SlamWaveRadius);
+        foreach (Player player in victims)
+            HitPlayer(player, kit.SlamWaveDamage);
+    }
+
     // Client side: hits this machine's own player if it stands inside the radius around the boss as displayed here.
     private bool JudgeLocalHit(float radius, float damage)
     {

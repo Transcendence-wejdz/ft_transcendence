@@ -2,7 +2,7 @@ using System;
 using Unity.Netcode;
 using UnityEngine;
 
-public enum BossPattern : byte { None, Charge, Slam, Summon }
+public enum BossPattern : byte { None, Charge, Slam, Summon, SlamWave, Roar }
 
 public enum BossPhase : byte { Windup, Active, Recovery }
 
@@ -28,7 +28,7 @@ public partial class Boss : NetworkBehaviour
     // The collider sits above the pivot; range checks and telegraphs start from the real body.
     public Vector2 BodyCenter => (Vector2)transform.position + bodyOffset;
 
-    private bool IsEnraged
+    public bool IsEnraged
     {
         get
         {
@@ -94,9 +94,13 @@ public partial class Boss : NetworkBehaviour
     {
         if (pattern != BossPattern.None)
         {
+            if (IsRoarPending)
+                combo.Clear();
             TickPattern();
             return;
         }
+        if (TryStartRoar())
+            return;
         if (target == null)
         {
             rb.linearVelocity = Vector2.zero;
@@ -141,6 +145,8 @@ public partial class Boss : NetworkBehaviour
             return;
         UpdateVisuals();
         UpdateLocalCharge();
+        UpdateRoarPush();
+        UpdateFireTrail();
     }
 
     void FixedUpdate()

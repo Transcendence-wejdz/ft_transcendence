@@ -12,24 +12,45 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 923ef523106b48a58e8aa44cc0345cb0, type: 3}
   m_Name: Lancer_Ultimate
   m_EditorClassIdentifier: Assembly-CSharp::AbilityKit
-  kind: 0
-  cooldown: 5
-  manaCost: 0
-  fxPrefab: {fileID: 0}
-  fxDistance: 1
-  fxOrigin: {x: 0, y: 0}
-  fxFromAimIndicator: 0
-  aimMode: 0
-  maxRange: 6
+  kind: 3
+  cooldown: 30
+  manaCost: 40
+  fxPrefab: {fileID: 6264129738211242944, guid: 6bae8e1f3902671f1964d24e72a0c78c, type: 3}
+  fxDistance: 3
+  fxOrigin: {x: 0, y: -0.6}
+  fxFromAimIndicator: 1
+  aimMode: 2
+  maxRange: 8
   aimAssist: 0
   aimAssistAngle: 10
-  damage: 15
-  moveLockDuration: 0.3
+  damage: 50
+  moveLockDuration: 0
   moveSpeedMultiplier: 0.35
   animSpeed: 1
   size: 1
-  ignoreAimRotation: 0
-  followCaster: 1
+  ignoreAimRotation: 1
+  followCaster: 0
   glowIntensity: 1.2
   glowSize: 1.1
   glowDuration: 0.42
+  projectileSpeed: 12
+  projectileMaxDistance: 10
+  pierceCount: 1
+  chargeFxPrefab: {fileID: 1360224253897849804, guid: 0ddf539b043e7a2bd8048f9da35987a4, type: 3}
+  chargeFxDistance: 0
+  chargeFxOrigin: {x: 0, y: -0.6}
+  chargeFxFromAimIndicator: 0
+  chargeSeconds: 2
+  chargeDamageMultiplier: 2
+  chargeSizeMultiplier: 2
+  takeoffFxPrefab: {fileID: 678906657501824091, guid: 119c42ce8ebef5d1d82cf52c976ea4ac, type: 3}
+  diveAirSeconds: 0.6
+  diveKnockbackForce: 14
+  diveKnockbackDuration: 0.35
+  shieldHoldDuration: 10
+  shieldHealth: 150
+  shieldKnockbackForce: 8
+  shieldKnockbackDuration: 0.25
+  shieldPushInterval: 0.5
+  shieldTurnSpeed: 120
+  shieldHoldAnimation: 0

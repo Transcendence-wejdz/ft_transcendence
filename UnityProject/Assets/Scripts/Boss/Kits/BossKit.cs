@@ -2,7 +2,7 @@ using UnityEngine;
 
 // Per-boss tuning (health, chase, charge/slam/summon patterns, animator states), so a new boss is mostly data.
 [CreateAssetMenu(fileName = "BossKit", menuName = "Transcendence/Boss Kit")]
-public class BossKit : ScriptableObject
+public partial class BossKit : ScriptableObject
 {
     [SerializeField] private string displayName = "Troll";
     [PowerRange(1f, 20000f, 2f)]

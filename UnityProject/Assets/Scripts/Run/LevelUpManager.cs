@@ -105,7 +105,7 @@ public partial class LevelUpManager : NetworkBehaviour
     // Each player gets their own offers: every peer derives the same ones from the round's seed, that player's id and class.
     public LevelUpBonusType GetOfferedBonusType(int slot, Player player)
     {
-        return PickOffers(OfferSeed, player.OwnerClientId, LevelUpBonusCatalog.OfferPool(SequenceLevel, player.HasProjectile)).Get(slot);
+        return PickOffers(OfferSeed, player.OwnerClientId, LevelUpBonusCatalog.OfferPool(SequenceLevel, player.HasProjectile, player.BonusStacks)).Get(slot);
     }
 
     public override void OnNetworkSpawn()

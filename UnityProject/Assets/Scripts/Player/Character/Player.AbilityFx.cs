@@ -32,7 +32,7 @@ public partial class Player
     }
 
     // Position is computed locally from the attacker's current transform, not sent over RPC - round-trip latency would otherwise bake a stale offset into the spawn point.
-    private void SpawnLocalFx(float angle, bool hasHitbox, AbilityType ability, float distance)
+    private GameObject SpawnLocalFx(float angle, bool hasHitbox, AbilityType ability, float distance, float chargeSize)
     {
         GameObject prefab = GetFxPrefab(ability);
         Vector3 spawnPos;
@@ -40,11 +40,12 @@ public partial class Player
         GameObject fx;
 
         if (prefab == null)
-            return;
+            return null;
         FxPose(ability, angle, distance, out spawnPos, out rotation);
         fx = Instantiate(prefab, spawnPos, rotation);
-        fx.transform.localScale *= FxScaleMultiplier(ability);
-        fx.GetComponent<IAttackFX>()?.Init(gameObject, hasHitbox, Ability(ability), DamageMultiplier);
+        fx.transform.localScale *= FxScaleMultiplier(ability) * chargeSize;
+        fx.GetComponent<IAttackFX>()?.Init(gameObject, hasHitbox, Ability(ability), DamageMultiplier * castDamageMultiplier);
+        return fx;
     }
 
     private void SpawnAbilityFx(AbilityType ability, float distance = -1f)
@@ -54,23 +55,23 @@ public partial class Player
         if (GetFxPrefab(ability) == null)
             return;
         angle = AssistedAimAngle(ability);
-        SpawnLocalFx(angle, hasHitbox: true, ability, distance);
+        SpawnLocalFx(angle, hasHitbox: true, ability, distance, castSizeMultiplier);
         if (NetworkObject.IsSpawned)
-            SpawnAbilityFxServerRpc(angle, ability, distance);
+            SpawnAbilityFxServerRpc(angle, ability, distance, castSizeMultiplier);
     }
 
     [ServerRpc]
-    private void SpawnAbilityFxServerRpc(float angle, AbilityType ability, float distance)
+    private void SpawnAbilityFxServerRpc(float angle, AbilityType ability, float distance, float chargeSize)
     {
-        SpawnAbilityFxClientRpc(angle, OwnerClientId, ability, distance);
+        SpawnAbilityFxClientRpc(angle, OwnerClientId, ability, distance, chargeSize);
     }
 
     // Mirrors the FX on the other clients only, the attacker already spawned its own (with the hitbox) instantly.
     [ClientRpc]
-    private void SpawnAbilityFxClientRpc(float angle, ulong attackerClientId, AbilityType ability, float distance)
+    private void SpawnAbilityFxClientRpc(float angle, ulong attackerClientId, AbilityType ability, float distance, float chargeSize)
     {
         if (NetworkManager.Singleton.LocalClientId != attackerClientId)
-            SpawnLocalFx(angle, hasHitbox: false, ability, distance);
+            SpawnLocalFx(angle, hasHitbox: false, ability, distance, chargeSize);
     }
 
     // Where this player's FX for an action spawns, relative to its feet (see AbilityKit.FxOffset).

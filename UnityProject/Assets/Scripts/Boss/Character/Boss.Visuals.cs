@@ -79,11 +79,19 @@ public partial class Boss
             AttackTelegraph.ShowLane(transform, BodyCenter, direction, laneLength, ChargeHitWidth, duration);
         else if (p == BossPattern.Slam)
             AttackTelegraph.Show(transform, BodyCenter, Vector2.right, 360f, kit.SlamRadius, duration);
+        else if (p == BossPattern.SlamWave)
+            AttackTelegraph.Show(transform, BodyCenter, Vector2.right, 360f, kit.SlamWaveRadius, duration);
+        else if (p == BossPattern.Roar)
+            AttackTelegraph.Show(transform, BodyCenter, Vector2.right, 360f, kit.RoarRadius, duration);
     }
 
     // Telegraphs and animations only; positions come from this peer's own transform.
     private void PlayPhaseVisual(BossPattern p, BossPhase ph, Vector2 direction, float duration, float laneLength)
     {
+        if (p == BossPattern.Roar && ph != BossPhase.Recovery)
+            invulnerableEndTime = Time.time + duration;
+        if (p == BossPattern.Charge)
+            chargeDirectionHere = direction;
         if (ph == BossPhase.Windup)
         {
             HoldFittedState(kit.WindupState, duration);

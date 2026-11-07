@@ -101,9 +101,9 @@ public partial class Player
     private bool IsCastableNow(AbilityType ability, AbilityKit kit)
     {
         if (ability == AbilityType.Special)
-            return Time.time >= specialReadyTime && CurrentMana >= kit.ManaCost;
+            return Time.time >= specialReadyTime && CurrentMana >= ManaCostOf(kit);
         if (ability == AbilityType.Ultimate)
-            return Time.time >= ultimateReadyTime && CurrentMana >= kit.ManaCost;
+            return Time.time >= ultimateReadyTime && CurrentMana >= ManaCostOf(kit) && !(isMounted && kit.Kind == AbilityKind.Dive);
         return true;
     }
 
@@ -112,6 +112,7 @@ public partial class Player
     {
         if (GamepadZoneAiming)
             stickAim = AimDirection;
+        EndCharge();
         aimingAbility = null;
         if (AimPreview != null)
             AimPreview.Hide();
@@ -138,6 +139,7 @@ public partial class Player
         aimingAbility = ability;
         aimDistance = kit.FxDistance;
         aimTarget = FxOffset(ability, AimDirection, aimDistance);
+        BeginCharge(ability, kit);
     }
 
     // Casts the aimed Special or Ultimate on release, then brings back the Attack preview if Attack is still held; the Attack just stops showing its preview.
@@ -148,11 +150,13 @@ public partial class Player
         if (aimingAbility != ability)
             return;
         distance = AimedDistance(ability);
+        CaptureCharge();
         CancelAim();
         if (ability == AbilityType.Special)
             CastSpecial(distance);
         else if (ability == AbilityType.Ultimate)
             CastUltimate(distance);
+        ClearCapturedCharge();
         if (ability != AbilityType.Attack && isAttackHeld && IsHoldAim(AbilityType.Attack))
             BeginAim(AbilityType.Attack);
     }
@@ -167,7 +171,7 @@ public partial class Player
         if (IsProjectile(ability))
             AimPreview.ShowLine(position, position + rotation * Vector3.right * Ability(ability).ProjectileMaxDistance);
         else
-            AimPreview.Show(GetFxPrefab(ability), position, rotation, FxScaleMultiplier(ability));
+            AimPreview.Show(GetFxPrefab(ability), position, rotation, FxScaleMultiplier(ability) * ChargeSize());
     }
 
     // Follows the aim every frame while held (nothing when the setting hides it); dying, pausing or switching to an instant mode drops the aim without casting.
@@ -187,10 +191,9 @@ public partial class Player
             aimDistance = PlacedDistance(ability);
         if (AimPreview == null)
             return;
-        if (GameSettings.ShowAimPreview(ability))
+        if (Ability(ability).ShowHitboxPreview && GameSettings.ShowAimPreview(ability))
             ShowAimPreview(ability);
         else
             AimPreview.Hide();
     }
-
 }

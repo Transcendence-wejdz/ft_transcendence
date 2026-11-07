@@ -6,13 +6,15 @@ public class AbilityKit : ScriptableObject
 {
     [Tooltip("Basic spawns its FX, Projectile flies it along the aim, Shield raises a held wall (Ultimate slot only).")]
     [SerializeField] private AbilityKind kind;
-    [PowerRange(0.05f, 30f, 2f)]
+    [PowerRange(0.05f, 120f, 2f)]
     [Tooltip("Seconds before the action can be used again.")]
     [SerializeField] private float cooldown = 0.5f;
     [Range(0f, 300f)]
     [Tooltip("Mana spent on use (ignored on the Attack slot).")]
     [SerializeField] private float manaCost;
     [SerializeField] private GameObject fxPrefab;
+    [Tooltip("HUD slot icon; empty keeps the slot's default icon.")]
+    [SerializeField] private Sprite icon;
     [Range(0f, 10f)]
     [Tooltip("Distance from the FX origin where the FX (and its hitbox) spawns, along the aim.")]
     [SerializeField] private float fxDistance = 1f;
@@ -22,6 +24,8 @@ public class AbilityKit : ScriptableObject
     [SerializeField] private bool fxFromAimIndicator;
     [Tooltip("Instant fires on press. Hold Fixed previews the hitbox at FX Distance while held (an Attack keeps autofiring, others cast on release). Hold Free also lets the player place it within Max Range (mouse distance, or right stick tilt).")]
     [SerializeField] private AbilityAimMode aimMode;
+    [Tooltip("Hold modes only: draws the hitbox preview while held. The player's preview setting can still hide it.")]
+    [SerializeField] private bool showHitboxPreview = true;
     [Range(0.5f, 20f)]
     [Tooltip("Farthest a Hold Free action can be placed from its FX origin.")]
     [SerializeField] private float maxRange = 6f;
@@ -65,6 +69,35 @@ public class AbilityKit : ScriptableObject
     [Range(1, 20)]
     [Tooltip("Enemies a projectile can pass through before it stops.")]
     [SerializeField] private int pierceCount = 1;
+    [Tooltip("Set on a Hold kit: plays while held, and the damage grows until release.")]
+    [SerializeField] private GameObject chargeFxPrefab;
+    [Range(0f, 10f)]
+    [Tooltip("Distance from the charge FX origin where the charge FX sits, along the aim.")]
+    [SerializeField] private float chargeFxDistance = 1f;
+    [Tooltip("Point the charge FX distance is measured from, relative to the player's feet; X mirrors when aiming left.")]
+    [SerializeField] private Vector2 chargeFxOrigin;
+    [Tooltip("Uses the center of the aim indicator ring as the charge FX origin instead of Charge FX Origin.")]
+    [SerializeField] private bool chargeFxFromAimIndicator;
+    [Range(0.2f, 10f)]
+    [Tooltip("Seconds held to reach full charge.")]
+    [SerializeField] private float chargeSeconds = 2f;
+    [Range(1f, 10f)]
+    [Tooltip("Damage multiplier at full charge; an immediate release deals the plain damage.")]
+    [SerializeField] private float chargeDamageMultiplier = 3f;
+    [Range(1f, 5f)]
+    [Tooltip("Size multiplier of the charge FX and the shot at full charge; the start of the shot stays in place.")]
+    [SerializeField] private float chargeSizeMultiplier = 2f;
+    [Tooltip("Dive: played where the player takes off.")]
+    [SerializeField] private GameObject takeoffFxPrefab;
+    [Range(0.2f, 3f)]
+    [Tooltip("Dive: seconds hidden and invulnerable before the impact.")]
+    [SerializeField] private float diveAirSeconds = 0.6f;
+    [Range(0f, 40f)]
+    [Tooltip("Dive: speed enemies in the impact are thrown out at.")]
+    [SerializeField] private float diveKnockbackForce = 14f;
+    [Range(0f, 2f)]
+    [Tooltip("Dive: seconds that throw lasts.")]
+    [SerializeField] private float diveKnockbackDuration = 0.35f;
     [Range(0.5f, 30f)]
     [Tooltip("Max seconds the shield stays up before dropping on its own.")]
     [SerializeField] private float shieldHoldDuration = 10f;
@@ -90,6 +123,15 @@ public class AbilityKit : ScriptableObject
     public float Cooldown => cooldown;
     public float ManaCost => manaCost;
     public GameObject FxPrefab => fxPrefab;
+    public Sprite Icon => icon;
+    public GameObject TakeoffFxPrefab => takeoffFxPrefab;
+    public float DiveAirSeconds => diveAirSeconds;
+    public float DiveKnockbackForce => diveKnockbackForce;
+    public float DiveKnockbackDuration => diveKnockbackDuration;
+    public GameObject ChargeFxPrefab => chargeFxPrefab;
+    public float ChargeSeconds => chargeSeconds;
+    public float ChargeDamageMultiplier => chargeDamageMultiplier;
+    public float ChargeSizeMultiplier => chargeSizeMultiplier;
     public float FxDistance => fxDistance;
     public Vector2 FxOrigin => fxOrigin;
     public bool FxFromAimIndicator => fxFromAimIndicator;
@@ -103,6 +145,7 @@ public class AbilityKit : ScriptableObject
             return aimMode;
         }
     }
+    public bool ShowHitboxPreview => showHitboxPreview;
     public float MaxRange => maxRange;
     public bool AimAssist => aimAssist;
     public float AimAssistAngle => aimAssistAngle;
@@ -132,15 +175,25 @@ public class AbilityKit : ScriptableObject
     // Where the FX spawns relative to the player's feet: its origin (the aim indicator center, or FX Origin with X mirrored when aiming left) plus its distance along the aim, unless a placed distance overrides it.
     public Vector2 FxOffset(Vector2 aim, Vector2 aimIndicatorCenter, float distanceOverride = -1f)
     {
-        Vector2 origin = fxOrigin;
         float distance = fxDistance;
 
-        if (fxFromAimIndicator)
+        if (distanceOverride >= 0f)
+            distance = distanceOverride;
+        return OffsetFrom(fxOrigin, fxFromAimIndicator, distance, aim, aimIndicatorCenter);
+    }
+
+    // Where the charge FX sits relative to the player's feet, placed like FxOffset from its own settings.
+    public Vector2 ChargeFxOffset(Vector2 aim, Vector2 aimIndicatorCenter)
+    {
+        return OffsetFrom(chargeFxOrigin, chargeFxFromAimIndicator, chargeFxDistance, aim, aimIndicatorCenter);
+    }
+
+    private static Vector2 OffsetFrom(Vector2 origin, bool fromAimIndicator, float distance, Vector2 aim, Vector2 aimIndicatorCenter)
+    {
+        if (fromAimIndicator)
             origin = aimIndicatorCenter;
         else if (aim.x < -0.01f)
             origin.x = -origin.x;
-        if (distanceOverride >= 0f)
-            distance = distanceOverride;
         return origin + aim * distance;
     }
 }

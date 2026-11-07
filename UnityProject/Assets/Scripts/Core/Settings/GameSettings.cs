@@ -6,6 +6,7 @@ public static partial class GameSettings
     private const string ShowEnemyHealthBarsKey = "Settings.ShowEnemyHealthBars";
     private const string ScreenShakeEnabledKey = "Settings.ScreenShakeEnabled";
     private const string ShowDamageNumbersKey = "Settings.ShowDamageNumbers";
+    private const string EnemyProjectileOutlineKey = "Settings.EnemyProjectileOutline";
     private const string ShowFpsKey = "Settings.ShowFps";
     private const string ShowPingKey = "Settings.ShowPing";
     private const string GraphicsQualityKey = "Settings.GraphicsQuality";

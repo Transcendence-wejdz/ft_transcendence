@@ -30,8 +30,12 @@ public partial class LevelUpUI
     private LevelUpBonusType RandomBonus()
     {
         Player local = LocalPlayer.GetPlayer();
-        LevelUpBonusType[] types = LevelUpBonusCatalog.OfferPool(manager.SequenceLevel, local != null && local.HasProjectile);
+        LevelUpBonusStacks stacks = default;
+        LevelUpBonusType[] types;
 
+        if (local != null)
+            stacks = local.BonusStacks;
+        types = LevelUpBonusCatalog.OfferPool(manager.SequenceLevel, local != null && local.HasProjectile, stacks);
         return types[Random.Range(0, types.Length)];
     }
 

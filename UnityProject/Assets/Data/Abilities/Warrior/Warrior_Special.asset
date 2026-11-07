@@ -33,3 +33,13 @@ MonoBehaviour:
   glowIntensity: 1.2
   glowSize: 1.1
   glowDuration: 0.42
+  projectileSpeed: 12
+  projectileMaxDistance: 10
+  pierceCount: 1
+  shieldHoldDuration: 10
+  shieldHealth: 150
+  shieldKnockbackForce: 8
+  shieldKnockbackDuration: 0.25
+  shieldPushInterval: 0.5
+  shieldTurnSpeed: 120
+  shieldHoldAnimation: 0

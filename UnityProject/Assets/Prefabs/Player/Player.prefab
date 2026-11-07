@@ -1083,6 +1083,7 @@ MonoBehaviour:
   pigPrefab: {fileID: -2253911629886400664, guid: 13c2269ca7f9951d2a4281654eab6d39, type: 3}
   pigScale: 1.5
   transformFxPrefab: {fileID: -2253911629886400664, guid: 9ab4d137f132008c899723fb836e3080, type: 3}
+  extraLifeFxPrefab: {fileID: 1513418157574982083, guid: ba936020165832106ab1950bdf250237, type: 3}
   transformFxOffset: {x: 0, y: -1.1}
   revealRadius: 1.61
   revealAlpha: 0.292

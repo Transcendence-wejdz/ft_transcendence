@@ -13,6 +13,7 @@ public partial class SettingsPanelUI
         BindToggle(specialPreviewToggle, value => GameSettings.ShowSpecialPreview = value);
         BindToggle(ultimatePreviewToggle, value => GameSettings.ShowUltimatePreview = value);
         BindToggle(damageNumbersToggle, value => GameSettings.ShowDamageNumbers = value);
+        BindToggle(projectileOutlineToggle, value => GameSettings.EnemyProjectileOutline = value);
         BindToggle(showFpsToggle, value => GameSettings.ShowFps = value);
         BindToggle(showPingToggle, value => GameSettings.ShowPing = value);
         BindToggle(hdrToggle, value => GameSettings.HdrEnabled = value);
@@ -53,6 +54,7 @@ public partial class SettingsPanelUI
         specialPreviewToggle.SetIsOnWithoutNotify(GameSettings.ShowSpecialPreview);
         ultimatePreviewToggle.SetIsOnWithoutNotify(GameSettings.ShowUltimatePreview);
         damageNumbersToggle.SetIsOnWithoutNotify(GameSettings.ShowDamageNumbers);
+        projectileOutlineToggle.SetIsOnWithoutNotify(GameSettings.EnemyProjectileOutline);
         showFpsToggle.SetIsOnWithoutNotify(GameSettings.ShowFps);
         showPingToggle.SetIsOnWithoutNotify(GameSettings.ShowPing);
         hdrToggle.SetIsOnWithoutNotify(GameSettings.HdrEnabled);

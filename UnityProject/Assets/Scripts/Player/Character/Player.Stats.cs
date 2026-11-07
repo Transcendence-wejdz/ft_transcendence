@@ -26,7 +26,7 @@ public partial class Player
     // A player who just spawned reads 0 health until their owner's first write arrives, which isn't a death.
     public bool IsHealthPending => IsSpawned && !healthReported;
 
-    public static bool DeathProtected { get; set; }
+    public static bool AutoReviveActive { get; set; }
 
     public static event Action<float, float> OnHealthChanged;
     public static event Action<float, float> OnManaChanged;

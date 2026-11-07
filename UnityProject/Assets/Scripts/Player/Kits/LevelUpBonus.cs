@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 
 // Level-up bonuses, normal then special. Append only: saves index by value.
@@ -69,14 +70,19 @@ public static class LevelUpBonusCatalog
         return System.Array.IndexOf(SpecialTypes, type) >= 0;
     }
 
-    // Piercing is only offered to a character that has a projectile to pierce with.
-    public static LevelUpBonusType[] OfferPool(int level, bool hasProjectile)
+    // Specials not taken yet this run, Piercing only with a projectile to pierce with; normal bonuses fill in once too few remain.
+    public static LevelUpBonusType[] OfferPool(int level, bool hasProjectile, LevelUpBonusStacks stacks)
     {
+        LevelUpBonusType[] specials = SpecialTypes;
+
         if (!IsSpecialLevel(level))
             return NormalTypes;
-        if (hasProjectile)
-            return SpecialTypes;
-        return SpecialTypesWithoutProjectile;
+        if (!hasProjectile)
+            specials = SpecialTypesWithoutProjectile;
+        specials = System.Array.FindAll(specials, type => !stacks.IsTaken(type));
+        if (specials.Length >= LevelUpManager.BonusOptionCount)
+            return specials;
+        return specials.Concat(NormalTypes).ToArray();
     }
 
     // A family of bonuses shares a hue: health is red, mana is blue, the regen variant of each a lighter shade.

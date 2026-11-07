@@ -78,14 +78,20 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 56d98aedfa0d96f61bbf3636404de244, type: 2}
   - {fileID: 11400000, guid: b068366b39b2d0dd9a3b6427d6237654, type: 2}
   tierUnlockWave: 0100000004000000
+  tierRetireWave: 0d000000140000000000000000000000
   baseEnemiesPerWave: 5
   extraEnemiesPerWave: 5
-  extraEnemiesPerPlayer: 5
+  extraEnemiesPerPlayer: 0
+  maxAliveEnemies: 300
+  healthPerExtraPlayer: 0.25
+  damagePerExtraPlayer: 0.1
   spawnRadius: 15
   timeBetweenWaves: 20
   clearCheckInterval: 0.5
   maxSpawnPointAttempts: 10
   spawnClearance: 1
+  spawnBatchSize: 10
+  spawnBatchInterval: 0.5
   spawnWaves: 0
   startsRun: 0
   bossSceneName: 

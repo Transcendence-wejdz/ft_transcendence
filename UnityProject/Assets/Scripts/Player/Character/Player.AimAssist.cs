@@ -3,7 +3,7 @@ using UnityEngine;
 // Gamepad aim assist and Hold Free placement: the angle bent toward a target, the zone moved by stick or mouse.
 public partial class Player
 {
-    // Mouse: angle from where the action's FX starts (e.g. the aim ring, below the feet) to the cursor, so shots pass under the crosshair; the player's aim is measured from its feet. Gamepad keeps the stick angle.
+    // Mouse: angle from where the action's FX starts (e.g. the aim ring, below the feet) to the cursor, so shots pass under the crosshair. Gamepad keeps the stick angle.
     private float ActionAimAngle(AbilityType ability)
     {
         Vector2 mouse;

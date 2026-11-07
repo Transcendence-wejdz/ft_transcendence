@@ -51,7 +51,7 @@ public partial class Boss
     {
         Vector2 fieldDirection;
 
-        if (manager.TryGetDirection(target, BodyCenter, out fieldDirection))
+        if (manager.TryGetPathDirection(target, BodyCenter, bodyRadius, out fieldDirection))
             return fieldDirection;
         return toTarget.normalized;
     }

@@ -133,7 +133,7 @@ public partial class Player
         if (!this.IsLocallyControlled())
             return;
         pushVelocity = ConsumePushVelocity();
-        if (IsBlocked)
+        if (IsBlocked || IsDiving)
         {
             StopWalking();
             wasBlocked = true;

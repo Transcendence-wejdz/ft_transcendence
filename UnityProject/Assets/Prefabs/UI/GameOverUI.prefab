@@ -750,6 +750,7 @@ MonoBehaviour:
   modeTabs: []
   modeTitle: {fileID: 0}
   columns: 1
+  nameColumnLength: 16
   rankFont: {fileID: 11400000, guid: 97db784e5595b54b4bc04bcb174fe704, type: 2}
 --- !u!1 &1873942185395661079
 GameObject:
@@ -1950,7 +1951,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Rank<pos=10%>Players<pos=82%>Score
+  m_text: Rank<pos=10%>Players<pos=58%>Wave<pos=70%>Time<pos=82%>Score
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: faa2df654bde5fa46b59979a3bf3b23d, type: 2}
   m_sharedMaterial: {fileID: 1531963109766729275, guid: faa2df654bde5fa46b59979a3bf3b23d, type: 2}

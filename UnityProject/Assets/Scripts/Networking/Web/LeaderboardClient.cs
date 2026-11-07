@@ -91,6 +91,7 @@ public class CoopRunStats
 {
     public int runId;
     public string[] team;
+    public int[] classes;
     public int wave;
     public int xp;
     public int seconds;

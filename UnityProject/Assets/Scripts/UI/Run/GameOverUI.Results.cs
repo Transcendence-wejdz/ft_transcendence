@@ -17,35 +17,45 @@ public partial class GameOverUI
         return network.LocalClientId;
     }
 
-    // Session players' names, or the local one solo, sorted so every teammate builds the same list.
-    private static List<string> TeamNames()
+    // Session players, or the local one solo, sorted by name so every teammate builds the same list.
+    private static List<Player> TeamPlayers()
     {
-        List<string> team = new List<string>();
+        List<Player> team = new List<Player>();
         Player local;
 
         foreach (Player player in Player.AllActiveInstances)
-            team.Add(player.PlayerName);
+            team.Add(player);
         if (team.Count == 0)
         {
             local = LocalPlayer.GetPlayer();
             if (local != null)
-                team.Add(local.PlayerName);
-            else
-                team.Add(FallbackPlayerName);
+                team.Add(local);
         }
-        team.Sort(System.StringComparer.Ordinal);
+        team.Sort((a, b) => string.CompareOrdinal(a.PlayerName, b.PlayerName));
         return team;
     }
 
-    // Built from the server's frozen result plus the synced team names, so every teammate's entry groups under one runId.
+    // Built from the server's frozen result plus the synced team, so every teammate's entry groups under one runId; classes line up with team names.
     private CoopRunStats CaptureRunStats()
     {
         RunResult result = check.Result;
-        List<string> team;
+        List<Player> players;
+        string[] team = { FallbackPlayerName };
+        int[] classes = new int[0];
 
         if (result.wave <= 0)
             return null;
-        team = TeamNames();
+        players = TeamPlayers();
+        if (players.Count > 0)
+        {
+            team = new string[players.Count];
+            classes = new int[players.Count];
+        }
+        for (int i = 0; i < players.Count; i++)
+        {
+            team[i] = players[i].PlayerName;
+            classes[i] = players[i].ClassIndex;
+        }
         return new CoopRunStats
         {
             runId = result.runId,
@@ -53,8 +63,9 @@ public partial class GameOverUI
             xp = result.xp,
             seconds = result.seconds,
             score = result.score.Total,
-            players = team.Count,
-            team = team.ToArray()
+            players = team.Length,
+            team = team,
+            classes = classes
         };
     }
 

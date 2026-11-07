@@ -12,10 +12,13 @@ public partial class LeaderboardUI : MonoBehaviour
     {
         public string names;
         public double score;
+        public int wave;
+        public int seconds;
         public bool isMine;
     }
 
     private const string OwnRowColor = "#FFD973";
+    private const string ClassIconsPath = "ClassIcons";
 
     private static readonly string[] ModeNames = { "Solo", "Coop", "Two vs Two", "Three vs One" };
 
@@ -27,6 +30,8 @@ public partial class LeaderboardUI : MonoBehaviour
     [SerializeField] private Button[] modeTabs;
     [SerializeField] private TMP_Text modeTitle;
     [SerializeField] private bool columns;
+    [Tooltip("Characters the names of one row can take, shared by its team; lower it on a narrow board.")]
+    [SerializeField] private int nameColumnLength = 24;
     [SerializeField] private TMP_FontAsset rankFont;
 
     private bool refreshing;
@@ -53,7 +58,7 @@ public partial class LeaderboardUI : MonoBehaviour
     {
         HoverColorWipe hover = modeTabs[index].GetComponent<HoverColorWipe>();
 
-        modeTabs[index].interactable = !active;
+        modeTabs[index].interactable = !active && !ComingSoonBanner.IsOn(modeTabs[index]);
         if (hover != null)
             hover.SetPinned(active);
     }
@@ -90,7 +95,7 @@ public partial class LeaderboardUI : MonoBehaviour
         refreshing = true;
         ShowLoading();
         fetchedMode = mode;
-        top = await LeaderboardClient.GetTopAsync(fetchedMode, topCount * maxTeamSize);
+        top = await LeaderboardClient.GetTopAsync(fetchedMode, FetchLimit());
         mine = await LeaderboardClient.GetMyEntryAsync(fetchedMode);
         if (this == null)
             return;
@@ -107,8 +112,10 @@ public partial class LeaderboardUI : MonoBehaviour
     {
         if (rankFont != null)
             MaterialReferenceManager.AddFontAsset(rankFont);
+        entriesText.spriteAsset = Resources.Load<TMP_SpriteAsset>(ClassIconsPath);
         for (int i = 0; i < modeTabs.Length; i++)
             BindTab(modeTabs[i], (LeaderboardMode)i);
+        BindClassFilters();
     }
 
     void OnEnable()

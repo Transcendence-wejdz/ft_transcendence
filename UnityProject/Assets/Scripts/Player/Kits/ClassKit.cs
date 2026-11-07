@@ -51,6 +51,16 @@ public class ClassKit : ScriptableObject
         return abilities[0];
     }
 
+    // Every variant of a slot, the one in use first.
+    public AbilityKit[] Variants(AbilityType ability)
+    {
+        if (ability == AbilityType.Special)
+            return specials;
+        if (ability == AbilityType.Ultimate)
+            return ultimates;
+        return new[] { attack };
+    }
+
     // The action in a slot, null when the class has none there.
     public AbilityKit Ability(AbilityType ability)
     {

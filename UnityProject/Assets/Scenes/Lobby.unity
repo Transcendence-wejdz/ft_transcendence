@@ -186,9 +186,45 @@ PrefabInstance:
       propertyPath: m_fontColor32.rgba
       value: 4282203647
       objectReference: {fileID: 0}
+    - target: {fileID: 2333614440150272086, guid: 68bd3445e2a216c65a74b92abcc4cf5b, type: 3}
+      propertyPath: m_fontSize
+      value: 4.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 2333614440150272086, guid: 68bd3445e2a216c65a74b92abcc4cf5b, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4292273901
+      objectReference: {fileID: 0}
+    - target: {fileID: 2333614440150272086, guid: 68bd3445e2a216c65a74b92abcc4cf5b, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
     - target: {fileID: 2538511968485924537, guid: 68bd3445e2a216c65a74b92abcc4cf5b, type: 3}
       propertyPath: m_fontColor32.rgba
       value: 4294951987
+      objectReference: {fileID: 0}
+    - target: {fileID: 2822108356396777125, guid: 68bd3445e2a216c65a74b92abcc4cf5b, type: 3}
+      propertyPath: m_fontSize
+      value: 4.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 2822108356396777125, guid: 68bd3445e2a216c65a74b92abcc4cf5b, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4292273901
+      objectReference: {fileID: 0}
+    - target: {fileID: 2822108356396777125, guid: 68bd3445e2a216c65a74b92abcc4cf5b, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 3111097854130466314, guid: 68bd3445e2a216c65a74b92abcc4cf5b, type: 3}
+      propertyPath: m_fontSize
+      value: 4.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 3111097854130466314, guid: 68bd3445e2a216c65a74b92abcc4cf5b, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4292273901
+      objectReference: {fileID: 0}
+    - target: {fileID: 3111097854130466314, guid: 68bd3445e2a216c65a74b92abcc4cf5b, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
       objectReference: {fileID: 0}
     - target: {fileID: 6465301414456678309, guid: 68bd3445e2a216c65a74b92abcc4cf5b, type: 3}
       propertyPath: m_LocalPosition.x

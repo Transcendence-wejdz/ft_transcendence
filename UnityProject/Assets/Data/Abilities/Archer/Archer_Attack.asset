@@ -38,9 +38,16 @@ MonoBehaviour:
   projectileMaxDistance: 15
   pierceCount: 3
   chargeFxPrefab: {fileID: 0}
+  chargeFxDistance: 1
+  chargeFxOrigin: {x: 0, y: 0}
+  chargeFxFromAimIndicator: 0
   chargeSeconds: 2
   chargeDamageMultiplier: 2.5
   chargeSizeMultiplier: 2
+  takeoffFxPrefab: {fileID: 0}
+  diveAirSeconds: 0.6
+  diveKnockbackForce: 14
+  diveKnockbackDuration: 0.35
   shieldHoldDuration: 10
   shieldHealth: 150
   shieldKnockbackForce: 8

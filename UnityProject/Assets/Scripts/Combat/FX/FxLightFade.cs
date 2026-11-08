@@ -17,8 +17,10 @@ public class FxLightFade : MonoBehaviour
         startIntensity = fxLight.intensity;
     }
 
+    // Off with the FX Glow setting.
     void Update()
     {
+        fxLight.enabled = GameSettings.FxGlow;
         elapsed += Time.deltaTime;
         fxLight.intensity = startIntensity * (1f - Mathf.Clamp01(elapsed / duration));
     }

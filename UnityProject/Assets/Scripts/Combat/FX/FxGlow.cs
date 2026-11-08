@@ -79,10 +79,10 @@ public class FxGlow : MonoBehaviour
         startTime = Time.time;
     }
 
-    // Late so the light picks up the frame the FX flipbook just set this frame.
+    // Late so the light picks up the frame the FX flipbook just set this frame; off with the FX Glow setting.
     void LateUpdate()
     {
-        bool lit = peakIntensity > 0f;
+        bool lit = peakIntensity > 0f && GameSettings.FxGlow;
         float t;
 
         lit &= SyncWithSource();

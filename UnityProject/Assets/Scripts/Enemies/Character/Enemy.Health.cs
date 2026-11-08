@@ -16,7 +16,7 @@ public partial class Enemy : IDamageable, IHealthStats
     private readonly NetworkVariable<float> currentHealth = new OfflineSafeNetworkVariable<float>(
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    public float MaxHealth => Kit.MaxHealth;
+    public float MaxHealth => Kit.MaxHealth * healthScale.Value;
     public float CurrentHealth => Mathf.Min(currentHealth.Value, predictedHealth);
 
     public event Action<float, float> OnHealthChanged;
@@ -48,7 +48,7 @@ public partial class Enemy : IDamageable, IHealthStats
     {
         yield return null;
         if (this.HasServerAuthority())
-            currentHealth.Value = Kit.MaxHealth;
+            currentHealth.Value = MaxHealth;
     }
 
     private void PredictDamage(float amount)

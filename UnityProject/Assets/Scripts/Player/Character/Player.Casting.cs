@@ -6,12 +6,20 @@ using UnityEngine.InputSystem;
 // Special and Ultimate casts: instant on press, or aimed while held and cast on release.
 public partial class Player
 {
+    // Everything is free in the Lobby.
+    public float ManaCostOf(AbilityKit kit)
+    {
+        if (ActiveSession.InLobby)
+            return 0f;
+        return kit.ManaCost;
+    }
+
     // Off cooldown and paid for; the mana is only spent once every other check passed.
     private bool TryPayCast(AbilityKit kit, float readyTime)
     {
         if (kit == null || !CanFight || Time.time < readyTime)
             return false;
-        return TrySpendMana(kit.ManaCost);
+        return TrySpendMana(ManaCostOf(kit));
     }
 
     // Hold kits stop at BeginAim, before TrySpendMana, so a refused aim warns too; a cooldown stays silent, as on an instant cast.
@@ -23,7 +31,7 @@ public partial class Player
             return;
         if (ability == AbilityType.Ultimate)
             readyTime = ultimateReadyTime;
-        if (Time.time >= readyTime && CurrentMana < kit.ManaCost)
+        if (Time.time >= readyTime && CurrentMana < ManaCostOf(kit))
             OnNotEnoughMana?.Invoke();
     }
 
@@ -54,7 +62,10 @@ public partial class Player
         ultimateReadyTime = Time.time + kit.Cooldown;
         StartMoveLock(kit);
         OnAbilityUsed?.Invoke(AbilityType.Ultimate, kit.Cooldown);
-        SpawnAbilityFx(AbilityType.Ultimate, distance);
+        if (kit.Kind == AbilityKind.Dive)
+            StartDive(kit, distance);
+        else
+            SpawnAbilityFx(AbilityType.Ultimate, distance);
     }
 
     private void Cast(AbilityType ability, float distance)

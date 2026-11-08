@@ -23,7 +23,7 @@ MonoBehaviour:
   attackWidth: 0.8
   attackOrigin: {x: 0, y: 0}
   damage: 9
-  attackCooldown: 1.6
+  attackCooldown: 2
   attackHitDelay: 0.5
   attackAnimationDuration: 0.5
   attackMoveSpeedMultiplier: 0

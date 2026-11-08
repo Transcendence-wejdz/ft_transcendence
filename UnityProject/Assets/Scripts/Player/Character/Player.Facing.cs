@@ -65,7 +65,7 @@ public partial class Player
         return true;
     }
 
-    // Mouse-to-world aim, evaluated every frame.
+    // Aim from the aim ring to the cursor, evaluated every frame, so the ring, the charge FX and the hitbox preview all point the same way.
     private Vector2 GetMouseAimDirection()
     {
         Vector2 mouseWorld;
@@ -73,7 +73,7 @@ public partial class Player
 
         if (!TryGetMouseWorld(out mouseWorld))
             return facing;
-        dir = mouseWorld - (Vector2)transform.position;
+        dir = mouseWorld - ((Vector2)transform.position + AimIndicatorCenter);
         if (dir.sqrMagnitude <= MinMoveInputSqr)
             return facing;
         return dir.normalized;

@@ -67,6 +67,8 @@ public partial class Player : NetworkBehaviour, IDamageable
     {
         OnDisableFeedback();
         StopSpawnFade();
+        HideChargeFx();
+        SetDiveHidden(false);
     }
 
     void Start()
@@ -122,6 +124,7 @@ public partial class Player : NetworkBehaviour, IDamageable
         UpdateStats();
         UpdatePigForm();
         UpdateActions();
+        UpdateChargeFx();
         UpdateShield();
         UpdateShieldContactPush();
     }

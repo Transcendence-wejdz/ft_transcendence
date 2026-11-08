@@ -6,6 +6,11 @@ public class SlashAttackFX : MonoBehaviour, IAttackFX
 {
     public static event System.Action<GameObject, Vector3> OnHitLanded;
 
+    public static void NotifyHitLanded(GameObject owner, Vector3 position)
+    {
+        OnHitLanded?.Invoke(owner, position);
+    }
+
     [SerializeField] private Sprite[] frames;
     [SerializeField] private float frameRate = 24f;
 
@@ -32,7 +37,7 @@ public class SlashAttackFX : MonoBehaviour, IAttackFX
     {
         MonoBehaviour behaviour;
 
-        if (damageable == null || hitTargets.Contains(damageable))
+        if (damageable == null || hitTargets.Contains(damageable) || Player.IsProtectedAlly(owner, damageable))
             return false;
         behaviour = damageable as MonoBehaviour;
         return behaviour == null || behaviour.gameObject != owner;

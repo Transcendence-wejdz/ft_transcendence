@@ -13,23 +13,44 @@ MonoBehaviour:
   m_Name: Archer_Ultimate
   m_EditorClassIdentifier: Assembly-CSharp::AbilityKit
   kind: 0
-  cooldown: 5
-  manaCost: 0
-  fxPrefab: {fileID: 0}
-  fxDistance: 1
+  cooldown: 12
+  manaCost: 50
+  fxPrefab: {fileID: 3226355057268093508, guid: a760371ae586b68adbfd26e669ac3f88, type: 3}
+  fxDistance: 1.13
   fxOrigin: {x: 0, y: 0}
-  fxFromAimIndicator: 0
-  aimMode: 0
+  fxFromAimIndicator: 1
+  aimMode: 1
   maxRange: 6
   aimAssist: 0
   aimAssistAngle: 10
-  damage: 15
+  damage: 40
   moveLockDuration: 0.3
-  moveSpeedMultiplier: 0.35
+  moveSpeedMultiplier: 0.2
   animSpeed: 1
   size: 1
   ignoreAimRotation: 0
-  followCaster: 1
+  followCaster: 0
   glowIntensity: 1.2
   glowSize: 1.1
   glowDuration: 0.42
+  projectileSpeed: 12
+  projectileMaxDistance: 10
+  pierceCount: 1
+  chargeFxPrefab: {fileID: 2383586085942923635, guid: 7551fc45148595e67a39ac73d73d1b10, type: 3}
+  chargeFxDistance: 1.13
+  chargeFxOrigin: {x: 0, y: 0}
+  chargeFxFromAimIndicator: 1
+  chargeSeconds: 2
+  chargeDamageMultiplier: 3
+  chargeSizeMultiplier: 3
+  takeoffFxPrefab: {fileID: 0}
+  diveAirSeconds: 0.6
+  diveKnockbackForce: 14
+  diveKnockbackDuration: 0.35
+  shieldHoldDuration: 10
+  shieldHealth: 150
+  shieldKnockbackForce: 8
+  shieldKnockbackDuration: 0.25
+  shieldPushInterval: 0.5
+  shieldTurnSpeed: 120
+  shieldHoldAnimation: 0

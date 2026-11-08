@@ -20,6 +20,7 @@ MonoBehaviour:
   fxOrigin: {x: 0, y: -0.4}
   fxFromAimIndicator: 1
   aimMode: 1
+  showHitboxPreview: 0
   maxRange: 6
   aimAssist: 1
   aimAssistAngle: 10
@@ -36,6 +37,17 @@ MonoBehaviour:
   projectileSpeed: 12
   projectileMaxDistance: 10
   pierceCount: 1
+  chargeFxPrefab: {fileID: 0}
+  chargeFxDistance: 1
+  chargeFxOrigin: {x: 0, y: 0}
+  chargeFxFromAimIndicator: 0
+  chargeSeconds: 2
+  chargeDamageMultiplier: 3
+  chargeSizeMultiplier: 2
+  takeoffFxPrefab: {fileID: 0}
+  diveAirSeconds: 0.6
+  diveKnockbackForce: 14
+  diveKnockbackDuration: 0.35
   shieldHoldDuration: 10
   shieldHealth: 150
   shieldKnockbackForce: 8

@@ -85,7 +85,7 @@ public partial class Boss : IDamageable, IHealthStats
 
     private void ApplyDamage(float amount)
     {
-        if (currentHealth.Value <= 0f)
+        if (currentHealth.Value <= 0f || IsInvulnerable)
             return;
         currentHealth.Value = Mathf.Max(0f, currentHealth.Value - amount);
         if (currentHealth.Value <= 0f)
@@ -101,6 +101,8 @@ public partial class Boss : IDamageable, IHealthStats
     // Callable from any client; applied on the server, predicted on the attacker's screen meanwhile.
     public void RequestDamage(float amount)
     {
+        if (IsInvulnerable)
+            return;
         DamageNumberSpawner.MarkLocalHit(this, amount);
         if (!NetworkObject.IsSpawned)
         {

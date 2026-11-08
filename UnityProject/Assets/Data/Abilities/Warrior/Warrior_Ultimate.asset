@@ -33,10 +33,17 @@ MonoBehaviour:
   glowIntensity: 1.2
   glowSize: 1.1
   glowDuration: 0
+  projectileSpeed: 12
+  projectileMaxDistance: 10
+  pierceCount: 1
+  chargeFxPrefab: {fileID: 0}
+  chargeSeconds: 2
+  chargeDamageMultiplier: 3
+  chargeSizeMultiplier: 2
   shieldHoldDuration: 10
   shieldHealth: 150
-  shieldKnockbackForce: 1
-  shieldKnockbackDuration: 1
+  shieldKnockbackForce: 10
+  shieldKnockbackDuration: 0.3
   shieldPushInterval: 0.2
   shieldTurnSpeed: 100
   shieldHoldAnimation: 1

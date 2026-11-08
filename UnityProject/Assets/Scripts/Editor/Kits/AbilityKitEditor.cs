@@ -19,9 +19,11 @@ public partial class AbilityKitEditor : KitPreviewEditor
     {
         new("ABILITY", "Type", "kind"),
         new("ABILITY", "Use", "cooldown", "manaCost", "moveLockDuration", "moveSpeedMultiplier", "animSpeed"),
-        new("ABILITY", "FX", "fxPrefab", "fxDistance", "fxOrigin", "fxFromAimIndicator", "size", "ignoreAimRotation", "followCaster"),
-        new("ABILITY", "Aim", "aimMode", "maxRange", "aimAssist", "aimAssistAngle"),
+        new("ABILITY", "FX", "fxPrefab", "icon", "fxDistance", "fxOrigin", "fxFromAimIndicator", "size", "ignoreAimRotation", "followCaster"),
+        new("ABILITY", "Aim", "aimMode", "showHitboxPreview", "maxRange", "aimAssist", "aimAssistAngle"),
         new("ABILITY", "Damage", "damage"),
+        new("ABILITY", "Charge", "chargeFxPrefab", "chargeFxDistance", "chargeFxOrigin", "chargeFxFromAimIndicator", "chargeSeconds", "chargeDamageMultiplier", "chargeSizeMultiplier"),
+        new("ABILITY", "Dive", "takeoffFxPrefab", "diveAirSeconds", "diveKnockbackForce", "diveKnockbackDuration"),
         new("ABILITY", "Glow", "glowIntensity", "glowSize", "glowDuration"),
         new("ABILITY", "Projectile", ProjectileFields),
         new("ABILITY", "Shield", ShieldFields),
@@ -54,14 +56,18 @@ public partial class AbilityKitEditor : KitPreviewEditor
             return true;
         if (!isShield && System.Array.IndexOf(ShieldFields, name) >= 0)
             return true;
-        if (isShield && (name == "aimMode" || name == "maxRange"))
+        if (isShield && (name == "aimMode" || name == "showHitboxPreview" || name == "maxRange"))
             return true;
+        if (name == "showHitboxPreview")
+            return serializedObject.FindProperty("aimMode").enumValueIndex == (int)AbilityAimMode.Instant;
         if (name == "aimAssistAngle")
             return !BoolField("aimAssist");
         if (name == "maxRange")
             return serializedObject.FindProperty("aimMode").enumValueIndex != (int)AbilityAimMode.HoldFree;
         if (name == "fxOrigin")
             return BoolField("fxFromAimIndicator");
+        if (name == "chargeFxOrigin")
+            return BoolField("chargeFxFromAimIndicator");
         return false;
     }
 

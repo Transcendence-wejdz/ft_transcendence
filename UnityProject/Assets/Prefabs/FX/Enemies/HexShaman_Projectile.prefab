@@ -328,6 +328,7 @@ MonoBehaviour:
   - {fileID: -6427890585569790601, guid: 14aa51b457d9ad5d39e9ef38ded3f881, type: 3}
   frameRate: 10
   impactPrefab: {fileID: 4872992958421230049, guid: 19b094c03a00f780aa8dc84131fce776, type: 3}
+  outlineMaterial: {fileID: 2100000, guid: 6db71c5a90085d460ba9c04dd85d6127, type: 2}
 --- !u!114 &3941945200836315605
 MonoBehaviour:
   m_ObjectHideFlags: 0

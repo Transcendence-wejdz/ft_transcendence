@@ -15,6 +15,12 @@ public static partial class GameSettings
         set => SetBool(ScreenShakeEnabledKey, value);
     }
 
+    public static bool EnemyProjectileOutline
+    {
+        get => GetBool(EnemyProjectileOutlineKey, false);
+        set => SetBool(EnemyProjectileOutlineKey, value);
+    }
+
     public static bool ShowDamageNumbers
     {
         get => GetBool(ShowDamageNumbersKey, true);

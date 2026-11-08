@@ -10,6 +10,7 @@ public class EnemyProjectile : MonoBehaviour
     [SerializeField] private Sprite[] frames;
     [SerializeField] private float frameRate = 16f;
     [SerializeField] private GameObject impactPrefab;
+    [SerializeField] private Material outlineMaterial;
 
     private Rigidbody2D rb;
     private float damage;
@@ -22,6 +23,7 @@ public class EnemyProjectile : MonoBehaviour
     private int frameIndex;
     private Vector3 startPosition;
     private Vector3 spriteBaseLocalPosition;
+    private ProjectileOutline outline;
 
     private bool IsAnimated => frames != null && frames.Length > 1 && spriteRenderer != null;
 
@@ -44,6 +46,8 @@ public class EnemyProjectile : MonoBehaviour
         if (frames != null && frames.Length > 0)
             spriteRenderer.sprite = frames[0];
         spriteBaseLocalPosition = spriteRenderer.transform.localPosition;
+        if (GameSettings.EnemyProjectileOutline && outlineMaterial != null)
+            outline = new ProjectileOutline(spriteRenderer, outlineMaterial);
     }
 
     // Forces a kinematic, continuous trigger body whatever the prefab says, or shields would be missed.
@@ -82,6 +86,7 @@ public class EnemyProjectile : MonoBehaviour
             frameTimer -= frameDuration;
             frameIndex = (frameIndex + 1) % frames.Length;
             spriteRenderer.sprite = frames[frameIndex];
+            outline?.SetSprite(frames[frameIndex]);
         }
     }
 

@@ -74,6 +74,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LevelUpManager
   ShowTopMostFoldoutHeaderGroup: 1
   multiplayerChoiceSeconds: 20
+  resumeCountdownSeconds: 1.8
 --- !u!1 &446113791828117760
 GameObject:
   m_ObjectHideFlags: 0
@@ -289,14 +290,20 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ddaf2804d33a58788b85c1b9340c7f28, type: 2}
   - {fileID: 11400000, guid: 6c2a56a18079fbd06a29e166b539e15c, type: 2}
   tierUnlockWave: 0100000004000000070000000a000000
+  tierRetireWave: 0d000000140000000000000000000000
   baseEnemiesPerWave: 5
   extraEnemiesPerWave: 5
-  extraEnemiesPerPlayer: 5
+  extraEnemiesPerPlayer: 0
+  maxAliveEnemies: 300
+  healthPerExtraPlayer: 0.25
+  damagePerExtraPlayer: 0.1
   spawnRadius: 15
   timeBetweenWaves: 20
   clearCheckInterval: 0.5
   maxSpawnPointAttempts: 10
   spawnClearance: 1
+  spawnBatchSize: 10
+  spawnBatchInterval: 0.5
   spawnWaves: 1
   startsRun: 1
 --- !u!114 &227354742320272167

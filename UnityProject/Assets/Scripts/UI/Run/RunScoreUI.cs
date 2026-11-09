@@ -90,6 +90,8 @@ public class RunScoreUI : MonoBehaviour
         AddLine($"Waves ({result.wave})", score.wavePoints);
         if (score.bossPoints > 0)
             AddLine("Boss", score.bossPoints);
+        if (score.Multiplier < 1f)
+            AddColoredLine("No friendly fire", $"x{score.Multiplier:0.##}", totalColor);
         AddColoredLine("Total", score.Total.ToString(), totalColor);
         AddColoredLine("Gold", goldDisplay, goldColor);
         labelsText.text = labels.ToString();

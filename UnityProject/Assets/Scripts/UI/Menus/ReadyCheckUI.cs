@@ -22,7 +22,6 @@ public partial class ReadyCheckUI : MonoBehaviour
     private static readonly Dictionary<string, ModeInfo> ModeInfos = new Dictionary<string, ModeInfo>
     {
         { "Coop", new ModeInfo("4-Player Co-op") },
-        { "Boss", new ModeInfo("Boss Fight") },
     };
 
     [SerializeField] private MenuPanel menuPanel;

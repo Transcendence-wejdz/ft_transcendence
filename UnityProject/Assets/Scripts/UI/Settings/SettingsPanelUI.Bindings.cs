@@ -17,6 +17,9 @@ public partial class SettingsPanelUI
         BindToggle(showFpsToggle, value => GameSettings.ShowFps = value);
         BindToggle(showPingToggle, value => GameSettings.ShowPing = value);
         BindToggle(hdrToggle, value => GameSettings.HdrEnabled = value);
+        BindToggle(vsyncToggle, value => GameSettings.VSync = value);
+        BindToggle(fxGlowToggle, value => GameSettings.FxGlow = value);
+        BindToggle(bloomToggle, value => GameSettings.Bloom = value);
         BindToggle(aimAssistToggle, value => GameSettings.AimAssist = value);
     }
 
@@ -24,6 +27,8 @@ public partial class SettingsPanelUI
     {
         for (int i = 0; i < qualityOptions.Length; i++)
             BindOption(qualityOptions[i], i, level => GameSettings.GraphicsQuality = level);
+        for (int i = 0; i < fpsLimitOptions.Length; i++)
+            BindOption(fpsLimitOptions[i], i, limit => GameSettings.FpsLimit = limit);
         for (int i = 0; i < cursorStyleOptions.Length; i++)
         {
             BindOption(cursorStyleOptions[i], i, style => GameSettings.CursorStyle = style);
@@ -58,6 +63,9 @@ public partial class SettingsPanelUI
         showFpsToggle.SetIsOnWithoutNotify(GameSettings.ShowFps);
         showPingToggle.SetIsOnWithoutNotify(GameSettings.ShowPing);
         hdrToggle.SetIsOnWithoutNotify(GameSettings.HdrEnabled);
+        vsyncToggle.SetIsOnWithoutNotify(GameSettings.VSync);
+        fxGlowToggle.SetIsOnWithoutNotify(GameSettings.FxGlow);
+        bloomToggle.SetIsOnWithoutNotify(GameSettings.Bloom);
         aimAssistToggle.SetIsOnWithoutNotify(GameSettings.AimAssist);
     }
 

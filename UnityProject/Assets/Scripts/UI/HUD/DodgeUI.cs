@@ -10,7 +10,7 @@ public class DodgeUI : MonoBehaviour
 
     [SerializeField] private GameObject pipTemplate;
     [Tooltip("World distance below the player's pivot, under the feet.")]
-    [SerializeField] private float depthBelowPlayer = 1.12f;
+    [SerializeField] private float depthBelowPlayer = 1.25f;
     [Tooltip("Seconds the full bar stays visible before fading out.")]
     [SerializeField] private float fullHoldSeconds = 0.6f;
     [SerializeField] private float refillPopScale = 1.3f;

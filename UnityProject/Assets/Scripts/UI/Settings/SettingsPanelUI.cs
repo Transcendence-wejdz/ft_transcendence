@@ -24,6 +24,10 @@ public partial class SettingsPanelUI : MonoBehaviour
     [Tooltip("Largest preview size, so big Cursor Sizes do not spill far over the rows around it.")]
     [SerializeField] private float crosshairPreviewMaxSize = 44f;
     [SerializeField] private Toggle hdrToggle;
+    [SerializeField] private Toggle[] fpsLimitOptions;
+    [SerializeField] private Toggle vsyncToggle;
+    [SerializeField] private Toggle fxGlowToggle;
+    [SerializeField] private Toggle bloomToggle;
     [SerializeField] private Toggle aimAssistToggle;
     [SerializeField] private Slider aimDeadzoneSlider;
     [SerializeField] private TMP_Text aimDeadzoneLabel;
@@ -138,6 +142,7 @@ public partial class SettingsPanelUI : MonoBehaviour
         RefreshCrosshairPreview();
         SyncToggles();
         SyncOptions(qualityOptions, GameSettings.GraphicsQuality);
+        SyncOptions(fpsLimitOptions, GameSettings.FpsLimit);
         SyncOptions(cursorStyleOptions, GameSettings.CursorStyle);
         SyncOptions(cursorColorOptions, GameSettings.CursorColor);
         SyncSliders();

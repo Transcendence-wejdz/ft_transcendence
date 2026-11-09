@@ -12,6 +12,12 @@ public class ModeReadyCheck : NetworkBehaviour
     private readonly NetworkVariable<FixedString64Bytes> pendingSceneName = new OfflineSafeNetworkVariable<FixedString64Bytes>(
         default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
+    // Options of the mode being proposed, then of the mode running; this object outlives the scene changes.
+    private readonly NetworkVariable<RunOptions> pendingOptions = new OfflineSafeNetworkVariable<RunOptions>(
+        RunOptions.Default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private readonly NetworkVariable<RunOptions> activeOptions = new OfflineSafeNetworkVariable<RunOptions>(
+        RunOptions.Default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
     // Inactive-inclusive fallback lookup.
     public static ModeReadyCheck Instance
     {
@@ -55,6 +61,8 @@ public class ModeReadyCheck : NetworkBehaviour
 
         pendingSceneName.Value = default;
         ResetAllReady();
+        activeOptions.Value = pendingOptions.Value;
+        RunOptions.Current = pendingOptions.Value;
         NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
     }
 
@@ -66,15 +74,32 @@ public class ModeReadyCheck : NetworkBehaviour
 
     // Any client can propose a mode, not just the host.
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-    private void RequestReadyCheckServerRpc(FixedString64Bytes sceneName)
+    private void RequestReadyCheckServerRpc(FixedString64Bytes sceneName, RunOptions options)
     {
+        pendingOptions.Value = options;
         pendingSceneName.Value = sceneName;
         ResetAllReady();
     }
 
-    public void RequestReadyCheck(string sceneName)
+    public void RequestReadyCheck(string sceneName, RunOptions options)
     {
-        RequestReadyCheckServerRpc(sceneName);
+        RequestReadyCheckServerRpc(sceneName, options);
+    }
+
+    private void HandleActiveOptionsChanged(RunOptions previous, RunOptions current)
+    {
+        RunOptions.Current = current;
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        activeOptions.OnValueChanged += HandleActiveOptionsChanged;
+        RunOptions.Current = activeOptions.Value;
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        activeOptions.OnValueChanged -= HandleActiveOptionsChanged;
     }
 
     // Clears any in-progress check; call when returning to the Lobby so stale readiness doesn't survive the round-trip.

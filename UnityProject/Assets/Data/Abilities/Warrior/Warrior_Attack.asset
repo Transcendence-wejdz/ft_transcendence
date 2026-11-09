@@ -16,6 +16,7 @@ MonoBehaviour:
   cooldown: 0.7
   manaCost: 0
   fxPrefab: {fileID: 2950713147391728551, guid: 03676747502a51cbd8b33fb46557150e, type: 3}
+  icon: {fileID: 21300000, guid: 3873bf6bf527822b98fb97e358bb701f, type: 3}
   fxDistance: 0.8
   fxOrigin: {x: 0, y: 0}
   fxFromAimIndicator: 1
@@ -33,3 +34,13 @@ MonoBehaviour:
   glowIntensity: 1.2
   glowSize: 1.1
   glowDuration: 0.42
+  projectileSpeed: 12
+  projectileMaxDistance: 10
+  pierceCount: 1
+  shieldHoldDuration: 10
+  shieldHealth: 150
+  shieldKnockbackForce: 8
+  shieldKnockbackDuration: 0.25
+  shieldPushInterval: 0.5
+  shieldTurnSpeed: 120
+  shieldHoldAnimation: 0

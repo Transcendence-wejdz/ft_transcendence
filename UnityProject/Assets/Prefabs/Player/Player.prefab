@@ -1056,6 +1056,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Player
   ShowTopMostFoldoutHeaderGroup: 1
+  gamepadAimSpeed: 8
+  aimAssistMeleeRange: 3
   defaultKit: {fileID: 11400000, guid: 00237731cda6cbfddb916172676af3c1, type: 2}
   nameTag: {fileID: 826270409130490218}
   previewCamera: {fileID: 1028552016406893187}
@@ -1083,13 +1085,13 @@ MonoBehaviour:
   pigPrefab: {fileID: -2253911629886400664, guid: 13c2269ca7f9951d2a4281654eab6d39, type: 3}
   pigScale: 1.5
   transformFxPrefab: {fileID: -2253911629886400664, guid: 9ab4d137f132008c899723fb836e3080, type: 3}
-  extraLifeFxPrefab: {fileID: 1513418157574982083, guid: ba936020165832106ab1950bdf250237, type: 3}
   transformFxOffset: {x: 0, y: -1.1}
   revealRadius: 1.61
   revealAlpha: 0.292
   revealSoftness: 0.85
   revealPixelsPerUnit: 64
   revealSpeed: 7.5
+  extraLifeFxPrefab: {fileID: 1513418157574982083, guid: ba936020165832106ab1950bdf250237, type: 3}
 --- !u!1 &2656065111865967794
 GameObject:
   m_ObjectHideFlags: 0
@@ -1429,7 +1431,7 @@ ParticleSystem:
         m_RotationOrder: 4
     startSizeY:
       serializedVersion: 2
-      minMaxState: 0
+      minMaxState: 3
       scalar: 1
       minScalar: 1
       maxCurve:
@@ -1482,7 +1484,7 @@ ParticleSystem:
         m_RotationOrder: 4
     startSizeZ:
       serializedVersion: 2
-      minMaxState: 0
+      minMaxState: 3
       scalar: 1
       minScalar: 1
       maxCurve:

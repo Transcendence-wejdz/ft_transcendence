@@ -109,7 +109,7 @@ public partial class Player
         if (chargeFx == null || kit == null || kit.ChargeFxPrefab == null)
             return;
         size = Mathf.Lerp(1f, kit.ChargeSizeMultiplier, ChargeProgress(kit, chargeFxStartTime));
-        angle = AimAngleDegrees;
+        angle = ChargeFxAngle;
         FxPose(chargeFxAbility, angle, -1f, out position, out rotation);
         position = transform.position + (Vector3)kit.ChargeFxOffset(new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad)), AimIndicatorCenter);
         chargeFx.transform.SetPositionAndRotation(position, rotation);

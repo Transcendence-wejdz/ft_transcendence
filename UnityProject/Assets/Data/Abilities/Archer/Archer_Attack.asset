@@ -16,6 +16,7 @@ MonoBehaviour:
   cooldown: 0.75
   manaCost: 0
   fxPrefab: {fileID: 8561813417502051360, guid: cdcba958b8be78ae8a9cfcc3b63754ef, type: 3}
+  icon: {fileID: 21300000, guid: 272d9d7b8b23a665c8be8a34cc04a488, type: 3}
   fxDistance: 1
   fxOrigin: {x: 0, y: 0}
   fxFromAimIndicator: 1
@@ -36,3 +37,21 @@ MonoBehaviour:
   projectileSpeed: 15
   projectileMaxDistance: 15
   pierceCount: 3
+  chargeFxPrefab: {fileID: 0}
+  chargeFxDistance: 1
+  chargeFxOrigin: {x: 0, y: 0}
+  chargeFxFromAimIndicator: 0
+  chargeSeconds: 2
+  chargeDamageMultiplier: 2.5
+  chargeSizeMultiplier: 2
+  takeoffFxPrefab: {fileID: 0}
+  diveAirSeconds: 0.6
+  diveKnockbackForce: 14
+  diveKnockbackDuration: 0.35
+  shieldHoldDuration: 10
+  shieldHealth: 150
+  shieldKnockbackForce: 8
+  shieldKnockbackDuration: 0.25
+  shieldPushInterval: 0.5
+  shieldTurnSpeed: 120
+  shieldHoldAnimation: 0

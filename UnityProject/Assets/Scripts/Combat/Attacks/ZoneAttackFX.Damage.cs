@@ -18,7 +18,7 @@ public partial class ZoneAttackFX
         if (other.GetComponent<ShieldHoldFX>() != null)
             return;
         damageable = other.GetComponentInParent<IDamageable>();
-        if (damageable == null || !hitThisTick.Add(damageable))
+        if (damageable == null || Player.IsProtectedAlly(owner, damageable) || !hitThisTick.Add(damageable))
             return;
         if (!IsOwner(damageable) && !Player.TryBlockAttack(owner, damageable, damage))
             Player.DealAttackDamage(owner, damageable, damage);

@@ -170,7 +170,7 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
             Destroy(gameObject);
             return;
         }
-        if (!IsOwnerOrMount(damageable))
+        if (!IsOwnerOrMount(damageable) && !Player.IsProtectedAlly(owner, damageable))
             HitTarget(damageable);
     }
 }

@@ -206,6 +206,12 @@ export type SendMessageBody = {
     text: string;
 };
 
+// Response of POST /api/players/[playerId]/messages: the message as saved, with its id and sentAt.
+// The sender's tab shows this copy and skips the same id when the WebSocket echo arrives.
+export type SentMessage = {
+    message: ChatMessage;
+};
+
 // Response of GET /api/players/[playerId]/messages?before=<cursor>: newest message first.
 // nextCursor null: the start of the conversation is reached, nothing older to load.
 export type MessagesPage = Page<ChatMessage>;

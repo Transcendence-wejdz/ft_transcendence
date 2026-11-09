@@ -90,7 +90,7 @@ export type Page<T> = {
 // TODO:    - /api/register that allow 3 to 20 char (letters, numbers, '_', '-'))
 // TODO:    - settings (in validation.ts) that allow 2 to 24 char and autorize space
 
-// TODO:    List of player_class and player_color now exist both in types.ts and validation.ts, 
+// TODO:    List of player_class and player_color now exist both in types.ts and validation.ts,
 // TODO:    in the end, we need to import the list from types.ts to validation.ts (we can't import from server)
 
 // Playable classes. Must match the game and CLASSES in $lib/server/validation.ts.
@@ -118,7 +118,7 @@ export type UserSummary = {
 export type OnlineStatus = 'online' | 'in_game' | 'offline';
 
 // The logged-in player, from /api/me: their summary plus private fields only they may see.
-// TODO:    change the return of /api/me from snake_case to camelCase so it matches the prisma name: 
+// TODO:    change the return of /api/me from snake_case to camelCase so it matches the prisma name:
 // TODO:    display_name -> displayName and avatar_url -> avatarUrl
 export type CurrentUser = UserSummary & {
     email: string;
@@ -209,6 +209,13 @@ export type SendMessageBody = {
 // Response of GET /api/players/[playerId]/messages?before=<cursor>: newest message first.
 // nextCursor null: the start of the conversation is reached, nothing older to load.
 export type MessagesPage = Page<ChatMessage>;
+
+// Response of GET /api/conversations: every row of /chat, loaded once.
+// Latest activity first; friends with no message yet (lastMessage null) come last.
+// Not a Page: there is at most one row per friend, so the list stays short.
+export type ConversationsList = {
+    conversations: Conversation[];
+};
 
 
 // ---- Notifications ----

@@ -2,7 +2,7 @@
 	import LegalPage from '$lib/components/LegalPage.svelte';
 
 	const sections = [
-		{ id: 'who', title: 'Who we are', content: who },
+		{ id: 'who', title: 'Who are we', content: who },
 		{ id: 'collect', title: 'What we collect', content: collect },
 		{ id: 'why', title: 'Why we use it', content: why },
 		{ id: 'services', title: 'Services we rely on', content: services },
@@ -76,7 +76,7 @@
 
 {#snippet contact()}
 	<p>
-		Reach the project owner on GitHub:
-		<a href="https://github.com/SaruM4N3">github.com/SaruM4N3</a>.
+		Reach the project on GitHub:
+		<a href="https://github.com/Transcendence-wejdz">github.com/Transcendence-wejdz</a>.
 	</p>
 {/snippet}

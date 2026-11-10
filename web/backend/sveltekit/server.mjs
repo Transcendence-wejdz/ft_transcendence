@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { parse } from 'node:url';
 import { Pool } from 'pg';
@@ -140,12 +140,22 @@ server.on('upgrade', async (request, socket, head) => {
 			rejectUpgrade(socket, 401, 'Unauthorized');
 			return;
 		}
+		const connectionId = randomUUID();
+		await pool.query(
+			'INSERT INTO presence_connections (id, user_id, heartbeat_at) VALUES ($1, $2, NOW())',
+			[connectionId, result.rows[0].user_id]
+		);
+		if (socket.destroyed) {
+			await pool.query('DELETE FROM presence_connections WHERE id = $1', [connectionId]);
+			return;
+		}
 
 		// Store identity on the socket so later pongs and close events can update
-		// the right session and user's presence.
+		// the right session and presence-connection row.
 		webSocketServer.handleUpgrade(request, socket, head, (webSocket) => {
 			webSocket.userId = result.rows[0].user_id;
 			webSocket.sessionId = result.rows[0].id;
+			webSocket.connectionId = connectionId;
 			webSocketServer.emit('connection', webSocket, request);
 		});
 	} catch (error) {
@@ -172,8 +182,12 @@ webSocketServer.on('connection', (webSocket) => {
 		webSocket.isAlive = true;
 		try {
 			const result = await pool.query(
-				'UPDATE sessions SET last_online = NOW() WHERE id = $1 AND expires_at > NOW()',
-				[webSocket.sessionId]
+				`WITH valid_session AS (
+					UPDATE sessions SET last_online = NOW() WHERE id = $1 AND expires_at > NOW() RETURNING id
+				)
+				UPDATE presence_connections SET heartbeat_at = NOW()
+				WHERE id = $2 AND EXISTS (SELECT 1 FROM valid_session)`,
+				[webSocket.sessionId, webSocket.connectionId]
 			);
 			if (result.rowCount === 0) webSocket.close(4001, 'Session expired');
 		} catch (error) {
@@ -183,7 +197,13 @@ webSocketServer.on('connection', (webSocket) => {
 	});
 
 	// Mark the user offline only after their final tab/connection closes.
-	webSocket.on('close', () => {
+	webSocket.on('close', async () => {
+		try {
+			await pool.query('DELETE FROM presence_connections WHERE id = $1', [webSocket.connectionId]);
+		} catch (error) {
+			console.error('Could not remove closed WebSocket presence:', error);
+		}
+
 		const activeConnections = connectionsByUser.get(webSocket.userId);
 		if (!activeConnections) return;
 		activeConnections.delete(webSocket);
@@ -197,6 +217,12 @@ webSocketServer.on('connection', (webSocket) => {
 // Ping each connection periodically. If the previous ping got no pong, the
 // connection is presumed dead and terminated so its close handler can run.
 const webSocketHeartbeat = setInterval(() => {
+	// Remove rows left behind if the process or network disappeared before a
+	// WebSocket close event could delete its presence record.
+	void pool
+		.query("DELETE FROM presence_connections WHERE heartbeat_at <= NOW() - INTERVAL '60 seconds'")
+		.catch((error) => console.error('Could not remove stale WebSocket presence:', error));
+
 	for (const webSocket of webSocketServer.clients) {
 		if (webSocket.isAlive === false) {
 			webSocket.terminate();

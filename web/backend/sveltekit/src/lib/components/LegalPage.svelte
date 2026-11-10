@@ -127,4 +127,14 @@
 	.doc :global(a) {
 		color: var(--color-ribbon);
 	}
+
+	@media (min-width: 900px) {
+ 	 .toc {
+		position: sticky;
+		top: 1.5rem;
+		align-self: flex-start;
+		max-height: calc(100vh - 3rem);
+		overflow-y: auto;
+		}
+	}
 </style>

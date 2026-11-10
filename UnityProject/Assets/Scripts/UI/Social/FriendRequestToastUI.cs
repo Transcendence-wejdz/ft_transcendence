@@ -12,6 +12,7 @@ public class FriendRequestToastUI : MonoBehaviour
     [SerializeField] private TMP_Text messageText;
     [SerializeField] private Image avatar;
     [SerializeField] private TMP_Text avatarInitial;
+    [SerializeField] private SiteAvatarPhoto sitePhoto;
     [SerializeField] private Button acceptButton;
     [SerializeField] private TMP_Text acceptLabel;
     [SerializeField] private Button dismissButton;
@@ -19,6 +20,76 @@ public class FriendRequestToastUI : MonoBehaviour
     [SerializeField] private Color warningColor = new Color(0.95f, 0.75f, 0.3f, 1f);
 
     private string pendingMemberId;
+
+    // Accepted or declined elsewhere (pause menu Requests section), or cancelled by the sender: the popup has nothing left to ask.
+    private void HideIfHandled()
+    {
+        if (!card.IsShown || string.IsNullOrEmpty(pendingMemberId))
+            return;
+        if (!IsStillPending(pendingMemberId))
+            card.Hide();
+    }
+
+    private static bool IsStillPending(string memberId)
+    {
+        foreach (Relationship request in FriendsManager.Incoming)
+        {
+            if (request.Member.Id == memberId)
+                return true;
+        }
+        return false;
+    }
+
+    private static string SenderName(string senderName)
+    {
+        if (string.IsNullOrEmpty(senderName))
+            return "Someone";
+        return senderName;
+    }
+
+    private void ResetAcceptButton()
+    {
+        acceptLabel.text = "Accept";
+        acceptButton.interactable = true;
+    }
+
+    private void Show(string memberId, string senderName)
+    {
+        string sender = SenderName(senderName);
+
+        pendingMemberId = memberId;
+        senderText.text = sender;
+        avatar.color = FriendAvatar.ColorFor(sender);
+        avatarInitial.text = FriendAvatar.InitialFor(sender);
+        sitePhoto.Load(memberId);
+        messageText.text = "wants to be friends";
+        messageText.color = messageColor;
+        ResetAcceptButton();
+        card.Show();
+    }
+
+    private async void Accept()
+    {
+        if (string.IsNullOrEmpty(pendingMemberId))
+            return;
+        acceptButton.interactable = false;
+        acceptLabel.text = "...";
+        try
+        {
+            await FriendsManager.AcceptAsync(pendingMemberId);
+            if (this != null)
+                card.Hide();
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"FriendRequestToastUI: accept failed - {e.Message}");
+            if (this == null)
+                return;
+            messageText.text = "Couldn't accept, try again.";
+            messageText.color = warningColor;
+            ResetAcceptButton();
+        }
+    }
 
     private void Awake()
     {
@@ -36,56 +107,5 @@ public class FriendRequestToastUI : MonoBehaviour
     {
         FriendsManager.OnFriendRequestReceived -= Show;
         FriendsManager.OnChanged -= HideIfHandled;
-    }
-
-    // Accepted or declined elsewhere (pause menu Requests section), or cancelled by the sender: the popup has nothing left to ask.
-    private void HideIfHandled()
-    {
-        if (!card.IsShown || string.IsNullOrEmpty(pendingMemberId))
-            return;
-
-        foreach (Relationship request in FriendsManager.Incoming)
-            if (request.Member.Id == pendingMemberId)
-                return;
-        card.Hide();
-    }
-
-    private void Show(string memberId, string senderName)
-    {
-        string sender = string.IsNullOrEmpty(senderName) ? "Someone" : senderName;
-        pendingMemberId = memberId;
-        senderText.text = sender;
-        avatar.color = FriendAvatar.ColorFor(sender);
-        avatarInitial.text = FriendAvatar.InitialFor(sender);
-        messageText.text = "wants to be friends";
-        messageText.color = messageColor;
-        acceptLabel.text = "Accept";
-        acceptButton.interactable = true;
-        card.Show();
-    }
-
-    private async void Accept()
-    {
-        if (string.IsNullOrEmpty(pendingMemberId))
-            return;
-
-        acceptButton.interactable = false;
-        acceptLabel.text = "...";
-        try
-        {
-            await FriendsManager.AcceptAsync(pendingMemberId);
-            if (this != null)
-                card.Hide();
-        }
-        catch (Exception e)
-        {
-            Debug.LogWarning($"FriendRequestToastUI: accept failed - {e.Message}");
-            if (this == null)
-                return;
-            messageText.text = "Couldn't accept, try again.";
-            messageText.color = warningColor;
-            acceptLabel.text = "Accept";
-            acceptButton.interactable = true;
-        }
     }
 }

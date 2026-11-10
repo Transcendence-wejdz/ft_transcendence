@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+// Ability slot overlay that unwinds over the cooldown of the local player's last use.
 public class CooldownIcon : MonoBehaviour
 {
     [SerializeField] private AbilityType ability;
@@ -8,6 +9,15 @@ public class CooldownIcon : MonoBehaviour
     private Image overlay;
     private float duration;
     private float remaining;
+
+    private void HandleAbilityUsed(AbilityType usedAbility, float cooldownDuration)
+    {
+        if (usedAbility != ability)
+            return;
+        duration = cooldownDuration;
+        remaining = cooldownDuration;
+        overlay.fillAmount = 1f;
+    }
 
     void Awake()
     {
@@ -29,22 +39,11 @@ public class CooldownIcon : MonoBehaviour
     {
         if (remaining <= 0f)
             return;
-
         remaining -= Time.deltaTime;
-
         if (duration > 0f)
             overlay.fillAmount = Mathf.Clamp01(remaining / duration);
         else
             overlay.fillAmount = 0f;
     }
 
-    private void HandleAbilityUsed(AbilityType usedAbility, float cooldownDuration)
-    {
-        if (usedAbility != ability)
-            return;
-
-        duration = cooldownDuration;
-        remaining = cooldownDuration;
-        overlay.fillAmount = 1f;
-    }
 }

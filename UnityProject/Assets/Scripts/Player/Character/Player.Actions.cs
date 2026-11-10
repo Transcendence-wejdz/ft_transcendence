@@ -3,9 +3,18 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+// Attack (autofire while held), Special and Ultimate: cooldowns, mana, move lock, and the FX spawned locally then mirrored.
 public partial class Player
 {
     public static event Action<AbilityType, float> OnAbilityUsed;
+
+    // Animator params keep their original names (LightAttack/HeavyAttack) for Attack/Special.
+    private static readonly int AttackHash = Animator.StringToHash("LightAttack");
+    private static readonly int SpecialHash = Animator.StringToHash("HeavyAttack");
+    private static readonly int UltimateHash = Animator.StringToHash("Ultimate");
+    private static readonly int AttackAnimSpeedHash = Animator.StringToHash("AttackAnimSpeed");
+    private static readonly int SpecialAnimSpeedHash = Animator.StringToHash("SpecialAnimSpeed");
+    private static readonly int UltimateAnimSpeedHash = Animator.StringToHash("UltimateAnimSpeed");
 
     [Header("Actions")]
     [SerializeField] private ClassKit defaultKit;
@@ -20,110 +29,33 @@ public partial class Player
     private float moveLockEndTime;
     private float moveLockSpeedMultiplier;
 
+    public ClassKit ActiveKit => activeKit;
+
     public float MovementSpeedMultiplier
     {
         get
         {
             if (isShieldActive.Value)
-                return activeKit != null ? ApplyAttackMobilityBonus(activeKit.UltimateMoveSpeedMultiplier) : 1f;
-            return Time.time < moveLockEndTime ? moveLockSpeedMultiplier : 1f;
+                return ShieldMoveSpeedMultiplier();
+            if (IsCharging)
+                return ApplyAttackMobilityBonus(chargingKit.MoveSpeedMultiplier);
+            if (Time.time < moveLockEndTime)
+                return moveLockSpeedMultiplier;
+            return 1f;
         }
     }
 
     // Dead players (pigs) can still move but not fight.
-    private bool CanFight => !IsBlocked && !IsDead;
+    private bool CanFight => !IsBlocked && !IsDead && !IsDiving;
 
-    // Animator params keep their original names (LightAttack/HeavyAttack) for Attack/Special.
-    private static readonly int AttackHash = Animator.StringToHash("LightAttack");
-    private static readonly int SpecialHash = Animator.StringToHash("HeavyAttack");
-    private static readonly int UltimateHash = Animator.StringToHash("Ultimate");
-    private static readonly int AttackAnimSpeedHash = Animator.StringToHash("AttackAnimSpeed");
-    private static readonly int SpecialAnimSpeedHash = Animator.StringToHash("SpecialAnimSpeed");
-    private static readonly int UltimateAnimSpeedHash = Animator.StringToHash("UltimateAnimSpeed");
-
-    private void AwakeActions()
+    private bool CanAutofire
     {
-        RefreshActiveKit();
-        OnClassOrColorChanged += (_, _) => RefreshActiveKit();
-    }
-
-    public ClassKit ActiveKit => activeKit;
-
-    private void RefreshActiveKit()
-    {
-        ClassKit kit = CharacterCatalog.Instance != null
-            ? CharacterCatalog.Instance.GetKit(ClassIndex)
-            : null;
-        activeKit = kit != null ? kit : defaultKit;
-    }
-
-    // Held down: keeps firing on its own once each cooldown ends, instead of requiring repeated clicks.
-    public void Attack(InputAction.CallbackContext ctx)
-    {
-        if (!this.IsLocallyControlled())
-            return;
-
-        if (ctx.canceled)
-            isAttackHeld = false;
-        else if (ctx.performed)
-            isAttackHeld = true;
-    }
-
-    private void UpdateActions()
-    {
-        if (isAttackHeld && this.IsLocallyControlled() && CanFight && Time.time >= attackReadyTime)
-            FireAttack();
-    }
-
-    private void FireAttack()
-    {
-        float cooldown = activeKit.AttackCooldown * AttackCooldownMultiplier;
-        animator.SetFloat(AttackAnimSpeedHash, activeKit.AttackAnimSpeed * AttackSpeedMultiplier);
-        animator.SetTrigger(AttackHash);
-        attackReadyTime = Time.time + cooldown;
-        moveLockEndTime = Time.time + activeKit.AttackMoveLockDuration;
-        moveLockSpeedMultiplier = ApplyAttackMobilityBonus(activeKit.AttackMoveSpeedMultiplier);
-        OnAbilityUsed?.Invoke(AbilityType.Attack, cooldown);
-        SpawnAbilityFx(AbilityType.Attack);
-    }
-
-    public void Special(InputAction.CallbackContext ctx)
-    {
-        if (!this.IsLocallyControlled() || !ctx.performed || !CanFight || Time.time < specialReadyTime)
-            return;
-        if (!TrySpendMana(activeKit.SpecialManaCost))
-            return;
-
-        float cooldown = activeKit.SpecialCooldown * SpecialCooldownMultiplier;
-        animator.SetFloat(SpecialAnimSpeedHash, activeKit.SpecialAnimSpeed);
-        animator.SetTrigger(SpecialHash);
-        specialReadyTime = Time.time + cooldown;
-        moveLockEndTime = Time.time + activeKit.SpecialMoveLockDuration;
-        moveLockSpeedMultiplier = ApplyAttackMobilityBonus(activeKit.SpecialMoveSpeedMultiplier);
-        OnAbilityUsed?.Invoke(AbilityType.Special, cooldown);
-        SpawnAbilityFx(AbilityType.Special);
-    }
-
-    public void Ultimate(InputAction.CallbackContext ctx)
-    {
-        if (activeKit != null && activeKit.HasShield)
+        get
         {
-            UltimateShield(ctx);
-            return;
+            if (!isAttackHeld || !this.IsLocallyControlled() || !CanFight || IsCharging)
+                return false;
+            return Time.time >= attackReadyTime && Ability(AbilityType.Attack) != null;
         }
-
-        if (!this.IsLocallyControlled() || !ctx.performed || !CanFight || Time.time < ultimateReadyTime)
-            return;
-        if (!TrySpendMana(activeKit.UltimateManaCost))
-            return;
-
-        animator.SetFloat(UltimateAnimSpeedHash, activeKit.UltimateAnimSpeed);
-        animator.SetTrigger(UltimateHash);
-        ultimateReadyTime = Time.time + activeKit.UltimateCooldown;
-        moveLockEndTime = Time.time + activeKit.UltimateMoveLockDuration;
-        moveLockSpeedMultiplier = ApplyAttackMobilityBonus(activeKit.UltimateMoveSpeedMultiplier);
-        OnAbilityUsed?.Invoke(AbilityType.Ultimate, activeKit.UltimateCooldown);
-        SpawnAbilityFx(AbilityType.Ultimate);
     }
 
     // Offset of this player's aim indicator ring from its feet, read once since the ring only rotates.
@@ -132,79 +64,106 @@ public partial class Player
         get
         {
             if (!aimIndicatorCenter.HasValue)
-            {
-                MouseDirectionIndicator indicator = GetComponentInChildren<MouseDirectionIndicator>(true);
-                aimIndicatorCenter = indicator != null ? (Vector2)(indicator.transform.position - transform.position) : Vector2.zero;
-            }
+                aimIndicatorCenter = FindAimIndicatorCenter();
             return aimIndicatorCenter.Value;
         }
     }
 
-    // Where this player's FX for an action spawns, relative to its feet (see ClassKit.FxOffset).
-    public Vector2 FxOffset(AbilityType ability, Vector2 aim) => activeKit != null ? activeKit.FxOffset(ability, aim, AimIndicatorCenter) : Vector2.zero;
-
-    private GameObject GetFxPrefab(AbilityType ability) => ability switch
+    private Vector2 FindAimIndicatorCenter()
     {
-        AbilityType.Special => activeKit.SpecialFxPrefab,
-        AbilityType.Ultimate => activeKit.UltimateFxPrefab,
-        _ => activeKit.AttackFxPrefab,
-    };
+        MouseDirectionIndicator indicator = GetComponentInChildren<MouseDirectionIndicator>(true);
 
-    private float GetSize(AbilityType ability) => ability switch
-    {
-        AbilityType.Special => activeKit.SpecialSize,
-        AbilityType.Ultimate => activeKit.UltimateSize,
-        _ => activeKit.AttackSize,
-    };
+        if (indicator == null)
+            return Vector2.zero;
+        return indicator.transform.position - transform.position;
+    }
 
-    private bool GetIgnoreAimRotation(AbilityType ability) => ability switch
+    private float ShieldMoveSpeedMultiplier()
     {
-        AbilityType.Special => activeKit.SpecialIgnoreAimRotation,
-        AbilityType.Ultimate => activeKit.UltimateIgnoreAimRotation,
-        _ => activeKit.AttackIgnoreAimRotation,
-    };
+        if (ShieldKit == null)
+            return 1f;
+        return ApplyAttackMobilityBonus(ShieldKit.MoveSpeedMultiplier);
+    }
 
-    private void SpawnAbilityFx(AbilityType ability)
+    private void RefreshActiveKit()
     {
-        if (GetFxPrefab(ability) == null)
+        ClassKit kit = null;
+
+        if (CharacterCatalog.Instance != null)
+            kit = CharacterCatalog.Instance.GetKit(ClassIndex);
+        if (kit != null)
+            activeKit = kit;
+        else
+            activeKit = defaultKit;
+    }
+
+    private void HandleKitClassChanged(int classIndex, int colorIndex)
+    {
+        RefreshActiveKit();
+    }
+
+    private void AwakeActions()
+    {
+        RefreshActiveKit();
+        OnClassOrColorChanged += HandleKitClassChanged;
+        isDiving.OnValueChanged += HandleDivingChanged;
+    }
+
+    private void StartMoveLock(AbilityKit kit)
+    {
+        moveLockEndTime = Time.time + kit.MoveLockDuration;
+        moveLockSpeedMultiplier = ApplyAttackMobilityBonus(kit.MoveSpeedMultiplier);
+    }
+
+    private void PlayAbilityAnimation(int triggerHash, int speedHash, float speed)
+    {
+        animator.SetFloat(speedHash, speed);
+        animator.SetTrigger(triggerHash);
+    }
+
+    private void FireAttack()
+    {
+        AbilityKit kit = Ability(AbilityType.Attack);
+        float cooldown = kit.Cooldown * AttackCooldownMultiplier;
+
+        PlayAbilityAnimation(AttackHash, AttackAnimSpeedHash, kit.AnimSpeed * AttackSpeedMultiplier);
+        attackReadyTime = Time.time + cooldown;
+        StartMoveLock(kit);
+        OnAbilityUsed?.Invoke(AbilityType.Attack, cooldown);
+        SpawnAbilityFx(AbilityType.Attack, AimedDistance(AbilityType.Attack));
+    }
+
+    private void UpdateActions()
+    {
+        if (CanAutofire)
+            FireAttack();
+        UpdateAim();
+    }
+
+    // This player's action in a slot, null when its class has none there.
+    public AbilityKit Ability(AbilityType ability)
+    {
+        if (activeKit == null)
+            return null;
+        return activeKit.Ability(ability);
+    }
+
+    // Held down: keeps firing on its own once each cooldown ends, instead of requiring repeated clicks; hold kits also preview each shot.
+    public void Attack(InputAction.CallbackContext ctx)
+    {
+        if (!this.IsLocallyControlled())
             return;
-
-        float angle = AimAngleDegrees;
-        SpawnLocalFx(angle, hasHitbox: true, ability);
-
-        if (NetworkObject.IsSpawned)
-            SpawnAbilityFxServerRpc(angle, ability);
+        if (ctx.canceled)
+        {
+            isAttackHeld = false;
+            ReleaseAim(AbilityType.Attack);
+        }
+        else if (ctx.performed)
+        {
+            isAttackHeld = true;
+            if (IsHoldAim(AbilityType.Attack))
+                BeginAim(AbilityType.Attack);
+        }
     }
 
-    [ServerRpc]
-    private void SpawnAbilityFxServerRpc(float angle, AbilityType ability)
-    {
-        SpawnAbilityFxClientRpc(angle, OwnerClientId, ability);
-    }
-
-    // Mirrors the FX on the other clients only, the attacker already spawned its own (with the hitbox) instantly.
-    [ClientRpc]
-    private void SpawnAbilityFxClientRpc(float angle, ulong attackerClientId, AbilityType ability)
-    {
-        if (NetworkManager.Singleton.LocalClientId == attackerClientId)
-            return;
-
-        SpawnLocalFx(angle, hasHitbox: false, ability);
-    }
-
-    // Position is computed locally from the attacker's current transform, not sent over RPC - round-trip latency would otherwise bake a stale offset into the spawn point.
-    private void SpawnLocalFx(float angle, bool hasHitbox, AbilityType ability)
-    {
-        GameObject prefab = GetFxPrefab(ability);
-        if (prefab == null)
-            return;
-
-        Vector2 dir = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
-        Vector3 spawnPos = transform.position + (Vector3)FxOffset(ability, dir);
-        Quaternion rotation = GetIgnoreAimRotation(ability) ? Quaternion.identity : Quaternion.Euler(0f, 0f, angle);
-
-        GameObject fx = Instantiate(prefab, spawnPos, rotation);
-        fx.transform.localScale *= GetSize(ability) * SizeBonusMultiplier;
-        fx.GetComponent<IAttackFX>()?.Init(gameObject, hasHitbox, activeKit, ability, DamageMultiplier);
-    }
 }

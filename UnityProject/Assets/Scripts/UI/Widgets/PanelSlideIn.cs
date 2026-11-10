@@ -28,6 +28,64 @@ public class PanelSlideIn : MonoBehaviour
 
     private float Total => Mathf.Max(duration, itemFade + itemStagger * Mathf.Max(items.Length - 1, 0));
 
+    private static float EaseOut(float x)
+    {
+        return 1f - Mathf.Pow(1f - Mathf.Clamp01(x), 3f);
+    }
+
+    private void CacheRestPositions()
+    {
+        if (hasRestPosition)
+            return;
+        foreach (Slide slide in slides)
+            slide.rest = slide.target.anchoredPosition;
+        hasRestPosition = true;
+    }
+
+    private void Apply()
+    {
+        float eased = EaseOut(time / duration);
+
+        if (backdrop != null)
+            backdrop.alpha = eased;
+        foreach (Slide slide in slides)
+            slide.target.anchoredPosition = slide.rest + slide.from.normalized * slideDistance * (1f - eased);
+        for (int i = 0; i < items.Length; i++)
+        {
+            if (items[i] != null)
+                items[i].alpha = EaseOut((time - i * itemStagger) / itemFade);
+        }
+    }
+
+    // Input is blocked while closing.
+    private void SetBackdropInput(bool enabled)
+    {
+        if (backdrop == null)
+            return;
+        backdrop.interactable = enabled;
+        backdrop.blocksRaycasts = enabled;
+    }
+
+    // Unscaled time, since the pause menu freezes timeScale.
+    private IEnumerator Play(float direction)
+    {
+        bool opening = direction > 0f;
+        float target = 0f;
+
+        closing = !opening;
+        SetBackdropInput(opening);
+        if (opening)
+            target = Total;
+        while (time != target)
+        {
+            time = Mathf.MoveTowards(time, target, Time.unscaledDeltaTime);
+            Apply();
+            yield return null;
+        }
+        if (!opening)
+            gameObject.SetActive(false);
+    }
+
     // Also cancels a running Hide, playing back in from wherever it was.
     public void Show()
     {
@@ -55,12 +113,7 @@ public class PanelSlideIn : MonoBehaviour
     // Applies the hidden state immediately so the first rendered frame is not the finished menu.
     private void OnEnable()
     {
-        if (!hasRestPosition)
-        {
-            foreach (Slide slide in slides)
-                slide.rest = slide.target.anchoredPosition;
-            hasRestPosition = true;
-        }
+        CacheRestPositions();
         time = 0f;
         Apply();
         StartCoroutine(Play(1f));
@@ -71,48 +124,5 @@ public class PanelSlideIn : MonoBehaviour
         closing = false;
         time = Total;
         Apply();
-    }
-
-    // Unscaled time, since the pause menu freezes timeScale; input is blocked while closing.
-    private IEnumerator Play(float direction)
-    {
-        bool opening = direction > 0f;
-        closing = !opening;
-        if (backdrop != null)
-        {
-            backdrop.interactable = opening;
-            backdrop.blocksRaycasts = opening;
-        }
-
-        float target = opening ? Total : 0f;
-        while (time != target)
-        {
-            time = Mathf.MoveTowards(time, target, Time.unscaledDeltaTime);
-            Apply();
-            yield return null;
-        }
-
-        if (!opening)
-            gameObject.SetActive(false);
-    }
-
-    private void Apply()
-    {
-        float eased = EaseOut(time / duration);
-        if (backdrop != null)
-            backdrop.alpha = eased;
-        foreach (Slide slide in slides)
-            slide.target.anchoredPosition = slide.rest + slide.from.normalized * slideDistance * (1f - eased);
-
-        for (int i = 0; i < items.Length; i++)
-        {
-            if (items[i] != null)
-                items[i].alpha = EaseOut((time - i * itemStagger) / itemFade);
-        }
-    }
-
-    private static float EaseOut(float x)
-    {
-        return 1f - Mathf.Pow(1f - Mathf.Clamp01(x), 3f);
     }
 }

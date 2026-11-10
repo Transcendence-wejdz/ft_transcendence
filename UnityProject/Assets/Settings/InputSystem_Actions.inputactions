@@ -256,7 +256,7 @@
                 {
                     "name": "",
                     "id": "de404618-54b8-4a50-8d9a-17ac53f432ee",
-                    "path": "<Mouse>/middleButton",
+                    "path": "<Mouse>/rightButton",
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
@@ -289,7 +289,7 @@
                 {
                     "name": "",
                     "id": "a2634883-18a1-472e-96d6-8bf08b313877",
-                    "path": "<Mouse>/rightButton",
+                    "path": "<Mouse>/middleButton",
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
@@ -300,7 +300,7 @@
                 {
                     "name": "",
                     "id": "18ef0d13-1b39-4547-9894-d94cf0fb96c8",
-                    "path": "<Keyboard>/backslash",
+                    "path": "<Keyboard>/r",
                     "interactions": "",
                     "processors": "",
                     "groups": "Keyboard&Mouse",
@@ -356,6 +356,17 @@
                     "name": "",
                     "id": "f02c751f-f209-40a7-b597-a1631bed82cc",
                     "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Pause",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "82ae998b-6212-42c4-a2aa-0802a6747fe6",
+                    "path": "<Keyboard>/escape",
                     "interactions": "",
                     "processors": "",
                     "groups": "Keyboard&Mouse",

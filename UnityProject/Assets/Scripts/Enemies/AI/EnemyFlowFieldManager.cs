@@ -1,21 +1,28 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Server hub: living players and one flow field per chased player.
-public class EnemyFlowFieldManager : MonoBehaviour
+// Server hub: living players, one flow field per chased player, and the ring places of Encircle enemies.
+public partial class EnemyFlowFieldManager : MonoBehaviour
 {
     private const float PlayerRefreshInterval = 0.25f;
     private const float RebuildInterval = 0.5f;
     private const float ForcedRebuildInterval = 2f;
     private const float UnusedFieldLifetime = 2f;
+    private const float SlotAssignInterval = 0.3f;
 
     private static EnemyFlowFieldManager instance;
 
     private readonly List<Player> livingPlayers = new List<Player>();
-    private readonly List<Player> scratchPlayers = new List<Player>();
-    private readonly Dictionary<Player, EnemyFlowField> fields = new Dictionary<Player, EnemyFlowField>();
-    private readonly List<Player> staleKeys = new List<Player>();
+    private readonly List<Player> currentlyLiving = new List<Player>();
+    private readonly Dictionary<(Player player, bool large), EnemyFlowField> fields = new Dictionary<(Player player, bool large), EnemyFlowField>();
+    private readonly List<(Player player, bool large)> keysToRemove = new List<(Player player, bool large)>();
+    private readonly HashSet<Enemy> encirclers = new HashSet<Enemy>();
+    private readonly Dictionary<Player, List<Enemy>> ringsByTarget = new Dictionary<Player, List<Enemy>>();
+    private readonly List<Enemy> ringSortedByAngle = new List<Enemy>();
+    private readonly Dictionary<Player, float> ringBaseAngles = new Dictionary<Player, float>();
+    private readonly Dictionary<Player, int> ringSizes = new Dictionary<Player, int>();
     private float nextPlayerRefreshTime;
+    private float nextSlotAssignTime;
 
     public int PlayersVersion { get; private set; }
     public IReadOnlyList<Player> LivingPlayers => livingPlayers;
@@ -51,18 +58,24 @@ public class EnemyFlowFieldManager : MonoBehaviour
     void FixedUpdate()
     {
         if (Time.time >= nextPlayerRefreshTime)
-            RefreshPlayers();
+            RefreshLivingPlayers();
 
-        UpdateFields();
+        RemoveUnusedFieldsAndRebuildOne();
+        if (Time.time >= nextSlotAssignTime)
+            AssignRingSlots();
     }
 
     public Player FindNearestLivingPlayer(Vector2 position)
     {
         Player nearest = null;
         float nearestDistSq = float.MaxValue;
+        float distSq;
+
         foreach (Player player in livingPlayers)
         {
-            float distSq = ((Vector2)player.transform.position - position).sqrMagnitude;
+            if (player.IsDiving)
+                continue;
+            distSq = ((Vector2)player.transform.position - position).sqrMagnitude;
             if (distSq < nearestDistSq)
             {
                 nearestDistSq = distSq;
@@ -73,41 +86,41 @@ public class EnemyFlowFieldManager : MonoBehaviour
     }
 
     // Samples the target's field; false if not built yet or out of range.
-    public bool TryGetDirection(Player target, Vector2 position, out Vector2 direction)
+    public bool TryGetPathDirection(Player target, Vector2 position, float bodyRadius, out Vector2 direction)
     {
-        direction = Vector2.zero;
-        if (!fields.TryGetValue(target, out EnemyFlowField field))
-        {
-            field = new EnemyFlowField();
-            fields.Add(target, field);
-        }
+        bool large = EnemyFlowField.IsLargeBody(bodyRadius);
+        EnemyFlowField field;
 
+        direction = Vector2.zero;
+        if (!fields.TryGetValue((target, large), out field))
+        {
+            field = new EnemyFlowField(large);
+            fields.Add((target, large), field);
+        }
         field.LastRequestedAt = Time.time;
-        return field.IsBuilt && field.TryGetDirection(position, out direction);
+        return field.IsBuilt && field.TryGetPathDirection(position, out direction);
     }
 
     private void HandlePlayerDied(Player dead)
     {
-        RefreshPlayers();
+        RefreshLivingPlayers();
     }
 
     // Bumps PlayersVersion when the living set changes; public so spawn placement can force a refresh early.
-    public void RefreshPlayers()
+    public void RefreshLivingPlayers()
     {
         nextPlayerRefreshTime = Time.time + PlayerRefreshInterval;
-        scratchPlayers.Clear();
-
+        currentlyLiving.Clear();
         foreach (Player player in Player.ActivePlayers)
         {
             if (!player.IsDead)
-                scratchPlayers.Add(player);
+                currentlyLiving.Add(player);
         }
 
-        if (SameContents(scratchPlayers, livingPlayers))
+        if (SameContents(currentlyLiving, livingPlayers))
             return;
-
         livingPlayers.Clear();
-        livingPlayers.AddRange(scratchPlayers);
+        livingPlayers.AddRange(currentlyLiving);
         PlayersVersion++;
     }
 
@@ -115,7 +128,6 @@ public class EnemyFlowFieldManager : MonoBehaviour
     {
         if (a.Count != b.Count)
             return false;
-
         for (int i = 0; i < a.Count; i++)
         {
             if (a[i] != b[i])
@@ -124,39 +136,53 @@ public class EnemyFlowFieldManager : MonoBehaviour
         return true;
     }
 
-    // Drops stale fields, then rebuilds the most out-of-date within the budget.
-    private void UpdateFields()
+    private bool IsFieldUnused(Player player, EnemyFlowField field, float now)
+    {
+        if (player == null || player.IsDead)
+            return true;
+        return now - field.LastRequestedAt > UnusedFieldLifetime;
+    }
+
+    // True when never built, when the player moved to another cell, or anyway past the forced interval.
+    private bool NeedsRebuild(Player player, EnemyFlowField field, float age)
+    {
+        Vector2Int playerCell;
+
+        if (!field.IsBuilt || age >= ForcedRebuildInterval)
+            return true;
+        if (age < RebuildInterval)
+            return false;
+        playerCell = EnemyFlowField.WorldToCell((Vector2)player.transform.position + BodyOffset);
+        return playerCell != field.GoalCell;
+    }
+
+    // Drops fields no enemy reads anymore, then rebuilds at most one per tick, the most out of date.
+    private void RemoveUnusedFieldsAndRebuildOne()
     {
         float now = Time.time;
-        staleKeys.Clear();
-        Player mostDue = null;
-        float mostDueAge = 0f;
+        (Player player, bool large) fieldToRebuild = (null, false);
+        float fieldToRebuildAge = 0f;
+        float age;
 
-        foreach (KeyValuePair<Player, EnemyFlowField> pair in fields)
+        keysToRemove.Clear();
+        foreach (KeyValuePair<(Player player, bool large), EnemyFlowField> pair in fields)
         {
-            Player player = pair.Key;
-            EnemyFlowField field = pair.Value;
-            if (player == null || player.IsDead || now - field.LastRequestedAt > UnusedFieldLifetime)
+            if (IsFieldUnused(pair.Key.player, pair.Value, now))
             {
-                staleKeys.Add(player);
+                keysToRemove.Add(pair.Key);
                 continue;
             }
-
-            float age = now - field.BuiltAt;
-            bool due = !field.IsBuilt
-                || (age >= RebuildInterval && EnemyFlowField.ToCell((Vector2)player.transform.position + BodyOffset) != field.GoalCell)
-                || age >= ForcedRebuildInterval;
-            if (due && (mostDue == null || age > mostDueAge))
-            {
-                mostDue = player;
-                mostDueAge = field.IsBuilt ? age : float.MaxValue;
-            }
+            age = now - pair.Value.BuiltAt;
+            if (!NeedsRebuild(pair.Key.player, pair.Value, age) || (fieldToRebuild.player != null && age <= fieldToRebuildAge))
+                continue;
+            fieldToRebuild = pair.Key;
+            fieldToRebuildAge = float.MaxValue;
+            if (pair.Value.IsBuilt)
+                fieldToRebuildAge = age;
         }
-
-        foreach (Player key in staleKeys)
+        foreach ((Player player, bool large) key in keysToRemove)
             fields.Remove(key);
-
-        if (mostDue != null)
-            fields[mostDue].Rebuild((Vector2)mostDue.transform.position + BodyOffset);
+        if (fieldToRebuild.player != null)
+            fields[fieldToRebuild].Rebuild((Vector2)fieldToRebuild.player.transform.position + BodyOffset);
     }
 }

@@ -8,6 +8,9 @@ public partial class BossKitEditor
     private const float ChainWindupFraction = 0.6f;
     private const float ChargeOvershoot = 3f;
     private const float MinChargeLength = 4f;
+    private const float MinTempo = 0.01f;
+    private const float MinChargeSpeed = 0.01f;
+    private const float AimSqrEpsilon = 0.0001f;
 
     private enum Combo { Opening, Melee, Ranged }
     private static readonly string[] ComboLabels = { "Opening (summon)", "Melee (charge + slam)", "Ranged (chain + summon)" };
@@ -28,105 +31,152 @@ public partial class BossKitEditor
         public float End => Start + Windup + Active + Recovery;
     }
 
-    private float Tempo => enraged ? Mathf.Max(Kit.EnrageTempo, 0.01f) : 1f;
+    private float Tempo
+    {
+        get
+        {
+            if (enraged)
+                return Mathf.Max(Kit.EnrageTempo, MinTempo);
+            return 1f;
+        }
+    }
 
     // Where the simulated target stands: inside slam range for melee, past the charge range otherwise.
-    private Vector2 TargetFor(Preview preview) => preview == Preview.Slam || (preview == Preview.Combo && combo == Combo.Melee)
-        ? Vector2.right * Mathf.Max(0.5f, Kit.SlamMaxRange * 0.6f)
-        : Vector2.right * Mathf.Max(Kit.ChargeMinRange + 2f, 3f);
+    private Vector2 TargetFor(Preview preview)
+    {
+        if (preview == Preview.Slam || (preview == Preview.Combo && combo == Combo.Melee))
+            return Vector2.right * Mathf.Max(0.5f, Kit.SlamMaxRange * 0.6f);
+        return Vector2.right * Mathf.Max(Kit.ChargeMinRange + 2f, 3f);
+    }
+
+    private void AddComboPatterns(List<BossPattern> patterns)
+    {
+        if (combo == Combo.Opening)
+        {
+            patterns.Add(BossPattern.Summon);
+            return;
+        }
+        if (combo == Combo.Melee)
+        {
+            patterns.Add(BossPattern.Charge);
+            patterns.Add(BossPattern.Slam);
+            return;
+        }
+        for (int i = 0; i < Mathf.Max(1, Kit.ChargeChainCount); i++)
+            patterns.Add(BossPattern.Charge);
+        patterns.Add(BossPattern.Summon);
+    }
 
     private List<BossPattern> Patterns(Preview preview)
     {
-        var patterns = new List<BossPattern>();
-        switch (preview)
-        {
-            case Preview.Charge:
-                patterns.Add(BossPattern.Charge);
-                break;
-            case Preview.Slam:
-                patterns.Add(BossPattern.Slam);
-                break;
-            case Preview.Summon:
-                patterns.Add(BossPattern.Summon);
-                break;
-            default:
-                if (combo == Combo.Opening)
-                {
-                    patterns.Add(BossPattern.Summon);
-                }
-                else if (combo == Combo.Melee)
-                {
-                    patterns.Add(BossPattern.Charge);
-                    patterns.Add(BossPattern.Slam);
-                }
-                else
-                {
-                    for (int i = 0; i < Mathf.Max(1, Kit.ChargeChainCount); i++)
-                        patterns.Add(BossPattern.Charge);
-                    patterns.Add(BossPattern.Summon);
-                }
-                break;
-        }
+        List<BossPattern> patterns = new List<BossPattern>();
+
+        if (preview == Preview.Charge)
+            patterns.Add(BossPattern.Charge);
+        else if (preview == Preview.Slam)
+            patterns.Add(BossPattern.Slam);
+        else if (preview == Preview.Summon)
+            patterns.Add(BossPattern.Summon);
+        else
+            AddComboPatterns(patterns);
         return patterns;
+    }
+
+    private float WindupOf(BossPattern pattern)
+    {
+        if (pattern == BossPattern.Charge)
+            return Kit.ChargeWindup;
+        if (pattern == BossPattern.Slam)
+            return Kit.SlamWindup;
+        return Kit.SummonWindup;
+    }
+
+    private static Vector2 AimDirection(Vector2 aim)
+    {
+        if (aim.sqrMagnitude > AimSqrEpsilon)
+            return aim.normalized;
+        return Vector2.right;
+    }
+
+    // Charges travel past the target (clamped to the kit's distance); other patterns stay put.
+    private void SetActive(ref Step step, float aimDistance)
+    {
+        if (step.Pattern == BossPattern.Charge)
+        {
+            step.Length = Mathf.Clamp(aimDistance + ChargeOvershoot, MinChargeLength, Mathf.Max(MinChargeLength, Kit.ChargeDistance));
+            step.Active = step.Length / Mathf.Max(MinChargeSpeed, Kit.ChargeSpeed);
+        }
+        else if (step.Pattern == BossPattern.Slam)
+            step.Active = Kit.SlamActiveDuration / Tempo;
+        else
+            step.Active = Kit.SummonActiveDuration / Tempo;
     }
 
     // Same sequencing as Boss.Combo: every step re-aims at the target, chained windups are shortened, only the last step recovers, all scaled by the tempo.
     private List<Step> BuildSteps(Preview preview)
     {
-        var steps = new List<Step>();
+        List<Step> steps = new List<Step>();
         List<BossPattern> patterns = Patterns(preview);
         Vector2 target = TargetFor(preview);
         Vector2 position = Vector2.zero;
         float time = 0f;
+        float windup;
+        Vector2 aim;
+        Step step;
+
         for (int i = 0; i < patterns.Count; i++)
         {
-            var step = new Step { Pattern = patterns[i], Start = time, From = position };
-            Vector2 aim = target - position;
-            step.Direction = aim.sqrMagnitude > 0.0001f ? aim.normalized : Vector2.right;
-            float windup = patterns[i] == BossPattern.Charge ? Kit.ChargeWindup : patterns[i] == BossPattern.Slam ? Kit.SlamWindup : Kit.SummonWindup;
+            step = new Step { Pattern = patterns[i], Start = time, From = position };
+            aim = target - position;
+            step.Direction = AimDirection(aim);
+            windup = WindupOf(patterns[i]);
             if (i > 0)
                 windup *= ChainWindupFraction;
             step.Windup = windup / Tempo;
-
-            if (patterns[i] == BossPattern.Charge)
-            {
-                step.Length = Mathf.Clamp(aim.magnitude + ChargeOvershoot, MinChargeLength, Mathf.Max(MinChargeLength, Kit.ChargeDistance));
-                step.Active = step.Length / Mathf.Max(0.01f, Kit.ChargeSpeed);
-                position += step.Direction * step.Length;
-            }
-            else
-            {
-                step.Active = (patterns[i] == BossPattern.Slam ? Kit.SlamActiveDuration : Kit.SummonActiveDuration) / Tempo;
-            }
-            step.Recovery = i == patterns.Count - 1 ? Kit.RecoveryDuration / Tempo : 0f;
+            SetActive(ref step, aim.magnitude);
+            position += step.Direction * step.Length;
+            if (i == patterns.Count - 1)
+                step.Recovery = Kit.RecoveryDuration / Tempo;
             time = step.End;
             steps.Add(step);
         }
         return steps;
     }
 
-    private static float TimelineLength(List<Step> steps) => (steps.Count > 0 ? steps[steps.Count - 1].End : 0f) + TailSeconds;
+    private static float TimelineLength(List<Step> steps)
+    {
+        if (steps.Count == 0)
+            return TailSeconds;
+        return steps[steps.Count - 1].End + TailSeconds;
+    }
+
+    private static float ChargeProgress(Step step, float time)
+    {
+        if (step.Active <= 0f)
+            return 1f;
+        return Mathf.Clamp01((time - step.Start - step.Windup) / step.Active);
+    }
 
     // Body center at time t: still between steps, sliding along the lane during charge actives.
     private static Vector2 BodyAt(List<Step> steps, float time)
     {
         Vector2 position = Vector2.zero;
+        float k;
+
         foreach (Step step in steps)
         {
-            float activeStart = step.Start + step.Windup;
-            if (step.Pattern == BossPattern.Charge)
+            if (step.Pattern != BossPattern.Charge)
             {
-                if (time <= activeStart)
+                if (time < step.End)
                     return step.From;
-                float k = step.Active > 0f ? Mathf.Clamp01((time - activeStart) / step.Active) : 1f;
-                position = step.From + step.Direction * step.Length * k;
-                if (k < 1f)
-                    return position;
+                continue;
             }
-            else if (time < step.End)
-            {
+            if (time <= step.Start + step.Windup)
                 return step.From;
-            }
+            k = ChargeProgress(step, time);
+            position = step.From + step.Direction * step.Length * k;
+            if (k < 1f)
+                return position;
         }
         return position;
     }
@@ -139,6 +189,8 @@ public partial class BossKitEditor
             if (time < step.End)
                 return step;
         }
-        return steps.Count > 0 ? steps[steps.Count - 1] : default;
+        if (steps.Count == 0)
+            return default;
+        return steps[steps.Count - 1];
     }
 }

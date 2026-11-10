@@ -17,25 +17,6 @@ public class ToastCard : MonoBehaviour
 
     public bool IsShown => content.activeSelf;
 
-    private void Awake()
-    {
-        restPosition = ((RectTransform)content.transform).anchoredPosition;
-        content.SetActive(false);
-    }
-
-    // Showing again while visible restarts the timer without replaying the slide-in from scratch.
-    public void Show()
-    {
-        content.SetActive(true);
-        Restart(ShowRoutine());
-    }
-
-    public void Hide()
-    {
-        if (content.activeSelf)
-            Restart(HideRoutine());
-    }
-
     private void Restart(IEnumerator next)
     {
         if (routine != null)
@@ -46,8 +27,10 @@ public class ToastCard : MonoBehaviour
     // Unscaled time throughout, since the pause menu may have frozen timeScale.
     private IEnumerator ShowRoutine()
     {
+        float shownAt;
+
         yield return Animate(contentGroup.alpha, 1f);
-        float shownAt = Time.unscaledTime;
+        shownAt = Time.unscaledTime;
         while (Time.unscaledTime - shownAt < autoHideSeconds)
         {
             timerFill.fillAmount = 1f - (Time.unscaledTime - shownAt) / autoHideSeconds;
@@ -64,25 +47,50 @@ public class ToastCard : MonoBehaviour
     }
 
     // Buttons only take clicks once fully shown.
+    // Slides up as it fades out, down as it fades in.
+    private void ApplyAlpha(RectTransform rect, float alpha)
+    {
+        contentGroup.alpha = alpha;
+        rect.anchoredPosition = restPosition + Vector2.up * slideDistance * (1f - alpha);
+    }
+
     private IEnumerator Animate(float from, float to)
     {
-        contentGroup.interactable = false;
-        contentGroup.blocksRaycasts = to > 0f;
         RectTransform rect = (RectTransform)content.transform;
         float t = 0f;
+        float eased;
+
+        contentGroup.interactable = false;
+        contentGroup.blocksRaycasts = to > 0f;
         while (t < animationDuration)
         {
             t += Time.unscaledDeltaTime;
-            float eased = 1f - Mathf.Pow(1f - Mathf.Clamp01(t / animationDuration), 3f);
-            float alpha = Mathf.Lerp(from, to, eased);
-            contentGroup.alpha = alpha;
-            rect.anchoredPosition = restPosition + Vector2.up * slideDistance * (1f - alpha);
+            eased = 1f - Mathf.Pow(1f - Mathf.Clamp01(t / animationDuration), 3f);
+            ApplyAlpha(rect, Mathf.Lerp(from, to, eased));
             yield return null;
         }
-        contentGroup.alpha = to;
-        rect.anchoredPosition = restPosition + Vector2.up * slideDistance * (1f - to);
+        ApplyAlpha(rect, to);
         contentGroup.interactable = to > 0f;
         if (to > 0f)
             timerFill.fillAmount = 1f;
+    }
+
+    // Showing again while visible restarts the timer without replaying the slide-in from scratch.
+    public void Show()
+    {
+        content.SetActive(true);
+        Restart(ShowRoutine());
+    }
+
+    public void Hide()
+    {
+        if (content.activeSelf)
+            Restart(HideRoutine());
+    }
+
+    private void Awake()
+    {
+        restPosition = ((RectTransform)content.transform).anchoredPosition;
+        content.SetActive(false);
     }
 }

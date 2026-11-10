@@ -1,0 +1,77 @@
+:root {
+	/* Dark surfaces */
+	--color-bg-page: #1d1b26;
+	--color-bg-bar: #16141e;
+	--color-bg-card: #2a2734;
+	--color-bg-raised: #34304a;
+	--color-bg-raised-hover: #403b5a;
+	--color-border-subtle: #3d3950;
+	--color-bg-card-shadow: #221f2b;
+
+	/* Parchment */
+	--color-parchment: #f3e6c6;
+	--color-parchment-text: #2a1a0c;
+	--color-parchment-text-muted: #5e4a33;
+	--color-input-bg: #fffaf0;
+	--color-input-placeholder: #7d6a50;
+	--color-parchment-shadow: #e2cf9f;
+
+	/* Text on dark */
+	--color-text: #f6efe0;
+	--color-text-secondary: #d9cfb8;
+	--color-text-muted: #b3a98f;
+
+	/* Gold accent */
+	--color-gold: #f2c14e;
+	--color-gold-shadow: #c98f22;
+	--color-gold-hover: #ffd36a;
+	--color-link-hover: #ffd978;
+
+	/* Status */
+	--color-danger: #ec5a61;
+	--color-danger-shadow: #b8383f;
+	--color-danger-hover: #f37a80;
+	--color-online: #7cd65a;
+	--color-ribbon: #8a4f2a;
+	--color-ribbon-text: #fbeed2;
+	--color-focus: #2f6fd6;
+	--color-danger-text: #7a1b21;
+
+	/* Team colors */
+	--color-team-black: #171923;
+	--color-team-blue: #3985f6;
+	--color-team-purple: #9667e8;
+	--color-team-red: #ec5a61;
+	--color-team-yellow: #e7bd48;
+
+	/* Shape */
+	--color-outline: #120f18;
+	--color-drop: #0b0a10;
+	--color-bg-raised-shadow: #24212f;
+	--border-width: 3px;
+	--radius: 6px;
+	--radius-card: 8px;
+	--radius-pill: 999px;
+	--shadow-drop: 0 4px 0 var(--color-drop);
+
+	/* Font sizes */
+	--text-md: 1rem;
+	--text-lg: 1.1875rem;
+	--text-sm: 0.875rem;
+
+	/* Spacing */
+	--space-sm: 0.625rem;
+	--space-md: 1rem;
+	--space-lg: 1.375rem;
+	--space-xs: 0.5rem;
+
+	/* Control heights */
+	--control-sm: 2.75rem;
+	--control-md: 3rem;
+
+	/* Fonts */
+	--font-title: "Pirata One", serif;
+	--font-ui: "Pixelify Sans", monospace;
+	--font-body: Inter, system-ui, sans-serif;
+}
+

@@ -3,93 +3,153 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // Settings panel: gameplay preference toggles and graphics options, synced from GameSettings whenever the panel opens.
-public class SettingsPanelUI : MonoBehaviour
+public partial class SettingsPanelUI : MonoBehaviour
 {
     [SerializeField] private Toggle enemyHealthBarsToggle;
     [SerializeField] private Toggle screenShakeToggle;
+    [SerializeField] private Toggle attackPreviewToggle;
+    [SerializeField] private Toggle specialPreviewToggle;
+    [SerializeField] private Toggle ultimatePreviewToggle;
     [SerializeField] private Toggle damageNumbersToggle;
+    [SerializeField] private Toggle projectileOutlineToggle;
     [SerializeField] private Toggle showFpsToggle;
     [SerializeField] private Toggle showPingToggle;
     [SerializeField] private Toggle[] qualityOptions;
+    [SerializeField] private Toggle[] cursorStyleOptions;
+    [SerializeField] private Toggle[] cursorColorOptions;
+    [SerializeField] private Image crosshairPreviewFill;
+    [SerializeField] private Image crosshairPreviewOutline;
+    [Tooltip("Preview size at 100% Cursor Size.")]
+    [SerializeField] private float crosshairPreviewSize = 32f;
+    [Tooltip("Largest preview size, so big Cursor Sizes do not spill far over the rows around it.")]
+    [SerializeField] private float crosshairPreviewMaxSize = 44f;
     [SerializeField] private Toggle hdrToggle;
+    [SerializeField] private Toggle[] fpsLimitOptions;
+    [SerializeField] private Toggle vsyncToggle;
+    [SerializeField] private Toggle fxGlowToggle;
+    [SerializeField] private Toggle bloomToggle;
+    [SerializeField] private Toggle aimAssistToggle;
+    [SerializeField] private Slider aimDeadzoneSlider;
+    [SerializeField] private TMP_Text aimDeadzoneLabel;
     [SerializeField] private Slider deadzoneSlider;
     [SerializeField] private TMP_Text deadzoneLabel;
     [SerializeField] private Slider cameraDistanceSlider;
     [SerializeField] private TMP_Text cameraDistanceLabel;
     [SerializeField] private Slider cursorSizeSlider;
     [SerializeField] private TMP_Text cursorSizeLabel;
+    [SerializeField] private Slider mouseSensitivitySlider;
+    [SerializeField] private TMP_Text mouseSensitivityLabel;
+    [SerializeField] private Slider aimSpeedSlider;
+    [SerializeField] private TMP_Text aimSpeedLabel;
 
-    private void Awake()
+    private static string PercentText(float value)
     {
-        enemyHealthBarsToggle.onValueChanged.AddListener(value => GameSettings.ShowEnemyHealthBars = value);
-        screenShakeToggle.onValueChanged.AddListener(value => GameSettings.ScreenShakeEnabled = value);
-        damageNumbersToggle.onValueChanged.AddListener(value => GameSettings.ShowDamageNumbers = value);
-        showFpsToggle.onValueChanged.AddListener(value => GameSettings.ShowFps = value);
-        showPingToggle.onValueChanged.AddListener(value => GameSettings.ShowPing = value);
-        hdrToggle.onValueChanged.AddListener(value => GameSettings.HdrEnabled = value);
-
-        for (int i = 0; i < qualityOptions.Length; i++)
-        {
-            int level = i;
-            qualityOptions[i].onValueChanged.AddListener(isOn => { if (isOn) GameSettings.GraphicsQuality = level; });
-        }
-
-        deadzoneSlider.minValue = Mathf.Round(GameSettings.StickDeadzoneMin / GameSettings.StickDeadzoneStep);
-        deadzoneSlider.maxValue = Mathf.Round(GameSettings.StickDeadzoneMax / GameSettings.StickDeadzoneStep);
-        deadzoneSlider.wholeNumbers = true;
-        deadzoneSlider.onValueChanged.AddListener(OnDeadzoneChanged);
-
-        BindPercentSlider(cameraDistanceSlider, cameraDistanceLabel, GameSettings.CameraDistanceMin, GameSettings.CameraDistanceMax, GameSettings.CameraDistanceStep, value => GameSettings.CameraDistance = value);
-        BindPercentSlider(cursorSizeSlider, cursorSizeLabel, GameSettings.CursorSizeMin, GameSettings.CursorSizeMax, GameSettings.CursorSizeStep, value => GameSettings.CursorSize = value);
+        return Mathf.RoundToInt(value * 100f) + "%";
     }
 
-    private void OnEnable()
+    private static void BindToggle(Toggle toggle, System.Action<bool> apply)
     {
-        enemyHealthBarsToggle.SetIsOnWithoutNotify(GameSettings.ShowEnemyHealthBars);
-        screenShakeToggle.SetIsOnWithoutNotify(GameSettings.ScreenShakeEnabled);
-        damageNumbersToggle.SetIsOnWithoutNotify(GameSettings.ShowDamageNumbers);
-        showFpsToggle.SetIsOnWithoutNotify(GameSettings.ShowFps);
-        showPingToggle.SetIsOnWithoutNotify(GameSettings.ShowPing);
-        hdrToggle.SetIsOnWithoutNotify(GameSettings.HdrEnabled);
-
-        for (int i = 0; i < qualityOptions.Length; i++)
-            qualityOptions[i].SetIsOnWithoutNotify(i == GameSettings.GraphicsQuality);
-
-        deadzoneSlider.SetValueWithoutNotify(Mathf.Round(GameSettings.StickDeadzone / GameSettings.StickDeadzoneStep));
-        RefreshDeadzone();
-
-        SyncPercentSlider(cameraDistanceSlider, cameraDistanceLabel, GameSettings.CameraDistance, GameSettings.CameraDistanceStep);
-        SyncPercentSlider(cursorSizeSlider, cursorSizeLabel, GameSettings.CursorSize, GameSettings.CursorSizeStep);
+        toggle.onValueChanged.AddListener(value => apply(value));
     }
 
-    // Whole-step slider showing its value as a percentage, like the deadzone one.
+    // Radio group: the option turned on writes its index.
+    private static void BindOption(Toggle option, int index, System.Action<int> apply)
+    {
+        option.onValueChanged.AddListener(isOn => ApplyIfOn(isOn, index, apply));
+    }
+
+    private static void ApplyIfOn(bool isOn, int index, System.Action<int> apply)
+    {
+        if (isOn)
+            apply(index);
+    }
+
+    private static void SyncOptions(Toggle[] options, int selected)
+    {
+        for (int i = 0; i < options.Length; i++)
+            options[i].SetIsOnWithoutNotify(i == selected);
+    }
+
+    // Style options show an "Icon" image of their crosshair instead of a name.
+    private static void SetStyleIcon(Toggle option, int style)
+    {
+        Transform icon = option.transform.Find("Icon");
+
+        if (icon != null)
+            icon.GetComponent<Image>().sprite = CursorManager.CrosshairSprite(style, false);
+    }
+
+    // Color options show a "Swatch" image instead of a name; its tint comes from the same palette as the crosshair.
+    private static void TintSwatch(Toggle option, int color)
+    {
+        Transform swatch = option.transform.Find("Swatch");
+
+        if (swatch == null || color >= GameSettings.CursorColorValues.Length)
+            return;
+        swatch.GetComponent<Image>().color = GameSettings.CursorColorValues[color];
+    }
+
+    private static void ApplySliderStep(float steps, float step, TMP_Text label, System.Action<float> apply)
+    {
+        apply(steps * step);
+        label.text = PercentText(steps * step);
+    }
+
+    // Whole-step slider showing its value as a percentage, so mouse drag and gamepad left/right land on the same values.
     private static void BindPercentSlider(Slider slider, TMP_Text label, float min, float max, float step, System.Action<float> apply)
     {
         slider.wholeNumbers = true;
         slider.minValue = Mathf.Round(min / step);
         slider.maxValue = Mathf.Round(max / step);
-        slider.onValueChanged.AddListener(steps =>
-        {
-            apply(steps * step);
-            label.text = Mathf.RoundToInt(steps * step * 100f) + "%";
-        });
+        slider.onValueChanged.AddListener(steps => ApplySliderStep(steps, step, label, apply));
     }
 
     private static void SyncPercentSlider(Slider slider, TMP_Text label, float value, float step)
     {
         slider.SetValueWithoutNotify(Mathf.Round(value / step));
-        label.text = Mathf.RoundToInt(value * 100f) + "%";
+        label.text = PercentText(value);
     }
 
-    // Slider works in whole steps so mouse drag and gamepad left/right land on the same values.
-    private void OnDeadzoneChanged(float steps)
+    private static void SetCrosshairImage(Image image, Sprite sprite, Color color, Vector2 size)
     {
-        GameSettings.StickDeadzone = steps * GameSettings.StickDeadzoneStep;
-        RefreshDeadzone();
+        image.sprite = sprite;
+        image.color = color;
+        image.rectTransform.sizeDelta = size;
     }
 
-    private void RefreshDeadzone()
+    // The crosshair as it shows in game: chosen style and color, outlined, scaled by Cursor Size.
+    private void RefreshCrosshairPreview()
     {
-        deadzoneLabel.text = Mathf.RoundToInt(GameSettings.StickDeadzone * 100f) + "%";
+        int style = GameSettings.CursorStyle;
+        Vector2 size = Vector2.one * Mathf.Min(crosshairPreviewSize * GameSettings.CursorSize, crosshairPreviewMaxSize);
+
+        if (crosshairPreviewFill == null || crosshairPreviewOutline == null)
+            return;
+        SetCrosshairImage(crosshairPreviewFill, CursorManager.CrosshairSprite(style, false), CursorManager.CrosshairColor(), size);
+        SetCrosshairImage(crosshairPreviewOutline, CursorManager.CrosshairSprite(style, true), CursorManager.CrosshairOutlineTint, size);
+    }
+
+    private void Awake()
+    {
+        BindToggles();
+        BindOptionGroups();
+        BindSliders();
+    }
+
+    private void OnEnable()
+    {
+        GameSettings.OnChanged += RefreshCrosshairPreview;
+        RefreshCrosshairPreview();
+        SyncToggles();
+        SyncOptions(qualityOptions, GameSettings.GraphicsQuality);
+        SyncOptions(fpsLimitOptions, GameSettings.FpsLimit);
+        SyncOptions(cursorStyleOptions, GameSettings.CursorStyle);
+        SyncOptions(cursorColorOptions, GameSettings.CursorColor);
+        SyncSliders();
+    }
+
+    private void OnDisable()
+    {
+        GameSettings.OnChanged -= RefreshCrosshairPreview;
     }
 }

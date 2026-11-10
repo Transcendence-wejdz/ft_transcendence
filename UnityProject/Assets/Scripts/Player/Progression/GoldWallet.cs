@@ -2,12 +2,15 @@ using System;
 using UnityEngine;
 
 // Lobby currency: on the website the account holds it and the server checks each run against its own clock; desktop builds and the Editor keep it in a local file.
-public static class GoldWallet
+public static partial class GoldWallet
 {
     public const int ScorePerGold = 1000;
+    public const int CheckpointEveryWaves = 5;
+    private const string RunTokenKey = "gold.runToken";
 
     public const int Offline = -1;
     public const int Refused = -2;
+    public const int Pending = -3;
 
     [Serializable]
     private class RunStart
@@ -28,6 +31,15 @@ public static class GoldWallet
         public bool victory;
     }
 
+    [Serializable]
+    private class RunCheckpoint
+    {
+        public string runToken;
+        public int wave;
+        public int kills;
+        public int score;
+    }
+
     private static string runToken;
     private static int serverBalance;
 
@@ -41,7 +53,48 @@ public static class GoldWallet
 
     public static bool CanEarn => !UsesServer || WebProfileBridge.HasProfile;
 
-    public static int Balance => UsesServer ? serverBalance : LocalProgressStore.Gold;
+    public static int Balance
+    {
+        get
+        {
+            if (UsesServer)
+                return serverBalance;
+            return LocalProgressStore.Gold;
+        }
+    }
+
+    private static void Credit(int gold)
+    {
+        if (gold <= 0)
+            return;
+        if (UsesServer)
+            serverBalance += gold;
+        else
+            LocalProgressStore.Gold += gold;
+        OnChanged?.Invoke(Balance);
+    }
+
+    private static RunReport BuildReport(RunResult result)
+    {
+        return new RunReport
+        {
+            runToken = runToken,
+            runId = result.runId,
+            score = result.score.Total,
+            wave = result.wave,
+            seconds = result.seconds,
+            kills = result.score.kills,
+            victory = result.victory
+        };
+    }
+
+    private static void ClaimLocal(RunResult result, Action<int> onDone)
+    {
+        int earned = GoldForScore(result.score.Total);
+
+        Credit(earned);
+        onDone?.Invoke(earned);
+    }
 
     public static int GoldForScore(int score)
     {
@@ -53,19 +106,33 @@ public static class GoldWallet
     {
         if (!UsesServer || !CanEarn)
             return;
-
         runToken = Guid.NewGuid().ToString();
-        WebBackend.Post("/api/game/run/start", JsonUtility.ToJson(new RunStart { runToken = runToken, mode = mode }));
+        PlayerPrefs.SetString(RunTokenKey, runToken);
+        PlayerPrefs.Save();
+        StartRunOnServer(JsonUtility.ToJson(new RunStart { runToken = runToken, mode = mode }));
     }
 
-    // onDone gets the gold credited, Offline on the website without an account, or Refused when the server rejects the run.
+    // A rejoining player picks the run back up, since a restart lost the token kept in memory.
+    public static void RestoreRun()
+    {
+        if (UsesServer && string.IsNullOrEmpty(runToken))
+            runToken = PlayerPrefs.GetString(RunTokenKey, string.Empty);
+    }
+
+    // Lets the server timestamp the run's progress; values are cumulative, so a lost one is covered by the next.
+    public static void ReportCheckpoint(int wave, ScoreBreakdown score)
+    {
+        if (!UsesServer || string.IsNullOrEmpty(runToken))
+            return;
+        WebBackend.Post("/api/game/run/checkpoint", JsonUtility.ToJson(new RunCheckpoint { runToken = runToken, wave = wave, kills = score.kills, score = score.Total }));
+    }
+
+    // onDone gets the gold credited, Offline without an account, Refused if the server rejects the run, or Pending if it can't be reached.
     public static void ClaimRunReward(RunResult result, Action<int> onDone)
     {
         if (!UsesServer)
         {
-            int localEarned = GoldForScore(result.score.Total);
-            Credit(localEarned);
-            onDone?.Invoke(localEarned);
+            ClaimLocal(result, onDone);
             return;
         }
         if (!CanEarn)
@@ -78,26 +145,7 @@ public static class GoldWallet
             onDone?.Invoke(Refused);
             return;
         }
-
-        RunReport report = new RunReport
-        {
-            runToken = runToken,
-            runId = result.runId,
-            score = result.score.Total,
-            wave = result.wave,
-            seconds = result.seconds,
-            kills = result.score.kills,
-            victory = result.victory
-        };
-        runToken = null;
-        int earned = GoldForScore(report.score);
-        WebBackend.Post("/api/game/reward", JsonUtility.ToJson(report), status =>
-        {
-            bool accepted = status >= 200 && status < 300;
-            if (accepted)
-                Credit(earned);
-            onDone?.Invoke(accepted ? earned : Refused);
-        });
+        ClaimOnServer(result, onDone);
     }
 
     // Called with the account's balance whenever the web page sends the profile; ignored outside the website.
@@ -105,9 +153,9 @@ public static class GoldWallet
     {
         if (!UsesServer)
             return;
-
         serverBalance = Mathf.Max(0, gold);
         OnChanged?.Invoke(serverBalance);
+        ResendPendingReward();
     }
 
     // Desktop/Editor only: takes the gold from the local save, or returns false when there isn't enough.
@@ -115,7 +163,6 @@ public static class GoldWallet
     {
         if (UsesServer || cost < 0 || LocalProgressStore.Gold < cost)
             return false;
-
         LocalProgressStore.Gold -= cost;
         OnChanged?.Invoke(Balance);
         return true;
@@ -126,20 +173,7 @@ public static class GoldWallet
     {
         if (!UsesServer)
             return;
-
         serverBalance = Mathf.Max(0, serverBalance - cost);
         OnChanged?.Invoke(serverBalance);
-    }
-
-    private static void Credit(int gold)
-    {
-        if (gold <= 0)
-            return;
-
-        if (UsesServer)
-            serverBalance += gold;
-        else
-            LocalProgressStore.Gold += gold;
-        OnChanged?.Invoke(Balance);
     }
 }

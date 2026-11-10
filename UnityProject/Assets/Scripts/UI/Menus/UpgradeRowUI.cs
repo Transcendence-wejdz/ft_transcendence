@@ -23,38 +23,58 @@ public class UpgradeRowUI : MonoBehaviour
     private Coroutine flash;
     private bool bound;
 
-    // The button stays interactable so gamepad navigation can reach it; an unaffordable one only looks disabled.
-    public void Bind(LevelUpBonusType upgrade)
+    // The level sits in its own field when the row has one, else after the name.
+    private void ShowNameAndLevel(int level)
     {
-        type = upgrade;
-        normalColor = buyButton.colors.normalColor;
-        imageColor = buyButton.targetGraphic.color;
-        textColor = buyText.color;
-        bound = true;
-        buyButton.onClick.AddListener(OnBuyClicked);
-        descriptionText.text = $"{LevelUpBonusCatalog.GetDescription(type)} per level";
-        Refresh();
+        string displayName = LevelUpBonusCatalog.GetDisplayName(type);
+        string levelLabel = $"{level}/{PermanentUpgrades.MaxLevel}";
+
+        if (levelText == null)
+        {
+            nameText.text = $"{displayName}  {levelLabel}";
+            return;
+        }
+        nameText.text = displayName;
+        levelText.text = levelLabel;
     }
 
-    public void Refresh()
+    private void ShowBuyButton(bool maxed)
     {
-        int level = PermanentUpgrades.GetLevel(type);
-        bool maxed = level >= PermanentUpgrades.MaxLevel;
-        string displayName = LevelUpBonusCatalog.GetDisplayName(type);
-        if (levelText != null)
-        {
-            nameText.text = displayName;
-            levelText.text = $"{level}/{PermanentUpgrades.MaxLevel}";
-        }
+        ColorBlock colors = buyButton.colors;
+
+        if (maxed)
+            buyText.text = "MAX";
         else
-            nameText.text = $"{displayName}  {level}/{PermanentUpgrades.MaxLevel}";
-        buyText.text = maxed ? "MAX" : PermanentUpgrades.NextCost(type).ToString();
+            buyText.text = PermanentUpgrades.NextCost(type).ToString();
         if (costIcon != null)
             costIcon.SetActive(!maxed);
-
-        ColorBlock colors = buyButton.colors;
-        colors.normalColor = PermanentUpgrades.CanBuy(type) ? normalColor : colors.disabledColor;
+        if (PermanentUpgrades.CanBuy(type))
+            colors.normalColor = normalColor;
+        else
+            colors.normalColor = colors.disabledColor;
         buyButton.colors = colors;
+    }
+
+    private void RestoreColors()
+    {
+        buyButton.targetGraphic.color = imageColor;
+        buyText.color = textColor;
+    }
+
+    // Unscaled, since a menu may be open over a paused game.
+    private IEnumerator FlashRed()
+    {
+        float k;
+
+        for (float t = 0f; t < FlashSeconds; t += Time.unscaledDeltaTime)
+        {
+            k = t / FlashSeconds;
+            buyButton.targetGraphic.color = Color.Lerp(FlashColor, imageColor, k);
+            buyText.color = Color.Lerp(FlashColor, textColor, k);
+            yield return null;
+        }
+        RestoreColors();
+        flash = null;
     }
 
     private void OnBuyClicked()
@@ -64,10 +84,31 @@ public class UpgradeRowUI : MonoBehaviour
             PermanentUpgrades.Buy(type);
             return;
         }
-
         if (flash != null)
             StopCoroutine(flash);
         flash = StartCoroutine(FlashRed());
+    }
+
+    // The button stays interactable so gamepad navigation can reach it; an unaffordable one only looks disabled.
+    public void Bind(LevelUpBonusType upgrade)
+    {
+        type = upgrade;
+        normalColor = buyButton.colors.normalColor;
+        imageColor = buyButton.targetGraphic.color;
+        textColor = buyText.color;
+        bound = true;
+        buyButton.onClick.AddListener(OnBuyClicked);
+        descriptionText.text = $"{LevelUpBonusCatalog.GetDescription(type, PermanentUpgrades.StacksPerLevel)} per level";
+        nameText.color = LevelUpBonusCatalog.GetColor(type);
+        Refresh();
+    }
+
+    public void Refresh()
+    {
+        int level = PermanentUpgrades.GetLevel(type);
+
+        ShowNameAndLevel(level);
+        ShowBuyButton(level >= PermanentUpgrades.MaxLevel);
     }
 
     // Restores the colors a flash left mid-way; the unbound row template keeps its own.
@@ -76,22 +117,6 @@ public class UpgradeRowUI : MonoBehaviour
         if (!bound)
             return;
         flash = null;
-        buyButton.targetGraphic.color = imageColor;
-        buyText.color = textColor;
-    }
-
-    // Unscaled, since a menu may be open over a paused game.
-    private IEnumerator FlashRed()
-    {
-        for (float t = 0f; t < FlashSeconds; t += Time.unscaledDeltaTime)
-        {
-            float k = t / FlashSeconds;
-            buyButton.targetGraphic.color = Color.Lerp(FlashColor, imageColor, k);
-            buyText.color = Color.Lerp(FlashColor, textColor, k);
-            yield return null;
-        }
-        buyButton.targetGraphic.color = imageColor;
-        buyText.color = textColor;
-        flash = null;
+        RestoreColors();
     }
 }

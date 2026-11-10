@@ -33,23 +33,6 @@ public static class LocalProgressStore
         }
     }
 
-    public static int GetUpgradeLevel(int index)
-    {
-        int[] levels = Data.upgrades;
-        return index >= 0 && index < levels.Length ? levels[index] : 0;
-    }
-
-    public static void SetUpgradeLevel(int index, int level)
-    {
-        if (index < 0)
-            return;
-
-        if (Data.upgrades.Length <= index)
-            Array.Resize(ref Data.upgrades, index + 1);
-        Data.upgrades[index] = level;
-        Save();
-    }
-
     private static ProgressData Data
     {
         get
@@ -61,19 +44,28 @@ public static class LocalProgressStore
     }
 
     // Falls back to the older gold-only file so gold earned before upgrades existed is kept.
+    private static int LoadLegacyGold()
+    {
+        LegacyGold legacy;
+
+        if (!File.Exists(LegacyGoldPath))
+            return 0;
+        legacy = JsonUtility.FromJson<LegacyGold>(File.ReadAllText(LegacyGoldPath));
+        if (legacy == null)
+            return 0;
+        return Mathf.Max(0, legacy.gold);
+    }
+
     private static ProgressData Load()
     {
+        ProgressData fresh;
+
         try
         {
             if (File.Exists(FilePath))
                 return JsonUtility.FromJson<ProgressData>(File.ReadAllText(FilePath)) ?? new ProgressData();
-
-            ProgressData fresh = new ProgressData();
-            if (File.Exists(LegacyGoldPath))
-            {
-                LegacyGold legacy = JsonUtility.FromJson<LegacyGold>(File.ReadAllText(LegacyGoldPath));
-                fresh.gold = legacy != null ? Mathf.Max(0, legacy.gold) : 0;
-            }
+            fresh = new ProgressData();
+            fresh.gold = LoadLegacyGold();
             return fresh;
         }
         catch (Exception e)
@@ -93,5 +85,24 @@ public static class LocalProgressStore
         {
             Debug.LogWarning($"LocalProgressStore: failed to save {FilePath}. {e.Message}");
         }
+    }
+
+    public static int GetUpgradeLevel(int index)
+    {
+        int[] levels = Data.upgrades;
+
+        if (index < 0 || index >= levels.Length)
+            return 0;
+        return levels[index];
+    }
+
+    public static void SetUpgradeLevel(int index, int level)
+    {
+        if (index < 0)
+            return;
+        if (Data.upgrades.Length <= index)
+            Array.Resize(ref Data.upgrades, index + 1);
+        Data.upgrades[index] = level;
+        Save();
     }
 }

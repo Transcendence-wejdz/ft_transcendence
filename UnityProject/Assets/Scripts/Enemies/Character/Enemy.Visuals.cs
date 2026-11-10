@@ -5,11 +5,15 @@ public partial class Enemy
 {
     private const float FlipDistance = 0.06f;
     private const float FlipCooldown = 0.2f;
+    private const float TeleportStepSqr = 1f;
+    private const float MinRunSpeed = 0.3f;
+    private const float RunHoldTime = 0.15f;
 
     private Vector2 lastPosition;
     private float facingDrift;
     private float lastFlipTime = -1f;
     private float lastMovedTime;
+
     private float attackVisualEndTime;
     private int currentAnimationHash;
     private int idleHash;
@@ -24,44 +28,63 @@ public partial class Enemy
         attackHash = Animator.StringToHash(Kit.AttackStateName);
     }
 
+    private void PlayAnimation(int hash)
+    {
+        currentAnimationHash = hash;
+        animator.Play(hash, 0, 0f);
+    }
+
     private void PlayAttackAnimation(float duration)
     {
         if (animator == null)
             return;
-
         attackVisualEndTime = Time.time + duration;
-        currentAnimationHash = attackHash;
-        animator.Play(attackHash, 0, 0f);
+        PlayAnimation(attackHash);
     }
 
-    // Facing uses hysteresis (drift saturates at FlipDistance) so interpolation and crowd jitter don't flip the sprite every frame.
+    // Hysteresis (drift saturates at FlipDistance) so interpolation and crowd jitter don't flip the sprite every frame.
+    private void UpdateFacing(Vector2 delta)
+    {
+        bool faceLeft;
+
+        if (delta.sqrMagnitude > TeleportStepSqr)
+            facingDrift = 0f;
+        else
+            facingDrift = Mathf.Clamp(facingDrift + delta.x, -FlipDistance, FlipDistance);
+        faceLeft = facingDrift < 0f;
+        if (spriteRenderer == null || spriteRenderer.flipX == faceLeft)
+            return;
+        if (Mathf.Abs(facingDrift) < FlipDistance || Time.time - lastFlipTime < FlipCooldown)
+            return;
+        spriteRenderer.flipX = faceLeft;
+        lastFlipTime = Time.time;
+    }
+
+    private int ChooseAnimation(Vector2 delta)
+    {
+        float minStep = MinRunSpeed * Time.deltaTime;
+
+        if (delta.sqrMagnitude > minStep * minStep)
+            lastMovedTime = Time.time;
+        if (Time.time < attackVisualEndTime)
+            return attackHash;
+        if (Time.time - lastMovedTime < RunHoldTime)
+            return runHash;
+        return idleHash;
+    }
+
     private void UpdateVisuals()
     {
         Vector2 position = transform.position;
         Vector2 delta = position - lastPosition;
+        int desired;
+
         lastPosition = position;
-
-        facingDrift = delta.sqrMagnitude > 1f ? 0f : Mathf.Clamp(facingDrift + delta.x, -FlipDistance, FlipDistance);
-        bool faceLeft = facingDrift < 0f;
-        if (spriteRenderer != null && Mathf.Abs(facingDrift) >= FlipDistance && Time.time - lastFlipTime >= FlipCooldown && spriteRenderer.flipX != faceLeft)
-        {
-            spriteRenderer.flipX = faceLeft;
-            lastFlipTime = Time.time;
-        }
-
+        UpdateFacing(delta);
         if (animator == null)
             return;
-
-        float minStep = 0.3f * Time.deltaTime;
-        if (delta.sqrMagnitude > minStep * minStep)
-            lastMovedTime = Time.time;
-
-        int desired = Time.time < attackVisualEndTime ? attackHash
-            : Time.time - lastMovedTime < 0.15f ? runHash : idleHash;
-        if (desired == currentAnimationHash)
-            return;
-
-        currentAnimationHash = desired;
-        animator.Play(desired, 0, 0f);
+        desired = ChooseAnimation(delta);
+        if (desired != currentAnimationHash)
+            PlayAnimation(desired);
     }
 }

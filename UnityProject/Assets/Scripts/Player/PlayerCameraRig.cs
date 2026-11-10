@@ -6,13 +6,22 @@ public static class PlayerCameraRig
     private const string MainCameraName = "Main Camera";
     private const string CinemachineCameraName = "CinemachineCamera";
 
+    private static AudioListener FindOwnListener(Transform player)
+    {
+        Transform mainCamera = player.Find(MainCameraName);
+
+        if (mainCamera == null)
+            return null;
+        return mainCamera.GetComponent<AudioListener>();
+    }
+
     public static void SetActive(Transform player, bool active)
     {
         Transform mainCamera = player.Find(MainCameraName);
+        Transform cinemachineCamera = player.Find(CinemachineCameraName);
+
         if (mainCamera != null)
             mainCamera.gameObject.SetActive(active);
-
-        Transform cinemachineCamera = player.Find(CinemachineCameraName);
         if (cinemachineCamera != null)
             cinemachineCamera.gameObject.SetActive(active);
     }
@@ -20,11 +29,10 @@ public static class PlayerCameraRig
     // Makes this player's camera the only enabled AudioListener (prefab listeners start disabled, joining rigs and remote copies would add more).
     public static void ClaimAudioListener(Transform player)
     {
-        Transform mainCamera = player.Find(MainCameraName);
-        AudioListener own = mainCamera != null ? mainCamera.GetComponent<AudioListener>() : null;
+        AudioListener own = FindOwnListener(player);
+
         if (own == null)
             return;
-
         foreach (AudioListener listener in Object.FindObjectsByType<AudioListener>(FindObjectsInactive.Exclude))
         {
             if (listener != own)
@@ -38,10 +46,11 @@ public static class PlayerCameraRig
     {
         Transform mainCamera = player.Find(MainCameraName);
         Transform cinemachineCamera = player.Find(CinemachineCameraName);
+        GameObject holder;
+
         if (mainCamera == null && cinemachineCamera == null)
             return null;
-
-        GameObject holder = new GameObject("DetachedPlayerCameraRig");
+        holder = new GameObject("DetachedPlayerCameraRig");
         if (mainCamera != null)
             mainCamera.SetParent(holder.transform, worldPositionStays: true);
         if (cinemachineCamera != null)

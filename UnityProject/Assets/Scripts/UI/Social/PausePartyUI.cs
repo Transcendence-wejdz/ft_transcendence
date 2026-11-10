@@ -20,63 +20,79 @@ public class PausePartyUI : MonoBehaviour
     private int signature;
     private Player lastLocal;
 
-    private void OnEnable()
+    private static bool IsOnline()
     {
-        foreach (PartySlotUI slot in slots)
-            slot.Clicked += OpenMenu;
-        Rebuild();
+        return NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
     }
 
-    private void OnDisable()
+    private static bool ContainsMember(IReadOnlyList<Relationship> relationships, string servicesId)
     {
-        foreach (PartySlotUI slot in slots)
-            slot.Clicked -= OpenMenu;
-        foreach (PartySlotUI slot in slots)
-            slot.SetEmpty();
+        foreach (Relationship relationship in relationships)
+        {
+            if (relationship.Member.Id == servicesId)
+                return true;
+        }
+        return false;
     }
 
-    // Hosting, a join, a leave or the session dying under us all change this; the local player also swaps from the offline to the spawned instance.
-    private void LateUpdate()
+    private static bool IsFriendOrAsked(string servicesId)
     {
-        if (CurrentSignature() != signature)
-            Rebuild();
+        return ContainsMember(FriendsManager.Friends, servicesId) || ContainsMember(FriendsManager.Outgoing, servicesId);
+    }
+
+    private static int IdentityHash(Player player)
+    {
+        if (player == null)
+            return 0;
+        return RuntimeHelpers.GetHashCode(player);
     }
 
     // While hosting/joining swaps players, neither is findable for a moment: keep showing the last local one (only deactivated, not destroyed).
     private Player ResolveLocal()
     {
         Player local = LocalPlayer.GetPlayer();
-        if (local != null)
-            lastLocal = local;
-        return local != null ? local : lastLocal;
+
+        if (local == null)
+            return lastLocal;
+        lastLocal = local;
+        return local;
     }
 
+    // Hosting, a join, a leave or the session dying under us all change this; the local player also swaps from the offline to the spawned instance.
     private int CurrentSignature()
     {
-        Player local = ResolveLocal();
-        int hash = FriendsManager.SessionSignature();
-        hash = hash * 31 + (local != null ? RuntimeHelpers.GetHashCode(local) : 0);
+        int hash = FriendsManager.SessionSignature() * 31 + IdentityHash(ResolveLocal());
+
         foreach (Player player in Player.AllActiveInstances)
+        {
             if (player != null)
                 hash = hash * 31 + RuntimeHelpers.GetHashCode(player);
+        }
         return hash;
     }
 
     // The offline solo player never registers, so the local player is resolved separately; others only count while online.
-    private void Rebuild()
+    private void CollectMembers(Player local)
     {
-        signature = CurrentSignature();
         members.Clear();
-        Player local = ResolveLocal();
         if (local != null)
             members.Add(local);
+        if (!IsOnline())
+            return;
+        foreach (Player player in Player.AllActiveInstances)
+        {
+            if (player != null && player != local && members.Count < slots.Length)
+                members.Add(player);
+        }
+    }
 
-        bool online = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
-        if (online)
-            foreach (Player player in Player.AllActiveInstances)
-                if (player != null && player != local && members.Count < slots.Length)
-                    members.Add(player);
+    private void Rebuild()
+    {
+        Player local;
 
+        signature = CurrentSignature();
+        local = ResolveLocal();
+        CollectMembers(local);
         for (int i = 0; i < slots.Length; i++)
         {
             if (i < members.Count)
@@ -87,34 +103,25 @@ public class PausePartyUI : MonoBehaviour
         countText.text = $"{members.Count}/{slots.Length}";
     }
 
-    // Kick for the host, Add friend when that teammate isn't a friend (or already asked) yet.
-    private void OpenMenu(PartySlotUI slot, Player player)
+    private void SetStatus(string message, bool isError)
     {
-        var items = new List<SocialContextMenuUI.Item>();
-        if (SessionKick.CanKick(player))
-            items.Add(new SocialContextMenuUI.Item("Kick", () => Kick(player), destructive: true));
-        string tag = player.FriendsTag;
-        if (!string.IsNullOrEmpty(tag) && !IsFriendOrAsked(player.ServicesId))
-            items.Add(new SocialContextMenuUI.Item("Add friend", () => AddFriend(tag)));
-        contextMenu.Open((RectTransform)slot.transform, items);
-    }
-
-    private static bool IsFriendOrAsked(string servicesId)
-    {
-        foreach (Relationship friend in FriendsManager.Friends)
-            if (friend.Member.Id == servicesId)
-                return true;
-        foreach (Relationship request in FriendsManager.Outgoing)
-            if (request.Member.Id == servicesId)
-                return true;
-        return false;
+        statusText.text = message;
+        if (isError)
+            statusText.color = errorColor;
+        else
+            statusText.color = infoColor;
     }
 
     private async void Kick(Player player)
     {
         bool kicked = await SessionKick.KickAsync(player);
-        if (this != null)
-            SetStatus(kicked ? "Player kicked." : "Only the host can kick.", isError: !kicked);
+
+        if (this == null)
+            return;
+        if (kicked)
+            SetStatus("Player kicked.", isError: false);
+        else
+            SetStatus("Only the host can kick.", isError: true);
     }
 
     private async void AddFriend(string tag)
@@ -133,9 +140,38 @@ public class PausePartyUI : MonoBehaviour
         }
     }
 
-    private void SetStatus(string message, bool isError)
+    // Kick for the host, Add friend when that teammate isn't a friend (or already asked) yet.
+    private void OpenMenu(PartySlotUI slot, Player player)
     {
-        statusText.text = message;
-        statusText.color = isError ? errorColor : infoColor;
+        List<SocialContextMenuUI.Item> items = new List<SocialContextMenuUI.Item>();
+        string tag = player.FriendsTag;
+
+        if (SessionKick.CanKick(player))
+            items.Add(new SocialContextMenuUI.Item("Kick", () => Kick(player), destructive: true));
+        if (!string.IsNullOrEmpty(tag) && !IsFriendOrAsked(player.ServicesId))
+            items.Add(new SocialContextMenuUI.Item("Add friend", () => AddFriend(tag)));
+        contextMenu.Open((RectTransform)slot.transform, items);
+    }
+
+    private void OnEnable()
+    {
+        foreach (PartySlotUI slot in slots)
+            slot.Clicked += OpenMenu;
+        Rebuild();
+    }
+
+    private void OnDisable()
+    {
+        foreach (PartySlotUI slot in slots)
+        {
+            slot.Clicked -= OpenMenu;
+            slot.SetEmpty();
+        }
+    }
+
+    private void LateUpdate()
+    {
+        if (CurrentSignature() != signature)
+            Rebuild();
     }
 }

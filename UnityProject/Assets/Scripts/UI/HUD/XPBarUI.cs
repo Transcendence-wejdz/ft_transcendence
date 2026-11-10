@@ -5,6 +5,8 @@ using UnityEngine.UI;
 // Bottom-center shared XP bar + level indicator under the top-left avatar, both shown once waves start (same gate as CoopHUD).
 public class XPBarUI : MonoBehaviour
 {
+    private const float SearchInterval = 0.5f;
+
     [SerializeField] private GameObject content;
     [SerializeField] private Image fillImage;
     [SerializeField] private TMP_Text levelText;
@@ -14,38 +16,56 @@ public class XPBarUI : MonoBehaviour
     private WaveSpawner spawner;
     private float nextSearchTime;
 
+    // Run managers are absent outside a run (Lobby), so the lookup is throttled instead of searching every frame.
+    private bool FindRunManagers()
+    {
+        if (xpManager != null && spawner != null)
+            return true;
+        if (Time.unscaledTime < nextSearchTime)
+            return false;
+        nextSearchTime = Time.unscaledTime + SearchInterval;
+        xpManager = FindAnyObjectByType<XPManager>();
+        spawner = FindAnyObjectByType<WaveSpawner>();
+        return xpManager != null && spawner != null;
+    }
+
+    private void SetShown(bool started)
+    {
+        if (levelText.gameObject.activeSelf == started)
+            return;
+        content.SetActive(started && showBar);
+        levelText.gameObject.SetActive(started);
+    }
+
+    private void ShowProgress()
+    {
+        int level;
+        int xpIntoLevel;
+        int xpForLevel;
+        float fraction = 0f;
+
+        xpManager.GetProgress(out level, out xpIntoLevel, out xpForLevel);
+        levelText.text = $"Lv. {level}";
+        if (xpForLevel > 0)
+            fraction = (float)xpIntoLevel / xpForLevel;
+        BrushFill.Set(fillImage, fraction);
+    }
+
     void Awake()
     {
         content.SetActive(false);
         levelText.gameObject.SetActive(false);
     }
 
-    // Run managers are absent outside a run (Lobby), so the lookup is throttled instead of searching every frame.
     void Update()
     {
-        if (xpManager == null || spawner == null)
-        {
-            if (Time.unscaledTime < nextSearchTime)
-                return;
-            nextSearchTime = Time.unscaledTime + 0.5f;
-            xpManager = FindAnyObjectByType<XPManager>();
-            spawner = FindAnyObjectByType<WaveSpawner>();
-            if (xpManager == null || spawner == null)
-                return;
-        }
+        bool started;
 
-        bool started = spawner.CurrentWave > 0;
-        if (levelText.gameObject.activeSelf != started)
-        {
-            content.SetActive(started && showBar);
-            levelText.gameObject.SetActive(started);
-        }
-
-        if (!started)
+        if (!FindRunManagers())
             return;
-
-        xpManager.GetProgress(out int level, out int xpIntoLevel, out int xpForLevel);
-        levelText.text = $"Lv. {level}";
-        BrushFill.Set(fillImage, xpForLevel > 0 ? (float)xpIntoLevel / xpForLevel : 0f);
+        started = spawner.CurrentWave > 0;
+        SetShown(started);
+        if (started)
+            ShowProgress();
     }
 }

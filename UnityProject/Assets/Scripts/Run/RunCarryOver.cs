@@ -28,6 +28,8 @@ public static class RunCarryOver
         ProcessedLevel = processedLevel;
         ElapsedSeconds = elapsedSeconds;
         HasOfflineBonusStacks = offlinePlayer != null;
-        OfflineBonusStacks = offlinePlayer != null ? offlinePlayer.BonusStacks : default;
+        OfflineBonusStacks = default;
+        if (offlinePlayer != null)
+            OfflineBonusStacks = offlinePlayer.BonusStacks;
     }
 }

@@ -1,53 +1,39 @@
-using TMPro;
 using UnityEngine;
 
-// Lobby customization panel: buttons and name field forwarding to LocalCharacterLook.
+// Lobby customization panel: class and color buttons forwarding to LocalCharacterLook.
 public class CharacterCustomizationMenu : MonoBehaviour
 {
-    [SerializeField] private TMP_InputField nameInputField;
     [SerializeField] private HoverColorWipe[] classButtons;
     [SerializeField] private GameObject[] colorMarkers;
 
-    private void Awake()
+    private void PinClass(int classIndex)
     {
-        if (nameInputField != null)
-            nameInputField.onEndEdit.AddListener(SetPlayerName);
+        for (int i = 0; i < classButtons.Length; i++)
+        {
+            if (classButtons[i] != null)
+                classButtons[i].SetPinned(i == classIndex);
+        }
     }
 
-    // Renders the real local player (not a separate doll) into CharacterPreviewRT while the panel is open.
-    private void OnEnable()
+    private void MarkColor(int colorIndex)
     {
-        LocalCharacterLook.OnNameChanged += ShowName;
-        LocalCharacterLook.OnPortraitChanged += ShowSelection;
+        for (int i = 0; i < colorMarkers.Length; i++)
+        {
+            if (colorMarkers[i] != null)
+                colorMarkers[i].SetActive(i == colorIndex);
+        }
+    }
 
+    // Pins the current class button and shows the marker on the current color (both indexed like CharacterCatalog).
+    private void ShowSelection(Sprite portrait)
+    {
         GameObject player = LocalPlayer.Get();
-        if (player == null)
+        CharacterCatalog catalog = CharacterCatalog.Instance;
+
+        if (player == null || catalog == null)
             return;
-
-        Player customization = player.GetComponent<Player>();
-
-        if (nameInputField != null && customization != null)
-            nameInputField.text = customization.PlayerName;
-
-        customization?.SetPreviewCameraActive(true);
-        ShowSelection(null);
-    }
-
-    private void OnDisable()
-    {
-        LocalCharacterLook.OnNameChanged -= ShowName;
-        LocalCharacterLook.OnPortraitChanged -= ShowSelection;
-
-        GameObject player = LocalPlayer.Get();
-        if (player == null)
-            return;
-
-        player.GetComponent<Player>()?.SetPreviewCameraActive(false);
-    }
-
-    public void SetPlayerName(string value)
-    {
-        LocalCharacterLook.SetPlayerName(value);
+        PinClass(catalog.ClassIndexOf(player));
+        MarkColor(catalog.ColorIndexOf(player));
     }
 
     public void SelectClass(int index)
@@ -60,31 +46,22 @@ public class CharacterCustomizationMenu : MonoBehaviour
         LocalCharacterLook.SelectColor(index);
     }
 
-    // Pins the current class button and shows the marker on the current color (both indexed like CharacterCatalog).
-    private void ShowSelection(Sprite _)
+    // Renders the real local player (not a separate doll) into CharacterPreviewRT while the panel is open.
+    private void OnEnable()
     {
-        GameObject player = LocalPlayer.Get();
-        CharacterCatalog catalog = CharacterCatalog.Instance;
-        if (player == null || catalog == null)
-            return;
+        Player customization;
 
-        int classIndex = catalog.ClassIndexOf(player);
-        int colorIndex = catalog.ColorIndexOf(player);
-        for (int i = 0; i < classButtons.Length; i++)
-        {
-            if (classButtons[i] != null)
-                classButtons[i].SetPinned(i == classIndex);
-        }
-        for (int i = 0; i < colorMarkers.Length; i++)
-        {
-            if (colorMarkers[i] != null)
-                colorMarkers[i].SetActive(i == colorIndex);
-        }
+        LocalCharacterLook.OnPortraitChanged += ShowSelection;
+        if (LocalPlayer.Get() == null)
+            return;
+        customization = LocalPlayer.GetPlayer();
+        customization?.SetPreviewCameraActive(true);
+        ShowSelection(null);
     }
 
-    private void ShowName(string value)
+    private void OnDisable()
     {
-        if (nameInputField != null && nameInputField.text != value)
-            nameInputField.text = value;
+        LocalCharacterLook.OnPortraitChanged -= ShowSelection;
+        LocalPlayer.GetPlayer()?.SetPreviewCameraActive(false);
     }
 }

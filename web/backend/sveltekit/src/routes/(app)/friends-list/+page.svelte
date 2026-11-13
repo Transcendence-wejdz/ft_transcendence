@@ -6,6 +6,7 @@
         displayName: string;
         color: string;
         online: boolean;
+        lastSeen: string | null;
         relationshipId: string;
     };
 
@@ -21,6 +22,12 @@
         displayName: string;
     };
 
+    type PresenceUpdate = {
+        userId: string;
+        online: boolean;
+        lastSeen: string | null;
+    };
+
     let search = $state('');
     let identifier = $state('');
     let error = $state('');
@@ -29,12 +36,31 @@
     let friends = $state<Friend[]>([]);
     let requests = $state<FriendRequest[]>([]);
     let blockedPlayers = $state<BlockedPlayer[]>([]);
+    const latestPresence = new Map<string, PresenceUpdate>();
+
+    function formatLastSeen(value: string | null) {
+        if (!value) return 'Last seen: unknown';
+        const elapsed = Math.max(0, Date.now() - new Date(value).getTime());
+        const minutes = Math.floor(elapsed / 60_000);
+        if (minutes < 1) return 'Last seen just now';
+        if (minutes < 60) return `Last seen ${minutes}m ago`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `Last seen ${hours}h ago`;
+        const days = Math.floor(hours / 24);
+        if (days < 7) return `Last seen ${days}d ago`;
+        return `Last seen ${new Date(value).toLocaleDateString()}`;
+    }
 
     async function loadFriends() {
         const response = await fetch('/api/friends-list');
         const result = await response.json();
         if (!response.ok) throw new Error(result.error ?? 'Could not load friends.');
-        friends = result.friends;
+        friends = result.friends.map((friend: Friend) => {
+            const update = latestPresence.get(friend.id);
+            return update
+                ? { ...friend, online: update.online, lastSeen: update.lastSeen ?? friend.lastSeen }
+                : friend;
+        });
         requests = result.requests;
     }
 
@@ -44,9 +70,6 @@
         if (!response.ok) throw new Error(result.error ?? 'Could not load blocked players.');
         blockedPlayers = result.blockedPlayers;
     }
-    const PRESENCE_REFRESH_INTERVAL_MS = 5_000;
-    let intervalId: ReturnType<typeof setInterval> | undefined;
-
     async function refreshFriends() {
         try {
             await loadFriends();
@@ -57,18 +80,30 @@
         }
     }
 
+    function handlePresenceUpdate(event: Event) {
+        const update = (event as CustomEvent<PresenceUpdate>).detail;
+        if (!update || typeof update.userId !== 'string' || typeof update.online !== 'boolean') return;
+        latestPresence.set(update.userId, update);
+        friends = friends.map((friend) => friend.id === update.userId
+            ? { ...friend, online: update.online, lastSeen: update.lastSeen ?? friend.lastSeen }
+            : friend);
+    }
+
+    function handlePresenceResync() {
+        void refreshFriends();
+    }
+
     onMount(() => {
+        window.addEventListener('friend-presence', handlePresenceUpdate);
+        window.addEventListener('friends-presence-resync', handlePresenceResync);
         loading = true;
         Promise.all([loadFriends(), loadBlockedPlayers()])
             .catch((cause: unknown) => { error = cause instanceof Error ? cause.message : 'Could not load friends.'; })
             .finally(() => { loading = false; });
 
-        intervalId = setInterval(() => {
-            void refreshFriends();
-        }, PRESENCE_REFRESH_INTERVAL_MS);
-
         return () => {
-            if (intervalId !== undefined) clearInterval(intervalId);
+            window.removeEventListener('friend-presence', handlePresenceUpdate);
+            window.removeEventListener('friends-presence-resync', handlePresenceResync);
         };
     });
 
@@ -219,7 +254,7 @@
                             <span class="friend-name">{friend.displayName}</span>
                             <span class:online={friend.online} class="friend-status">
                                 <span class="status-dot"></span>
-                                {friend.online ? 'Online' : 'Offline'}
+                                {friend.online ? 'Online' : formatLastSeen(friend.lastSeen)}
                             </span>
                         </div>
 

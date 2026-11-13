@@ -20,7 +20,9 @@ model User {
   gold         Int       @default(0)
   upgrades     Json      @default("{}")
   createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastSeen     DateTime? @map("last_seen") @db.Timestamptz(6)
   sessions     Session[]
+  presenceConnections PresenceConnection[]
   gameRuns     GameRun[]
   requestFriendships Friendship[] @relation("FriendshipRequest")
   lowFriendships     Friendship[] @relation("FriendshipLowRequest")
@@ -41,6 +43,16 @@ model Session {
 
   @@index([userId], map: "sessions_user_id_idx")
   @@map("sessions")
+}
+
+model PresenceConnection {
+  id          String   @id @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  heartbeatAt DateTime @default(now()) @map("heartbeat_at") @db.Timestamptz(6)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, heartbeatAt], map: "presence_connections_user_id_heartbeat_at_idx")
+  @@map("presence_connections")
 }
 
 model GameRun {

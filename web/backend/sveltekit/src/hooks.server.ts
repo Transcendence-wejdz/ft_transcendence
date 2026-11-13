@@ -1,7 +1,10 @@
 import { redirect, type Handle } from '@sveltejs/kit';
+import { sequence } from '@sveltejs/kit/hooks';
+import { getTextDirection } from '$lib/paraglide/runtime.js';
+import { paraglideMiddleware } from '$lib/paraglide/server.js';
 import { SESSION_COOKIE, validateSession } from '$lib/server/session.js';
 
-export const handle: Handle = async ({ event, resolve }) => {
+const handleSession: Handle = async ({ event, resolve }) => {
     const token = event.cookies.get(SESSION_COOKIE);
     event.locals.user = token ? await validateSession(token) : null;
 
@@ -14,3 +17,11 @@ export const handle: Handle = async ({ event, resolve }) => {
     }
     return resolve(event);
 };
+
+const handleParaglide: Handle = ({ event, resolve }) => paraglideMiddleware(event.request, ({ request, locale }) => {
+    return resolve({ ...event, request }, {
+        transformPageChunk: ({ html }) => html.replace('%paraglide.lang%', locale).replace('%paraglide.dir%', getTextDirection(locale))
+    });
+});
+
+export const handle = sequence(handleParaglide, handleSession);

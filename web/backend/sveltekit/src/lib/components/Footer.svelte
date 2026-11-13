@@ -1,5 +1,9 @@
+<script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
+</script>
+
 <footer class="footer">
-	<span>ft_transcendence · 42 · Art inspired by Tiny Swords</span>
+	<span>{m.footer_credits()}</span>
 	<nav class="nav" aria-label="Footer">
 		<a href="/about">About</a>
 		<a href="/privacy">Privacy Policy</a>

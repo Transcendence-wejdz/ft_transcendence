@@ -12,8 +12,8 @@
 			<button class="button button-outline" onclick={() => goto('/settings')}>Your settings</button>
 		</div>
 		<div class="quick-links">
-			<button onclick={() => goto('/project')}>About the project <span>→</span></button>
-			<button onclick={() => goto('/team')}>Meet the team <span>→</span></button>
+			<button onclick={() => goto('/about')}>About the project <span>→</span></button>
+			<button onclick={() => goto('/about#team')}>Meet the team <span>→</span></button>
 			<button onclick={() => goto('/friends-list')}>Manage friends <span>→</span></button>
 		</div>
 	</div>

@@ -19,6 +19,8 @@
 		<a href="/game" data-sveltekit-reload>Play</a>
 		{#if user}
 			<a href="/friends-list">Friends</a>
+		{:else}
+			<a href="/about">About</a>
 		{/if}
 	</nav>
 

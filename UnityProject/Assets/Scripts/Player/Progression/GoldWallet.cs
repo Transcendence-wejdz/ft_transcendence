@@ -168,6 +168,22 @@ public static partial class GoldWallet
         return true;
     }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    // Locally set/add amount of gold
+    public static void DevSet(int amount)
+    {
+        if (UsesServer)
+            return;
+        LocalProgressStore.Gold = amount;
+        OnChanged?.Invoke(Balance);
+    }
+
+    public static void DevAdd(int amount)
+    {
+        DevSet(LocalProgressStore.Gold + amount);
+    }
+#endif
+
     // Website only: mirrors a purchase the server already charged.
     public static void ApplyServerSpend(int cost)
     {

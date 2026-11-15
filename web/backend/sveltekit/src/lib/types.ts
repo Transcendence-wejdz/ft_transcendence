@@ -223,8 +223,6 @@ export type ConversationsList = {
     conversations: Conversation[];
 };
 
-// ---- Notifications ----
-
 // ---- Game ----
 
 // ---- Achievements ----

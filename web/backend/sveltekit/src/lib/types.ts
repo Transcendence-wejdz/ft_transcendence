@@ -86,13 +86,6 @@ export type Page<T> = {
 
 // ---- Users ----
 
-// TODO:    Rules of login differ depending of the route, we need to choose between:
-// TODO:    - /api/register that allow 3 to 20 char (letters, numbers, '_', '-'))
-// TODO:    - settings (in validation.ts) that allow 2 to 24 char and autorize space
-
-// TODO:    List of player_class and player_color now exist both in types.ts and validation.ts,
-// TODO:    in the end, we need to import the list from types.ts to validation.ts (we can't import from server)
-
 // Playable classes. Must match the game and CLASSES in $lib/server/validation.ts.
 export const PLAYER_CLASSES = ['Warrior', 'Archer', 'Lancer', 'Monk', 'Pawn'] as const;
 
@@ -105,8 +98,7 @@ export type PlayerColor = (typeof PLAYER_COLORS)[number];
 
 // Just enough to show any player: a friends list row, a chat header, a leaderboard line.
 // Seen by other players: never add private fields (email, gold, settings) here.
-// TODO:    actually, avatarUrl does not contain the url, but the image itself:
-// TODO:    maybe we can set a route GET /api/players/[id]/avatar that return the image with cache header.
+// Avatar storage still open, see #96.
 export type UserSummary = {
     id: Uuid;
     displayName: string;
@@ -118,8 +110,6 @@ export type UserSummary = {
 export type OnlineStatus = 'online' | 'in_game' | 'offline';
 
 // The logged-in player, from /api/me: their summary plus private fields only they may see.
-// TODO:    change the return of /api/me from snake_case to camelCase so it matches the prisma name:
-// TODO:    display_name -> displayName and avatar_url -> avatarUrl
 export type CurrentUser = UserSummary & {
     email: string;
     class: PlayerClass;
@@ -181,11 +171,9 @@ export type RelationshipActionBody = {
 // Longest message allowed, checked on both sides: the front stops typing, the API answers message_too_long.
 export const MESSAGE_MAX_LENGTH = 1000;
 
-// TODO:    the chat-thread.html mockup shows match invites as messages (Join / Decline):
-// TODO:    if we keep them, add a kind field ('text' | 'match_invite') with the invite data.
 // One chat message. Mine when senderId is the logged-in player; receiverId tells my other tabs which conversation it goes in.
+// Match invites as messages still open, see #97.
 export type ChatMessage = {
-
     id: Uuid;
     senderId: Uuid;
     receiverId: Uuid;
@@ -194,7 +182,7 @@ export type ChatMessage = {
 };
 
 // A row of /chat: the other player, their latest message (null if none yet) and the unread badge (0: hidden).
-// TODO: Need to clarify if we still want to implement the unread counter to show the number of message unread (see the chat.html mockup)
+// unreadCount still open, see #97.
 export type Conversation = {
     peer: UserSummary;
     lastMessage: ChatMessage | null;

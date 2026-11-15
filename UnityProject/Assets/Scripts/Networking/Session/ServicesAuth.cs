@@ -96,7 +96,7 @@ public static class ServicesAuth
             WebBackend.Post("/api/game/unity-id", JsonUtility.ToJson(new UnityIdLink { accessToken = AuthenticationService.Instance.AccessToken }));
     }
 
-    private static async Task SyncPlayerNameAndPublishAsync()
+    public static async Task SyncPlayerNameAndPublishAsync()
     {
         await SyncPlayerNameAsync();
         PublishPlayerId();

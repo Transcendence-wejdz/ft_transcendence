@@ -36,6 +36,31 @@ public static class ServicesAuth
         return signInTask;
     }
 
+    // A web profile can arrive after Unity Services started. Retry the name/link sync once the account is known.
+    public static async Task SyncWithWebProfileAsync()
+    {
+        try
+        {
+            if (signInTask != null && !signInTask.IsCompleted)
+            {
+                await signInTask;
+                return;
+            }
+
+            if (UnityServices.State != ServicesInitializationState.Initialized || !AuthenticationService.Instance.IsSignedIn)
+            {
+                await EnsureSignedInAsync();
+                return;
+            }
+
+            await SyncPlayerNameAndPublishAsync();
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"ServicesAuth: could not sync the web profile with Unity. {e.Message}");
+        }
+    }
+
     // Scoped to the web account's profile, so each signed-in user keeps their own Unity player.
     private static async Task InitializeServicesAsync()
     {
@@ -53,11 +78,9 @@ public static class ServicesAuth
 #endif
         if (UnityServices.State != ServicesInitializationState.Initialized)
             await InitializeServicesAsync();
-        if (AuthenticationService.Instance.IsSignedIn)
-            return;
-        await AuthenticationService.Instance.SignInAnonymouslyAsync();
-        await SyncPlayerNameAsync();
-        PublishPlayerId();
+        if (!AuthenticationService.Instance.IsSignedIn)
+            await AuthenticationService.Instance.SignInAnonymouslyAsync();
+        await SyncPlayerNameAndPublishAsync();
     }
 
     [Serializable]
@@ -71,6 +94,12 @@ public static class ServicesAuth
     {
         if (WebProfileBridge.HasProfile)
             WebBackend.Post("/api/game/unity-id", JsonUtility.ToJson(new UnityIdLink { accessToken = AuthenticationService.Instance.AccessToken }));
+    }
+
+    public static async Task SyncPlayerNameAndPublishAsync()
+    {
+        await SyncPlayerNameAsync();
+        PublishPlayerId();
     }
 
     // Web display name with spaces turned to underscores, cut to the Unity name length.

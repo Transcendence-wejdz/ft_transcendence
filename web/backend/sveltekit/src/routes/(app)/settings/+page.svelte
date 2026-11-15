@@ -81,7 +81,7 @@
                 <div class="avatar" style={`--player-color: ${colors.find((item) => item.name === color)?.value ?? '#171923'}`}>
                     {#if avatarUrl}<img src={avatarUrl} alt="" />{:else}{displayName.slice(0, 1).toUpperCase() || '?'}{/if}
                 </div>
-                <h2>{displayName || 'Player name'}</h2>
+                <h2>{data.user.unity_player_name || displayName || 'Player name'}</h2>
                 <div class="badges">
                     <span class="badge"><span class="badge-dot" style={`--player-color: ${colors.find((item) => item.name === color)?.value ?? '#171923'}`}></span>{color}</span>
                     <span class="badge">{playerClass}</span>
@@ -92,6 +92,8 @@
             <form class="settings-form" onsubmit={saveSettings}>
                 <section class="form-section">
                     <div class="section-heading"><span class="step">01</span><div><h2>Profile details</h2><p>Choose how other players see you.</p></div></div>
+                    <label class="field-label" for="unity-name">UNITY USERNAME</label>
+                    <input id="unity-name" class="text-input" value={data.user.unity_player_name || 'Launch the game to sync your Unity username'} readonly />
                     <label class="field-label" for="display-name">PLAYER NAME</label>
                     <input id="display-name" class="text-input" bind:value={displayName} minlength="2" maxlength="24" autocomplete="nickname" required />
                     <small>2-24 characters. Letters, numbers, spaces, _ and -.</small>

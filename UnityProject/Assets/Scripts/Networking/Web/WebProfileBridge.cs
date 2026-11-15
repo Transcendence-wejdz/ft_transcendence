@@ -132,6 +132,7 @@ public partial class WebProfileBridge : MonoBehaviour
         Confirm(profile, classIndex, colorIndex, playerName);
         PlayerProfileStore.Save(classIndex, colorIndex, playerName);
         ApplyRemote(profile, classIndex, colorIndex, playerName);
+        _ = ServicesAuth.SyncWithWebProfileAsync();
     }
 
     // Overwrites local settings with the account's saved ones; missing keys keep their current value.

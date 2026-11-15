@@ -27,9 +27,36 @@ export const POST: RequestHandler = async ({ locals, request }) => {
         const unityPlayerId = await unityPlayerIdFromToken(input.accessToken);
         if (!isUnityPlayerId(unityPlayerId)) return json({ success: false, error: 'Invalid Unity token.' }, { status: 400 });
 
+        let unityPlayerName: string | null = null;
+        try {
+            const nameResponse = await fetch(`https://social.services.api.unity.com/v1/names/${encodeURIComponent(unityPlayerId)}`, {
+                headers: { Authorization: `Bearer ${input.accessToken}` }
+            });
+            if (nameResponse.ok) {
+                const nameResult: unknown = await nameResponse.json();
+                if (nameResult && typeof nameResult === 'object' && 'name' in nameResult
+                    && typeof nameResult.name === 'string' && nameResult.name.trim()) {
+                    unityPlayerName = nameResult.name.trim();
+                }
+            } else {
+                console.warn(`Unity Player Names returned HTTP ${nameResponse.status}; linking the Unity player without refreshing its name.`);
+            }
+        } catch (error) {
+            console.warn('Unity Player Names lookup failed; linking the Unity player without refreshing its name.', error);
+        }
+
+        const currentUser = await prisma.user.findUnique({ where: { id: userId }, select: { unityPlayerId: true } });
+        const userUpdate = {
+            unityPlayerId,
+            ...(unityPlayerName
+                ? { unityPlayerName }
+                : currentUser?.unityPlayerId && currentUser.unityPlayerId !== unityPlayerId
+                    ? { unityPlayerName: null }
+                    : {})
+        };
         await prisma.$transaction([
-            prisma.user.updateMany({ where: { unityPlayerId, NOT: { id: userId } }, data: { unityPlayerId: null } }),
-            prisma.user.update({ where: { id: userId }, data: { unityPlayerId } })
+            prisma.user.updateMany({ where: { unityPlayerId, NOT: { id: userId } }, data: { unityPlayerId: null, unityPlayerName: null } }),
+            prisma.user.update({ where: { id: userId }, data: userUpdate })
         ]);
         return json({ success: true });
     } catch (error) {

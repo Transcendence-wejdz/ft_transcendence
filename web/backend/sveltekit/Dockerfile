@@ -14,6 +14,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
 COPY --from=build /app/build ./build
+COPY server.mjs ./server.mjs
 USER node
 EXPOSE 3000
-CMD ["node", "build"]
+CMD ["node", "server.mjs"]

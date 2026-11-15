@@ -3,7 +3,8 @@ import { prisma } from '$lib/server/db.js';
 import { isUniqueViolation } from '$lib/server/validation.js';
 import type { RequestHandler } from './$types';
 
-const userSummary = { id: true, displayName: true, color: true } as const;
+const userSummary = { id: true, displayName: true, color: true, lastSeen: true } as const;
+const PRESENCE_CONNECTION_LEASE_MS = 60_000;
 
 export const GET: RequestHandler = async ({ locals }) => {
 	if (!locals.user) return json({ success: false, error: 'Not authenticated' }, { status: 401 });
@@ -38,24 +39,35 @@ export const GET: RequestHandler = async ({ locals }) => {
 		}));
 
 	const friendIds = friends.map((friend) => friend.id);
-	const onlineSince = new Date(Date.now() - 10_000);
+	const presenceLeaseStart = new Date(Date.now() - PRESENCE_CONNECTION_LEASE_MS);
 
-	const activeSessions = await prisma.session.findMany({
+	const activeConnections = await prisma.presenceConnection.findMany({
 		where: {
 			userId: { in: friendIds },
-			expiresAt: { gt: new Date() },
-			lastOnline: { gt: onlineSince }
+			heartbeatAt: { gt: presenceLeaseStart }
 		},
 		select: { userId: true }
 	});
 
-	const onlineUserIds = new Set(activeSessions.map((session) => session.userId));
+	const onlineUserIds = new Set(activeConnections.map((connection) => connection.userId));
+	const latestActivity = await prisma.session.findMany({
+		where: { userId: { in: friendIds } },
+		select: { userId: true, lastOnline: true },
+		orderBy: { lastOnline: 'desc' }
+	});
+	const lastSeenByUser = new Map<string, Date>();
+	for (const session of latestActivity) {
+		if (!lastSeenByUser.has(session.userId)) lastSeenByUser.set(session.userId, session.lastOnline);
+	}
 	return json(
 		{
 			success: true,
 			friends: friends.map((friend) => ({
 				...friend,
-				online: onlineUserIds.has(friend.id)
+				online: onlineUserIds.has(friend.id),
+				lastSeen: (friend.lastSeen && (!lastSeenByUser.get(friend.id) || friend.lastSeen > lastSeenByUser.get(friend.id)!))
+					? friend.lastSeen.toISOString()
+					: lastSeenByUser.get(friend.id)?.toISOString() ?? null
 			})),
 			requests
 		},
@@ -105,14 +117,20 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				where: { userLowId_userHighId: { userLowId, userHighId } },
 				select: { relationStatus: true, requesterId: true }
 			});
-        if (existing?.relationStatus === 'PENDING' && existing.requesterId !== locals.user.id) {
-                await prisma.friendship.update({
-                    where: { userLowId_userHighId: { userLowId, userHighId } },
-                    data: { relationStatus: 'ACCEPTED' }
-                });
-					return json({ success: true }, { status: 200 });
+			if (existing?.relationStatus === 'PENDING' && existing.requesterId !== locals.user.id) {
+				await prisma.friendship.update({
+					where: { userLowId_userHighId: { userLowId, userHighId } },
+					data: { relationStatus: 'ACCEPTED' }
+				});
+				return json({ success: true }, { status: 200 });
 			}
-			return json({ success: false, error: existing?.relationStatus === 'ACCEPTED' ? 'Already friends' : 'Request already sent' }, { status: 409 });
+			return json(
+				{
+					success: false,
+					error: existing?.relationStatus === 'ACCEPTED' ? 'Already friends' : 'Request already sent'
+				},
+				{ status: 409 }
+			);
 		}
 		throw error;
 	}

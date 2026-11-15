@@ -212,6 +212,49 @@ export type ConversationsList = {
 
 // ---- Profile ----
 
+// Modes the database accepts today (GAME_MODES in $lib/server/gameRuns.ts).
+export type GameMode = 'solo' | 'coop';
+
+// A player's totals in one mode, from their finished runs.
+export type ModeStats = {
+    bestScore: number;
+    bestWave: number;
+    kills: number;
+    games: number;
+};
+
+// Place in a mode's leaderboard (best score per player). null when the player has no finished run in that mode.
+export type ModeRank = {
+    rank: number;
+    players: number;
+};
+
+// One finished run in the profile's history. Only the player's own line: teammates are never listed.
+export type ProfileRun = {
+    id: Uuid;
+    mode: GameMode;
+    score: number;
+    wave: number;
+    kills: number;
+    seconds: number;
+    victory: boolean;
+    finishedAt: IsoDate;
+};
+
+// The page /profile/[name]. No gold here: shown nowhere but the game (decided in #102).
+export type PublicProfile = UserSummary & {
+    class: PlayerClass;
+    createdAt: IsoDate | null;
+    online: boolean;
+    lastSeenAt: IsoDate | null;
+    relationship: RelationshipStatus | 'self'; // 'blocked' is never sent: blocking is dropped
+    relationshipId: Uuid | null;
+    stats: Record<GameMode, ModeStats>;
+    ranks: Record<GameMode, ModeRank | null>;
+    upgrades: Record<string, number>; // upgrade type → level 0 to 10
+    lastRuns: ProfileRun[];
+};
+
 // ---- Leaderboard ----
 
 // ---- Settings ----

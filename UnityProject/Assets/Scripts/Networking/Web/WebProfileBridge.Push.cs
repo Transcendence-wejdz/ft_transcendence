@@ -50,7 +50,7 @@ public partial class WebProfileBridge
         if (IsSuccess(status))
         {
             ConfirmedName = playerName;
-            _ = ServicesAuth.SyncPlayerNameAsync();
+            _ = ServicesAuth.SyncPlayerNameAndPublishAsync();
         }
         else if (status == 400 || status == 409)
         {

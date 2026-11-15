@@ -12,6 +12,7 @@ model User {
   email        String    @unique
   passwordHash String    @map("password_hash")
   displayName  String    @unique @map("display_name")
+  unityPlayerName String? @map("unity_player_name")
   color        String    @default("Black")
   class        String    @default("Warrior")
   avatarUrl    String?   @map("avatar_url")

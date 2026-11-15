@@ -8,6 +8,7 @@ declare global {
 				id: string;
 				email: string;
 				display_name: string;
+				unity_player_name: string | null;
 				color: string;
 				class: string;
 				avatar_url: string | null;

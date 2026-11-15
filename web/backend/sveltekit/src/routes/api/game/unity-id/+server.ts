@@ -27,9 +27,26 @@ export const POST: RequestHandler = async ({ locals, request }) => {
         const unityPlayerId = await unityPlayerIdFromToken(input.accessToken);
         if (!isUnityPlayerId(unityPlayerId)) return json({ success: false, error: 'Invalid Unity token.' }, { status: 400 });
 
+        const nameResponse = await fetch(`https://social.services.api.unity.com/v1/names/${encodeURIComponent(unityPlayerId)}`, {
+            headers: { Authorization: `Bearer ${input.accessToken}` }
+        });
+        if (!nameResponse.ok) {
+            console.error(`Unity Player Names returned HTTP ${nameResponse.status}.`);
+            return json({ success: false, error: 'Could not retrieve the Unity player name.' }, { status: 502 });
+        }
+
+        const nameResult: unknown = await nameResponse.json();
+        const unityPlayerName = nameResult && typeof nameResult === 'object' && 'name' in nameResult
+            && typeof nameResult.name === 'string' && nameResult.name.trim()
+            ? nameResult.name.trim()
+            : null;
+        if (!unityPlayerName) {
+            return json({ success: false, error: 'Unity returned an invalid player name.' }, { status: 502 });
+        }
+
         await prisma.$transaction([
-            prisma.user.updateMany({ where: { unityPlayerId, NOT: { id: userId } }, data: { unityPlayerId: null } }),
-            prisma.user.update({ where: { id: userId }, data: { unityPlayerId } })
+            prisma.user.updateMany({ where: { unityPlayerId, NOT: { id: userId } }, data: { unityPlayerId: null, unityPlayerName: null } }),
+            prisma.user.update({ where: { id: userId }, data: { unityPlayerId, unityPlayerName } })
         ]);
         return json({ success: true });
     } catch (error) {

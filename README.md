@@ -109,9 +109,9 @@ Everyone develops; the roles above add extra responsibilities on top.
 - **Branches**:
 
   ```
-  main      protected, PR only, CI green + 1 review (what we present at evaluation)
+  main      protected, PR only, CI green + 4 reviews (what we present at evaluation)
     ▲ merge commit "release: …"
-  develop   protected, PR only, CI green (integration of web + game)
+  develop   protected, PR only, CI green + 2 reviews (integration of web + game)
     ▲ squash merge
   feat/<scope>-<name>   fix/<scope>-<name>   docs/<name>   short-lived, branched from develop
   ```
@@ -124,7 +124,7 @@ Everyone develops; the roles above add extra responsibilities on top.
   Scopes: `web`, `api`, `db`, `game`, `net`, `infra`, `ci`, `vault`, `docs`.
   WebGL rebuilds go in their own `chore(game): rebuild WebGL player` commit.
 - **Pull requests**: title in Conventional Commit format (it becomes the squash commit on `develop`),
-  filled-in [PR template](.github/pull_request_template.md), green CI, at least one review.
+  filled-in [PR template](.github/pull_request_template.md), green CI, at least two reviews.
 
 ## CI/CD
 

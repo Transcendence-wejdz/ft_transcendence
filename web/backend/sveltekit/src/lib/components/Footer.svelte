@@ -4,10 +4,10 @@
 
 <footer class="footer">
 	<span>{m.footer_credits()}</span>
-	<nav class="nav" aria-label="Footer">
-		<a href="/about">About</a>
-		<a href="/privacy">Privacy Policy</a>
-		<a href="/terms">Terms of Service</a>
+	<nav class="nav" aria-label={m.footer_nav()}>
+		<a href="/about">{m.footer_about()}</a>
+		<a href="/privacy">{m.footer_privacy()}</a>
+		<a href="/terms">{m.footer_terms()}</a>
 	</nav>
 </footer>
 

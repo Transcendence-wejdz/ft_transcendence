@@ -1,4 +1,19 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
-	"footer_credits": "ft_transcendence · 42 · Graphismes inspirés de Tiny Swords"
+	"nav_home": "Accueil de Transcendence",
+	"nav_main": "Navigation principale",
+	"nav_play": "Jouer",
+	"nav_friends": "Amis",
+	"nav_about": "À propos",
+	"nav_log_in": "Se connecter",
+	"nav_sign_up": "S'inscrire",
+	"nav_language": "Langue",
+	"account_profile": "Profil",
+	"account_settings": "Paramètres",
+	"account_log_out": "Se déconnecter",
+	"footer_credits": "ft_transcendence · 42 · Graphismes inspirés de Tiny Swords",
+	"footer_nav": "Pied de page",
+	"footer_about": "À propos",
+	"footer_privacy": "Politique de confidentialité",
+	"footer_terms": "Conditions d'utilisation"
 }

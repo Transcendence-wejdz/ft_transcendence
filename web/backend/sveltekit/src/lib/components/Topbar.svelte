@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
 	import Button from '$lib/components/ui/Button.svelte';
 	import AccountMenu from '$lib/components/AccountMenu.svelte';
+	import LanguageSelect from '$lib/components/LanguageSelect.svelte';
 
 	type Props = {
 		user: App.Locals['user'];
@@ -10,26 +12,27 @@
 </script>
 
 <header class="topbar">
-	<a class="brand" href="/" aria-label="Transcendence home">
+	<a class="brand" href="/" aria-label={m.nav_home()}>
 		<span class="brand-mark">T</span>
 		<span class="brand-name">Transcendence</span>
 	</a>
 
-	<nav class="nav" aria-label="Main navigation">
-		<a href="/game" data-sveltekit-reload>Play</a>
+	<nav class="nav" aria-label={m.nav_main()}>
+		<a href="/game" data-sveltekit-reload>{m.nav_play()}</a>
 		{#if user}
-			<a href="/friends-list">Friends</a>
+			<a href="/friends-list">{m.nav_friends()}</a>
 		{:else}
-			<a href="/about">About</a>
+			<a href="/about">{m.nav_about()}</a>
 		{/if}
 	</nav>
 
 	<div class="actions">
+		<LanguageSelect />
 		{#if user}
 			<AccountMenu {user} />
 		{:else}
-			<a class="login" href="/login">Log in</a>
-			<Button href="/register" size="sm">Sign up</Button>
+			<a class="login" href="/login">{m.nav_log_in()}</a>
+			<Button href="/register" size="sm">{m.nav_sign_up()}</Button>
 		{/if}
 	</div>
 </header>

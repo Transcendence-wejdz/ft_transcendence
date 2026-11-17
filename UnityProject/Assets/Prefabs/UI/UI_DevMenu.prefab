@@ -2618,7 +2618,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DevMenu
   panel: {fileID: 496189167787869302}
   devAction: {fileID: -8043547611548027107, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
-  godModeToggle: {fileID: 7450333777122908411}
+  godMasterToggle: {fileID: 6720245074330869076}
   infiniteHealthToggle: {fileID: 4223450471579255293}
   unlimitedManaToggle: {fileID: 3737127760882249614}
   unlimitedDashesToggle: {fileID: 3851663287715476704}
@@ -2823,6 +2823,7 @@ GameObject:
   - component: {fileID: 3600178915884627545}
   - component: {fileID: 7450333777122908411}
   - component: {fileID: 647179697772134243}
+  - component: {fileID: 6720245074330869076}
   m_Layer: 5
   m_Name: god
   m_TagString: Untagged
@@ -2919,6 +2920,23 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!114 &6720245074330869076
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3441089422367791869}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66f380f894880f499b7a96e270e35b51, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MasterToggle
+  children:
+  - {fileID: 4223450471579255293}
+  - {fileID: 3737127760882249614}
+  - {fileID: 3851663287715476704}
+  - {fileID: 7735407353185968770}
 --- !u!1 &3528662222055878259
 GameObject:
   m_ObjectHideFlags: 0

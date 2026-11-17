@@ -195,7 +195,7 @@ created_at     timestamptz
 **Planned** (from the 13/09 meeting): real-time features and messaging (Web, majors), i18n and
 additional browsers (Accessibility, minors), game history / achievements (User management, minor),
 AI opponent (AI, major), WAF + secrets vault (Cybersecurity, major), a second game (pig race) with
-matchmaking (Gaming, major), advanced chat and gamification (minors), health check (DevOps, minor).
+matchmaking (Gaming, major), gamification (minor).
 The module list and point totals will be finalized against the subject before evaluation.
 
 ## Individual Contributions

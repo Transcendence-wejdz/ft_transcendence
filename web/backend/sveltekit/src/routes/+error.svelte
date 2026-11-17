@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { m } from '$lib/paraglide/messages.js';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Ribbon from '$lib/components/ui/Ribbon.svelte';
 	import PixelNumber from '$lib/components/PixelNumber.svelte';
@@ -7,23 +8,19 @@
 	const notFound = $derived(page.status === 404);
 </script>
 
-<svelte:head><title>Transcendence — {notFound ? 'Page not found' : 'Server error'}</title></svelte:head>
+<svelte:head><title>Transcendence — {notFound ? m.error_404_ribbon() : m.error_500_ribbon()}</title></svelte:head>
 
 <section class="error-page">
-	<Ribbon>{notFound ? 'Page not found' : 'Server error'}</Ribbon>
+	<Ribbon>{notFound ? m.error_404_ribbon() : m.error_500_ribbon()}</Ribbon>
 	<div class="number"><PixelNumber value={page.status} /></div>
-	<h1>{notFound ? 'Lost at sea' : 'The horde broke through'}</h1>
-	<p>
-		{notFound
-			? 'This page sailed off the map. Check the address or head back to land.'
-			: 'Something broke on our side. Try again in a moment.'}
-	</p>
+	<h1>{notFound ? m.error_404_title() : m.error_500_title()}</h1>
+	<p>{notFound ? m.error_404_text() : m.error_500_text()}</p>
 	<div class="actions">
-		<Button href="/">Back to the home page</Button>
+		<Button href="/">{m.error_home()}</Button>
 		{#if notFound}
-			<Button variant="secondary" href="/about">About the project</Button>
+			<Button variant="secondary" href="/about">{m.error_about()}</Button>
 		{:else}
-			<Button variant="secondary" onclick={() => location.reload()}>Try again</Button>
+			<Button variant="secondary" onclick={() => location.reload()}>{m.error_retry()}</Button>
 		{/if}
 	</div>
 </section>

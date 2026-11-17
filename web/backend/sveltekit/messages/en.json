@@ -56,5 +56,14 @@
 	"about_cta_player": "Jump into a run and climb the leaderboard.",
 	"about_cta_guest": "Create an account and climb the leaderboard.",
 	"about_cta_play": "Play now",
-	"about_cta_register": "Create an account"
+	"about_cta_register": "Create an account",
+	"error_404_ribbon": "Page not found",
+	"error_404_title": "Lost at sea",
+	"error_404_text": "This page sailed off the map. Check the address or head back to land.",
+	"error_500_ribbon": "Server error",
+	"error_500_title": "The horde broke through",
+	"error_500_text": "Something broke on our side. Try again in a moment.",
+	"error_home": "Back to the home page",
+	"error_about": "About the project",
+	"error_retry": "Try again"
 }

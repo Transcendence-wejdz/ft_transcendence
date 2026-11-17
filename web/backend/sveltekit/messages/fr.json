@@ -56,5 +56,14 @@
 	"about_cta_player": "Lancez une partie et grimpez au classement.",
 	"about_cta_guest": "Créez un compte et grimpez au classement.",
 	"about_cta_play": "Jouer maintenant",
-	"about_cta_register": "Créer un compte"
+	"about_cta_register": "Créer un compte",
+	"error_404_ribbon": "Page introuvable",
+	"error_404_title": "Perdu en mer",
+	"error_404_text": "Cette page a quitté la carte. Vérifiez l'adresse ou regagnez la terre ferme.",
+	"error_500_ribbon": "Erreur du serveur",
+	"error_500_title": "La horde a percé nos défenses",
+	"error_500_text": "Quelque chose a cassé de notre côté. Réessayez dans un instant.",
+	"error_home": "Retour à l'accueil",
+	"error_about": "À propos du projet",
+	"error_retry": "Réessayer"
 }

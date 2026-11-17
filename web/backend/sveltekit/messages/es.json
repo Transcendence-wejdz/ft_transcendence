@@ -56,5 +56,14 @@
 	"about_cta_player": "Empieza una partida y sube en la clasificación.",
 	"about_cta_guest": "Crea una cuenta y sube en la clasificación.",
 	"about_cta_play": "Jugar ahora",
-	"about_cta_register": "Crear una cuenta"
+	"about_cta_register": "Crear una cuenta",
+	"error_404_ribbon": "Página no encontrada",
+	"error_404_title": "Perdido en el mar",
+	"error_404_text": "Esta página se salió del mapa. Revisa la dirección o vuelve a tierra firme.",
+	"error_500_ribbon": "Error del servidor",
+	"error_500_title": "La horda ha roto nuestras defensas",
+	"error_500_text": "Algo se ha roto por nuestra parte. Inténtalo de nuevo en un momento.",
+	"error_home": "Volver al inicio",
+	"error_about": "Sobre el proyecto",
+	"error_retry": "Reintentar"
 }

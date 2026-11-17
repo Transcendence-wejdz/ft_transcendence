@@ -24,11 +24,11 @@
 	};
 
 	const members: Member[] = [
-		{ name: '…', login: 'zsonie', github: 'SaruM4N3', role: 'Product owner · Developer', team: 'blue', unitClass: 'Warrior' },
-		{ name: '…', login: 'erbuffet', github: 'Nikad0', role: 'Back-end lead · Developer', team: 'red', unitClass: 'Archer' },
-		{ name: '…', login: 'jureix-c', github: 'E-B3rry', role: 'Tech lead · Developer', team: 'purple', unitClass: 'Pawn' },
-		{ name: '…', login: 'dabuchhe', github: 'dabuchhe', role: 'Scrum master · Developer', team: 'yellow', unitClass: 'Monk' },
-		{ name: '…', login: 'willda-s', github: 'willda-s', role: 'Front-end lead · Developer', team: 'black', unitClass: 'Lancer' }
+		{ name: 'Saru', login: 'zsonie', github: 'SaruM4N3', role: 'Product owner · Developer', team: 'blue', unitClass: 'Warrior', photo: '/team/zsonie.jpg' },
+		{ name: 'Eric', login: 'erbuffet', github: 'Nikad0', role: 'Back-end lead · Developer', team: 'red', unitClass: 'Archer', photo: '/team/erbuffet.jpg' },
+		{ name: 'Jules', login: 'jureix-c', github: 'E-B3rry', role: 'Tech lead · Developer', team: 'purple', unitClass: 'Pawn', photo: '/team/jureix-c.png' },
+		{ name: 'Damien', login: 'dabuchhe', github: 'dabuchhe', role: 'Scrum master · Developer', team: 'yellow', unitClass: 'Monk', photo: '/team/dabuchhe.png' },
+		{ name: 'William', login: 'willda-s', github: 'willda-s', role: 'Front-end lead · Developer', team: 'black', unitClass: 'Lancer', photo: '/team/willda-s.jpg' }
 	];
 
 	const flow = [
@@ -149,7 +149,7 @@
 			points: 1,
 			status: 'planned',
 			detail:
-				'Achievements, an XP and level system and leaderboards, saved in the database and shown with clear progress feedback.'
+				'Gold earned in every run to buy permanent upgrades, an XP and level system, and leaderboards, all saved in the database.'
 		}
 	];
 
@@ -266,8 +266,8 @@
 			<h2>Think you can beat our scores?</h2>
 			<p>
 				{page.data.user
-					? 'Jump into a run and challenge the team from their profiles.'
-					: 'Create an account, then challenge the team from their profiles.'}
+					? 'Jump into a run and climb the leaderboard.'
+					: 'Create an account and climb the leaderboard.'}
 			</p>
 		</div>
 		<div class="cta-actions">
@@ -276,9 +276,6 @@
 			{:else}
 				<Button href="/register">Create an account</Button>
 			{/if}
-			<Button variant="secondary" href="https://github.com/Transcendence-wejdz/ft_transcendence">
-				View the source
-			</Button>
 		</div>
 	</div>
 </Card>

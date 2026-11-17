@@ -87,6 +87,7 @@ GameObject:
   - component: {fileID: 3226651936751822861}
   - component: {fileID: 5091286071532954602}
   - component: {fileID: 8222823776829104744}
+  - component: {fileID: 7716646235555248246}
   m_Layer: 5
   m_Name: main-panel
   m_TagString: Untagged
@@ -5337,3 +5338,24 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &7716646235555248246
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 496189167787869302}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd74acf8ad0f65dc9bb4dd996f009c56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PanelSlideIn
+  backdrop: {fileID: 0}
+  slides:
+  - target: {fileID: 6875805626836887986}
+    from: {x: 1, y: 0}
+  items: []
+  slideDistance: 320
+  duration: 0.3
+  itemFade: 0.2
+  itemStagger: 0.05

@@ -6,12 +6,14 @@ using UnityEngine.UI;
 // Debug panel
 public class DevMenu : MonoBehaviour
 {
+    // Base
     [SerializeField] private GameObject panel;
     [SerializeField] private InputActionReference devAction;
+    // Gold
     [SerializeField] private Button moreGoldButton;
     [SerializeField] private Button lessGoldButton;
     [SerializeField] private TMP_InputField goldInput;
-    [SerializeField] private int step = 100;
+    [SerializeField] private int goldStep = 100;
 
 // Unity live / dev build
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -24,8 +26,8 @@ public class DevMenu : MonoBehaviour
     {
         panel.SetActive(false);
         // Gold
-        moreGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(step));
-        lessGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(-step));
+        moreGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(goldStep));
+        lessGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(-goldStep));
         goldInput.onEndEdit.AddListener(SetGold);
     }
 
@@ -44,8 +46,17 @@ public class DevMenu : MonoBehaviour
 
     private void Update()
     {
-        if (devAction.action.WasPressedThisFrame())
+        PanelSlideIn slide;
+
+        if (!devAction.action.WasPressedThisFrame())
+            return;
+        slide = panel.GetComponent<PanelSlideIn>();
+        if (slide == null)
             panel.SetActive(!panel.activeSelf);
+        else if (slide.IsOpen)
+            slide.Hide();
+        else
+            slide.Show();
     }
 
     // Gold

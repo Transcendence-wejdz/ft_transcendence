@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale } from '$lib/paraglide/runtime.js';
 	import type { Snippet } from 'svelte';
 	import Ribbon from '$lib/components/ui/Ribbon.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
@@ -13,16 +15,19 @@
 	};
 
 	let { title, updated, sections, other }: Props = $props();
+	const date = $derived(
+		new Intl.DateTimeFormat(getLocale(), { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(updated))
+	);
 </script>
 
 <svelte:head><title>Transcendence — {title}</title></svelte:head>
 
-<Ribbon>Legal</Ribbon>
+<Ribbon>{m.legal_ribbon()}</Ribbon>
 <h1>{title}</h1>
-<p class="updated">Last updated {updated}</p>
+<p class="updated">{m.legal_updated({ date })}</p>
 
 <div class="layout">
-	<nav class="toc" aria-label="Sections">
+	<nav class="toc" aria-label={m.legal_sections()}>
 		{#each sections as section, i (section.id)}
 			<a href="#{section.id}">{i + 1}. {section.title}</a>
 		{/each}

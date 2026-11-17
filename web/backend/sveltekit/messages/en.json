@@ -15,5 +15,8 @@
 	"footer_nav": "Footer",
 	"footer_about": "About",
 	"footer_privacy": "Privacy Policy",
-	"footer_terms": "Terms of Service"
+	"footer_terms": "Terms of Service",
+	"legal_ribbon": "Legal",
+	"legal_sections": "Sections",
+	"legal_updated": "Last updated {date}"
 }

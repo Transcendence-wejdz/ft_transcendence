@@ -15,5 +15,9 @@
 	"footer_nav": "Pied de page",
 	"footer_about": "À propos",
 	"footer_privacy": "Politique de confidentialité",
-	"footer_terms": "Conditions d'utilisation"
+	"footer_terms": "Conditions d'utilisation",
+	"legal_ribbon": "Mentions légales",
+	"legal_sections": "Sections",
+	"legal_updated": "Mis à jour le {date}"
+
 }

@@ -15,5 +15,8 @@
 	"footer_nav": "Pie de página",
 	"footer_about": "Acerca de",
 	"footer_privacy": "Política de privacidad",
-	"footer_terms": "Términos del servicio"
+	"footer_terms": "Términos del servicio",
+	"legal_ribbon": "Aviso legal",
+	"legal_sections": "Secciones",
+	"legal_updated": "Actualizado el {date}"
 }

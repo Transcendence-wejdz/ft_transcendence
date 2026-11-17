@@ -22,7 +22,7 @@
 - [ ] CI is green
 - [ ] Tested in Google Chrome, if applicable
 - [ ] No secrets/credentials committed
-- [ ] Reviewed by at least two humans, three is recommended
+- [ ] Reviewed by at least two humans
 - [ ] LLM checks passed
 
 ## What to preview/test

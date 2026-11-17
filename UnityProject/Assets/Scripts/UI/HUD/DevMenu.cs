@@ -9,6 +9,14 @@ public class DevMenu : MonoBehaviour
     // Base
     [SerializeField] private GameObject panel;
     [SerializeField] private InputActionReference devAction;
+    // Player
+    [SerializeField] private Toggle godModeToggle;
+    [SerializeField] private Toggle infiniteHealthToggle;
+    [SerializeField] private Toggle unlimitedManaToggle;
+    [SerializeField] private Toggle unlimitedDashesToggle;
+    [SerializeField] private Toggle noCooldownToggle;
+    [SerializeField] private Toggle fastAsFuckToggle;
+    [SerializeField] private Toggle KGBAgentToggle;
     // Gold
     [SerializeField] private Button moreGoldButton;
     [SerializeField] private Button lessGoldButton;
@@ -25,6 +33,8 @@ public class DevMenu : MonoBehaviour
     private void Awake()
     {
         panel.SetActive(false);
+        // Player
+        fastAsFuckToggle.onValueChanged.AddListener((value) => LocalPlayer.GetPlayer()?.DevSpeedBoost(value));
         // Gold
         moreGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(goldStep));
         lessGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(-goldStep));
@@ -34,6 +44,7 @@ public class DevMenu : MonoBehaviour
     private void OnEnable()
     {
         devAction.action.Enable();
+        // Gold
         GoldWallet.OnChanged += Refresh;
         Refresh(GoldWallet.Balance);
     }
@@ -41,6 +52,7 @@ public class DevMenu : MonoBehaviour
     private void OnDisable()
     {
         devAction.action.Disable();
+        // Gold
         GoldWallet.OnChanged -= Refresh;
     }
 

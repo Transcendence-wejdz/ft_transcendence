@@ -10,7 +10,7 @@ public class DevMenu : MonoBehaviour
     [SerializeField] private GameObject panel;
     [SerializeField] private InputActionReference devAction;
     // Player
-    [SerializeField] private Toggle godModeToggle;
+    [SerializeField] private MasterToggle godMasterToggle;  // Master toggle for all god fields
     [SerializeField] private Toggle infiniteHealthToggle;
     [SerializeField] private Toggle unlimitedManaToggle;
     [SerializeField] private Toggle unlimitedDashesToggle;

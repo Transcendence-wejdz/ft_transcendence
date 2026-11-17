@@ -31,6 +31,8 @@ model User {
 
   blocksMade       Block[] @relation("Blocker")
   blocksReceived   Block[] @relation("Blocked")
+  messagesSent     Message[] @relation("MessageSender")
+  messagesReceived Message[] @relation("MessageReceiver")
 
   @@map("users")
 }
@@ -113,4 +115,21 @@ model Block {
   @@unique([blockerId, blockedId])
   @@index([blockedId])
   @@map("blocks")
+}
+
+// One chat message between two players. read_at stays null until the receiver opens the conversation (unread counter, #97).
+model Message {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  senderId   String    @map("sender_id") @db.Uuid
+  receiverId String    @map("receiver_id") @db.Uuid
+  text       String
+  sentAt     DateTime  @default(now()) @map("sent_at") @db.Timestamptz(6)
+  readAt     DateTime? @map("read_at") @db.Timestamptz(6)
+
+  sender   User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, receiverId, sentAt])
+  @@index([receiverId, readAt])
+  @@map("messages")
 }

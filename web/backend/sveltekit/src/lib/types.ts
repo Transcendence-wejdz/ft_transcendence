@@ -50,10 +50,7 @@ export const ACCOUNT_ERROR_CODES = [
     'invalid_avatar',      // 400: not a PNG, JPG, WebP or GIF under 500 KB
     'email_taken',         // 409
     'name_taken',          // 409
-    'wrong_password',      // 403: the current password, asked before changing email or password
-    'invalid_totp_code',   // 401: wrong or expired 2FA code
-    'oauth_denied',        // sent as /login?error=oauth_denied: the player refused on the 42 page
-    'oauth_failed'         // sent as /login?error=oauth_failed: 42 did not answer, or the link expired
+    'wrong_password'       // 403: the current password, asked before changing email or password
 ] as const;
 
 // Every error code the API can send.
@@ -114,8 +111,6 @@ export type CurrentUser = UserSummary & {
     email: string;
     class: PlayerClass;
     gold: number;
-    authProvider: 'password' | '42';
-    hasTwoFactor: boolean;
 };
 
 // ---- Friends ----

@@ -65,6 +65,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	) as Record<GameMode, ModeStats>;
 
 	const lastSeen = latest(user.lastSeen, lastSession?.lastOnline ?? null);
+	const relationship = isMe ? 'self' : relationshipOf(meId, friendship);
+	// Online status and last seen are for the player and their friends only
+	const showPresence = relationship === 'self' || relationship === 'friends';
 
 	const profile: PublicProfile = {
 		id: user.id,
@@ -73,9 +76,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		avatarUrl: user.avatarUrl,
 		class: user.class as PlayerClass,
 		createdAt: user.createdAt?.toISOString() ?? null,
-		online: connections > 0,
-		lastSeenAt: lastSeen?.toISOString() ?? null,
-		relationship: isMe ? 'self' : relationshipOf(meId, friendship),
+		online: showPresence ? connections > 0 : null,
+		lastSeenAt: showPresence ? (lastSeen?.toISOString() ?? null) : null,
+		relationship,
 		relationshipId: friendship?.id ?? null,
 		stats,
 		ranks: { solo: ranks[0], coop: ranks[1] },

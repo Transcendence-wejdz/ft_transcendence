@@ -245,7 +245,7 @@ export type ProfileRun = {
 export type PublicProfile = UserSummary & {
     class: PlayerClass;
     createdAt: IsoDate | null;
-    online: boolean;
+    online: boolean | null; // null: hidden, only the player and their friends see it
     lastSeenAt: IsoDate | null;
     relationship: RelationshipStatus | 'self'; // 'blocked' is never sent: blocking is dropped
     relationshipId: Uuid | null;

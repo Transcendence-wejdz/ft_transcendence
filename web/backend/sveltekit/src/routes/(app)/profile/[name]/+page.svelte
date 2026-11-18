@@ -125,9 +125,9 @@
 		<div class="identity">
 			<h1>{profile.displayName}</h1>
 			<div class="tags">
-				{#if profile.online}
+				{#if profile.online === true}
 					<Tag dot="var(--color-online)">Online</Tag>
-				{:else}
+				{:else if profile.online === false}
 					<Tag dot="#8f8775">Offline{lastSeen ? ` · ${lastSeen}` : ''}</Tag>
 				{/if}
 				<Tag dot="var(--color-team-{team})">{profile.color} · {profile.class}</Tag>

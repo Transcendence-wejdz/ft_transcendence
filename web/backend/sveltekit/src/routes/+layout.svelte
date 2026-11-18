@@ -49,11 +49,18 @@
 						const update = JSON.parse(event.data);
 						if (update.type !== 'friend-presence' || typeof update.userId !== 'string' || typeof update.online !== 'boolean') return;
 						window.dispatchEvent(new CustomEvent('friend-presence', { detail: update }));
+						const onlineAlertTimesKey = 'friend-online-alert-times';
+						const alertTimes = JSON.parse(sessionStorage.getItem(onlineAlertTimesKey) ?? '{}') as Record<string, number>;
 						if (update.online) {
-							const alert = { id: `${update.userId}-${Date.now()}`, name: update.displayName ?? 'A friend' };
-							onlineAlerts = [...onlineAlerts, alert];
-							setTimeout(() => onlineAlerts = onlineAlerts.filter((item) => item.id !== alert.id), 5_000);
+							const now = Date.now();
+							if (!alertTimes[update.userId] || now - alertTimes[update.userId] >= 30_000) {
+								const alert = { id: `${update.userId}-${Date.now()}`, name: update.displayName ?? 'A friend' };
+								onlineAlerts = [...onlineAlerts, alert];
+								setTimeout(() => onlineAlerts = onlineAlerts.filter((item) => item.id !== alert.id), 5_000);
+								alertTimes[update.userId] = now;
+							}
 						}
+						sessionStorage.setItem(onlineAlertTimesKey, JSON.stringify(alertTimes));
 					} catch (cause) {
 						console.error('Invalid WebSocket message:', cause);
 					}

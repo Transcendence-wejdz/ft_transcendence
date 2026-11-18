@@ -28,7 +28,6 @@ public partial class Player
     private float ultimateReadyTime;
     private float moveLockEndTime;
     private float moveLockSpeedMultiplier;
-    private bool fastAsFuck;
 
     public ClassKit ActiveKit => activeKit;
 
@@ -36,7 +35,7 @@ public partial class Player
     {
         get
         {
-            if (fastAsFuck)
+            if (FastAsFuck)
                 return 3f;
             if (isShieldActive.Value)
                 return ShieldMoveSpeedMultiplier();
@@ -167,11 +166,5 @@ public partial class Player
             if (IsHoldAim(AbilityType.Attack))
                 BeginAim(AbilityType.Attack);
         }
-    }
-
-    // Dev
-    public void DevSpeedBoost(bool value)
-    {
-        fastAsFuck = value;
     }
 }

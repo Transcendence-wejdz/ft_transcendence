@@ -97,7 +97,8 @@ public partial class Player
         if (!CanDodge())
             return;
         direction = DodgeDirection();
-        dodgeCharges = DodgeCharges - 1;
+        if (!UnlimitedDashes)
+            dodgeCharges = DodgeCharges - 1;
         dodgeEndTime = Time.time + activeKit.DodgeDuration;
         StartDashStrike();
         dodgeVelocity = direction * (activeKit.DodgeDistance / activeKit.DodgeDuration);

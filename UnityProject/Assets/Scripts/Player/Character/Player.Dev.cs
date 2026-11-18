@@ -7,13 +7,13 @@ public partial class Player
     public bool InfiniteHealth { get; private set; }
     public bool UnlimitedMana { get; private set; }
     public bool UnlimitedDashes { get; private set; }
+    public bool NoCooldown { get; private set; }
     public bool FastAsFuck { get; private set; }
 
     // Setters with regens if applicable
     public void DevInfiniteHealth(bool on)
     {
         InfiniteHealth = on;
-        Debug.Log($"[Dev] InfiniteHealth={on} on {name} (local={this.IsLocallyControlled()})");
         if (on)
             Heal(MaxHealth);
     }
@@ -29,5 +29,8 @@ public partial class Player
         if (on)
             dodgeCharges = MaxDodgeCharges;
     }
+    public void DevNoCooldown(bool on) => NoCooldown = on;
     public void DevSpeedBoost(bool on) => FastAsFuck = on;
+
+    private float DevCooldown(float cooldown) => NoCooldown ? 0.05f : cooldown;
 }

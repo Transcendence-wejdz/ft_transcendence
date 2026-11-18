@@ -126,7 +126,7 @@ public partial class Player
     private void FireAttack()
     {
         AbilityKit kit = Ability(AbilityType.Attack);
-        float cooldown = kit.Cooldown * AttackCooldownMultiplier;
+        float cooldown = DevCooldown(kit.Cooldown * AttackCooldownMultiplier);
 
         PlayAbilityAnimation(AttackHash, AttackAnimSpeedHash, kit.AnimSpeed * AttackSpeedMultiplier);
         attackReadyTime = Time.time + cooldown;

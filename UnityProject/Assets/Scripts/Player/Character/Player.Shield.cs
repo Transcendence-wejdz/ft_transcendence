@@ -81,7 +81,7 @@ public partial class Player
         shieldEndTime = Time.time + kit.ShieldHoldDuration;
         nextShieldPushTime = Time.time;
         PlayShieldAnimation(kit);
-        OnAbilityUsed?.Invoke(AbilityType.Ultimate, kit.Cooldown);
+        OnAbilityUsed?.Invoke(AbilityType.Ultimate, DevCooldown(kit.Cooldown));
         SpawnAbilityFx(AbilityType.Ultimate);
         PushNearbyEnemies(onSpawn: true);
     }
@@ -94,7 +94,7 @@ public partial class Player
         isShieldActive.Value = false;
         if (kit == null)
             return;
-        ultimateReadyTime = Time.time + kit.Cooldown;
+        ultimateReadyTime = Time.time + DevCooldown(kit.Cooldown);
         if (kit.ShieldHoldAnimation)
             animator.SetBool(ShieldHeldHash, false);
     }

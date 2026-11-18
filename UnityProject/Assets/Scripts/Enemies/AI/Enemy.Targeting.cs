@@ -11,7 +11,7 @@ public partial class Enemy
 
     private bool NeedsNewTarget(EnemyFlowFieldManager manager)
     {
-        if (target == null || target.IsDead || target.IsDiving)
+        if (target == null || target.IsDead || target.IsDiving || target.KgbAgent)
             return true;
         if (seenPlayersVersion != manager.PlayersVersion)
             return true;

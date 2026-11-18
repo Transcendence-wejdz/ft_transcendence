@@ -38,6 +38,7 @@ public class DevMenu : MonoBehaviour
         unlimitedManaToggle.onValueChanged.AddListener((value) => LocalPlayer.GetPlayer()?.DevUnlimitedMana(value));
         unlimitedDashesToggle.onValueChanged.AddListener((value) => LocalPlayer.GetPlayer()?.DevUnlimitedDashes(value));
         noCooldownToggle.onValueChanged.AddListener((value) => LocalPlayer.GetPlayer()?.DevNoCooldown(value));
+        KGBAgentToggle.onValueChanged.AddListener((value) => LocalPlayer.GetPlayer()?.DevKgbAgent(value));
         fastAsFuckToggle.onValueChanged.AddListener((value) => LocalPlayer.GetPlayer()?.DevSpeedBoost(value));
         // Gold
         moreGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(goldStep));

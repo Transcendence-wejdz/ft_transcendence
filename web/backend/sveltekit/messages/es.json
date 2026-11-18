@@ -1,0 +1,19 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"nav_home": "Inicio de Transcendence",
+	"nav_main": "Navegación principal",
+	"nav_play": "Jugar",
+	"nav_friends": "Amigos",
+	"nav_about": "Acerca de",
+	"nav_log_in": "Iniciar sesión",
+	"nav_sign_up": "Registrarse",
+	"nav_language": "Idioma",
+	"account_profile": "Perfil",
+	"account_settings": "Ajustes",
+	"account_log_out": "Cerrar sesión",
+	"footer_credits": "ft_transcendence · 42 · Arte inspirado en Tiny Swords",
+	"footer_nav": "Pie de página",
+	"footer_about": "Acerca de",
+	"footer_privacy": "Política de privacidad",
+	"footer_terms": "Términos del servicio"
+}

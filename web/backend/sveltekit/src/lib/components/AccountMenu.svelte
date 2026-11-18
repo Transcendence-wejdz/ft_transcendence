@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
 	import { DropdownMenu } from 'bits-ui';
 	import Avatar, { type Team } from '$lib/components/ui/Avatar.svelte';
 
@@ -30,16 +31,16 @@
 		<DropdownMenu.Content class="account-menu" align="end" sideOffset={8}>
 			<DropdownMenu.Item class="account-item">
 				{#snippet child({ props })}
-					<a href="/profile/{user.display_name}" {...props}>Profile</a>
+					<a href="/profile/{user.display_name}" {...props}>{m.account_profile()}</a>
 				{/snippet}
 			</DropdownMenu.Item>
 			<DropdownMenu.Item class="account-item">
 				{#snippet child({ props })}
-					<a href="/settings" {...props}>Settings</a>
+					<a href="/settings" {...props}>{m.account_settings()}</a>
 				{/snippet}
 			</DropdownMenu.Item>
 			<DropdownMenu.Separator class="account-separator" />
-			<DropdownMenu.Item class="account-item" onSelect={logout}>Log out</DropdownMenu.Item>
+			<DropdownMenu.Item class="account-item" onSelect={logout}>{m.account_log_out()}</DropdownMenu.Item>
 		</DropdownMenu.Content>
 	</DropdownMenu.Portal>
 </DropdownMenu.Root>

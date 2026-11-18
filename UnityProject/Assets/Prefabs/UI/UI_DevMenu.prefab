@@ -2629,6 +2629,8 @@ MonoBehaviour:
   lessGoldButton: {fileID: 2010470577243150029}
   goldInput: {fileID: 6901104237984336332}
   goldStep: 100
+  lagSlider: {fileID: 2920022798529959441}
+  lagValue: {fileID: 1073078117269974844}
 --- !u!1 &3369303695059541513
 GameObject:
   m_ObjectHideFlags: 0

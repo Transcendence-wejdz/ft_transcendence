@@ -1,7 +1,9 @@
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using Unity.Multiplayer.Tools.NetworkSimulator.Runtime;
 
 // Debug panel
 public class DevMenu : MonoBehaviour
@@ -22,6 +24,9 @@ public class DevMenu : MonoBehaviour
     [SerializeField] private Button lessGoldButton;
     [SerializeField] private TMP_InputField goldInput;
     [SerializeField] private int goldStep = 100;
+    // Network
+    [SerializeField] private Slider lagSlider;
+    [SerializeField] private TMP_Text lagValue;
 
 // Unity live / dev build
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -44,6 +49,8 @@ public class DevMenu : MonoBehaviour
         moreGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(goldStep));
         lessGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(-goldStep));
         goldInput.onEndEdit.AddListener(SetGold);
+        // Network
+        lagSlider.onValueChanged.AddListener(SetLag);
     }
 
     private void OnEnable()
@@ -83,6 +90,17 @@ public class DevMenu : MonoBehaviour
             GoldWallet.DevSet(n);
         else
             Refresh(GoldWallet.Balance);
+    }
+
+    // Network
+    private void SetLag(float ms)
+    {
+        NetworkSimulator simulator = NetworkManager.Singleton?.GetComponent<NetworkSimulator>();
+        int msRounded = (int)ms;
+
+        lagValue.text = $"{msRounded} ms";
+        if (simulator != null)
+            simulator.ConnectionPreset = NetworkSimulatorPreset.Create("Dev", packetDelayMs: msRounded);
     }
 #else
     private void Awake()

@@ -167,6 +167,7 @@ public partial class WaveSpawner : NetworkBehaviour
         }
     }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     // Start wave (at next check from WaitForNextWave)
     public static void DevStartWave(int wave)
     {
@@ -178,6 +179,7 @@ public partial class WaveSpawner : NetworkBehaviour
             spawner.devSkip = true;
         }
     }
+#endif
 
     public override void OnNetworkSpawn()
     {

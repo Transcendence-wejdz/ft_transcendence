@@ -11,9 +11,13 @@ public partial class Player
     public bool NoCooldown { get; private set; }
     public bool FastAsFuck { get; private set; }
     private const float DevSpeedMultiplier = 3f;
-    // Replicated on network
+    // Replicated on network, must be kept in release
     private readonly NetworkVariable<bool> kgbAgent = new OfflineSafeNetworkVariable<bool>(
         false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+    private float DevCooldown(float cooldown) => NoCooldown ? 0.05f : cooldown;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     public bool KgbAgent => kgbAgent.Value;
     // Persistence
     public static bool DevPrefInt(string key) => PlayerPrefs.GetInt("dev." + key) == 1;
@@ -59,6 +63,7 @@ public partial class Player
         ChooseLevelUpBonusLocal(type);
         hasChosenLevelUpBonus.Value = tmpChosen;
     }
-
-    private float DevCooldown(float cooldown) => NoCooldown ? 0.05f : cooldown;
+#else
+    public bool KgbAgent => false;  // Owner written
+#endif
 }

@@ -26,6 +26,7 @@ public class DevMenu : MonoBehaviour
     [SerializeField] private Button bossButton;
     [SerializeField] private Button forceWinButton;
     [SerializeField] private Button forceLoseButton;
+    [SerializeField] private Button levelUpButton;
     // Gold
     [SerializeField] private Button moreGoldButton;
     [SerializeField] private Button lessGoldButton;
@@ -64,6 +65,7 @@ public class DevMenu : MonoBehaviour
         bossButton.onClick.AddListener(() => GameModeLoader.LoadNow("Boss"));
         forceWinButton.onClick.AddListener(() => GameOverCheck.DevEndRun(true));
         forceLoseButton.onClick.AddListener(() => GameOverCheck.DevEndRun(false));
+        levelUpButton.onClick.AddListener(XPManager.DevLevelUp);
         // Gold
         moreGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(goldStep));
         lessGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(-goldStep));

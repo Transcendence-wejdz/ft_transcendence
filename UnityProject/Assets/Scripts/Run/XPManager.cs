@@ -118,4 +118,17 @@ public class XPManager : NetworkBehaviour
         Unsubscribe();
         base.OnDestroy();
     }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    // Grants the XP missing for next level if host/solo
+    public static void DevLevelUp()
+    {
+        XPManager xp = FindAnyObjectByType<XPManager>();
+
+        if (xp == null || !xp.HasServerAuthority())
+            return;
+        xp.GetProgress(out _, out int xpIntoLevel, out int xpForLevel);
+        xp.GrantXP(xpForLevel - xpIntoLevel);
+    }
+#endif
 }

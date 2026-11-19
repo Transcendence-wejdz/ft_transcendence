@@ -4661,6 +4661,7 @@ MonoBehaviour:
   killAllButton: {fileID: 1058145947620724331}
   bonusDropdown: {fileID: 632853355832658500}
   giveBonusButton: {fileID: 8994882166311538634}
+  pauseSpawningToggle: {fileID: 538156815883718174}
   moreGoldButton: {fileID: 2176463880661400756}
   lessGoldButton: {fileID: 2010470577243150029}
   goldInput: {fileID: 6901104237984336332}
@@ -9978,7 +9979,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 0
+  m_Interactable: 1
   m_TargetGraphic: {fileID: 2016011007558640243}
   toggleTransition: 1
   graphic: {fileID: 7892429190076380687}

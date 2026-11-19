@@ -36,6 +36,8 @@ public partial class WaveSpawner : NetworkBehaviour
     private int pendingSpawns;
     private bool spawningBatches;
 
+    public static bool DevPaused { get; set; }  // DevMenu spawning pause
+
     public int CurrentWave
     {
         get
@@ -153,12 +155,13 @@ public partial class WaveSpawner : NetworkBehaviour
         WaitForSeconds checkDelay = new WaitForSeconds(clearCheckInterval);
         float elapsed = 0f;
 
-        while (elapsed < timeBetweenWaves)
+        while (elapsed < timeBetweenWaves || DevPaused)
         {
-            if (IsWaveOver())
+            if (IsWaveOver() && !DevPaused)
                 yield break;
             yield return checkDelay;
-            elapsed += clearCheckInterval;
+            if (!DevPaused)
+                elapsed += clearCheckInterval;
         }
     }
 

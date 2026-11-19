@@ -32,6 +32,8 @@ public class DevMenu : MonoBehaviour
     [SerializeField] private Button killAllButton;
     [SerializeField] private TMP_Dropdown bonusDropdown;
     [SerializeField] private Button giveBonusButton;
+    // Spawning
+    [SerializeField] private Toggle pauseSpawningToggle;
     // Gold
     [SerializeField] private Button moreGoldButton;
     [SerializeField] private Button lessGoldButton;
@@ -76,6 +78,9 @@ public class DevMenu : MonoBehaviour
         levelUpButton.onClick.AddListener(XPManager.DevLevelUp);
         killAllButton.onClick.AddListener(KillAll);
         giveBonusButton.onClick.AddListener(() => LocalPlayer.GetPlayer()?.DevGiveBonus((LevelUpBonusType)bonusDropdown.value));
+        // Spawning
+        pauseSpawningToggle.SetIsOnWithoutNotify(WaveSpawner.DevPaused);  // Static so no persistence needer
+        pauseSpawningToggle.onValueChanged.AddListener((value) => WaveSpawner.DevPaused = value);
         // Gold
         moreGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(goldStep));
         lessGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(-goldStep));

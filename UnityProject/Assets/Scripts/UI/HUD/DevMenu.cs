@@ -29,6 +29,7 @@ public class DevMenu : MonoBehaviour
     [SerializeField] private Button forceWinButton;
     [SerializeField] private Button forceLoseButton;
     [SerializeField] private Button levelUpButton;
+    [SerializeField] private Button killAllButton;
     // Gold
     [SerializeField] private Button moreGoldButton;
     [SerializeField] private Button lessGoldButton;
@@ -71,6 +72,7 @@ public class DevMenu : MonoBehaviour
         forceWinButton.onClick.AddListener(() => GameOverCheck.DevEndRun(true));
         forceLoseButton.onClick.AddListener(() => GameOverCheck.DevEndRun(false));
         levelUpButton.onClick.AddListener(XPManager.DevLevelUp);
+        killAllButton.onClick.AddListener(KillAll);
         // Gold
         moreGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(goldStep));
         lessGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(-goldStep));
@@ -135,6 +137,13 @@ public class DevMenu : MonoBehaviour
         options.biome = biome;
         RunOptions.Current = options;
         GameModeLoader.LoadNow("Coop");
+    }
+
+    // KillAll count as real kills
+    private void KillAll()
+    {
+        foreach (Enemy enemy in FindObjectsByType<Enemy>(FindObjectsInactive.Exclude))
+            enemy.RequestDamage(enemy.CurrentHealth);
     }
 
     // Gold

@@ -40,6 +40,7 @@ jobs:
             > "$GITHUB_WORKSPACE/.review-comments.json"
 
       - uses: anthropics/claude-code-action@v1
+        id: review
         with:
           claude_code_oauth_token: ${{ steps.token.outputs.value }}
           github_token: ${{ github.token }}
@@ -81,7 +82,17 @@ jobs:
             unless the explanation is wrong and the issue really is critical.
             - If you already posted a summary, update it with `gh pr comment --edit-last`
             instead of posting a new one.
+
+            # Verdict
+            Return `KO` if any ❗ or 🚨 issue is still unsolved, `OK` otherwise.
           claude_args: >-
             --model opus
+            --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["OK","KO"]}},"required":["verdict"]}'
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
             --disallowedTools "Edit,Write,MultiEdit,NotebookEdit,Bash(git push:*),Bash(git commit:*)"
+
+      - name: verdict
+        env:
+          VERDICT: ${{ fromJSON(steps.review.outputs.structured_output).verdict }}
+        run: |
+          [ "$VERDICT" = "OK" ] || { echo "::error::LLM review: KO"; exit 1; }

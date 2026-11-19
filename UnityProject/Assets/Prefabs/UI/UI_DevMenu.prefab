@@ -3885,7 +3885,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 0
+  m_Interactable: 1
   m_TargetGraphic: {fileID: 330953797259796365}
   m_OnClick:
     m_PersistentCalls:
@@ -4662,6 +4662,10 @@ MonoBehaviour:
   bonusDropdown: {fileID: 632853355832658500}
   giveBonusButton: {fileID: 8994882166311538634}
   pauseSpawningToggle: {fileID: 538156815883718174}
+  waveMinusButton: {fileID: 2498145322164707704}
+  waveInput: {fileID: 8477938906924278357}
+  wavePlusButton: {fileID: 7881611697418064607}
+  waveSkipButton: {fileID: 6567189393390233282}
   enemyDropdown: {fileID: 1874074030044240520}
   spawnEnemyButton: {fileID: 5855859220017089668}
   spawnRadius: 4
@@ -9899,7 +9903,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 0
+  m_Interactable: 1
   m_TargetGraphic: {fileID: 7503544070631536216}
   m_OnClick:
     m_PersistentCalls:
@@ -10606,7 +10610,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 0
+  m_Interactable: 1
   m_TargetGraphic: {fileID: 4612769525831486271}
   m_OnClick:
     m_PersistentCalls:

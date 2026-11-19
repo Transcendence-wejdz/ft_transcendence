@@ -34,6 +34,10 @@ public class DevMenu : MonoBehaviour
     [SerializeField] private Button giveBonusButton;
     // Spawning
     [SerializeField] private Toggle pauseSpawningToggle;
+    [SerializeField] private Button waveMinusButton;
+    [SerializeField] private TMP_InputField waveInput;
+    [SerializeField] private Button wavePlusButton;
+    [SerializeField] private Button waveSkipButton;
     [SerializeField] private TMP_Dropdown enemyDropdown;
     [SerializeField] private Button spawnEnemyButton;
     [SerializeField] private float spawnRadius = 4f;
@@ -57,7 +61,6 @@ public class DevMenu : MonoBehaviour
 
     private void Awake()
     {
-        panel.SetActive(false);
         // Player
         infiniteHealthToggle.onValueChanged.AddListener((value) => LocalPlayer.GetPlayer()?.DevInfiniteHealth(value));
         PersistToggle(infiniteHealthToggle, "health");
@@ -84,6 +87,9 @@ public class DevMenu : MonoBehaviour
         // Spawning
         pauseSpawningToggle.SetIsOnWithoutNotify(WaveSpawner.DevPaused);  // Static so no persistence needed
         pauseSpawningToggle.onValueChanged.AddListener((value) => WaveSpawner.DevPaused = value);
+        waveMinusButton.onClick.AddListener(() => RefreshWave(TargetWave() - 2));
+        wavePlusButton.onClick.AddListener(() => RefreshWave(TargetWave()));
+        waveSkipButton.onClick.AddListener(() => WaveSpawner.DevStartWave(TargetWave()));
         spawnEnemyButton.onClick.AddListener(SpawnEnemy);
         // Gold
         moreGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(goldStep));
@@ -93,6 +99,8 @@ public class DevMenu : MonoBehaviour
         lagSlider.onValueChanged.AddListener(SetLag);
         PersistSlider(lagSlider, "lag");
         SetLag(lagSlider.value);
+        // Open DevMenu back if opened
+        panel.SetActive(Player.DevPrefInt("opened"));
     }
 
     private void OnEnable()
@@ -101,6 +109,8 @@ public class DevMenu : MonoBehaviour
         // Gold
         GoldWallet.OnChanged += Refresh;
         Refresh(GoldWallet.Balance);
+        // Spawning
+        WaveSpawner.OnWaveStarted += RefreshWave;
     }
 
     private void OnDisable()
@@ -109,6 +119,8 @@ public class DevMenu : MonoBehaviour
         IsHovered = false;
         // Gold
         GoldWallet.OnChanged -= Refresh;
+        // Spawning
+        WaveSpawner.OnWaveStarted -= RefreshWave;
     }
 
     private void Update()
@@ -123,10 +135,13 @@ public class DevMenu : MonoBehaviour
         slide = panel.GetComponent<PanelSlideIn>();
         if (slide == null)
             panel.SetActive(!panel.activeSelf);
-        else if (slide.IsOpen)
+        else if (slide.IsOpen) {
             slide.Hide();
-        else
+            Player.SetDevPrefInt("opened", false);
+        } else {
             slide.Show();
+            Player.SetDevPrefInt("opened", true);
+        }
     }
 
     // Persistence listener setups
@@ -156,6 +171,17 @@ public class DevMenu : MonoBehaviour
     {
         foreach (Enemy enemy in FindObjectsByType<Enemy>(FindObjectsInactive.Exclude))
             enemy.RequestDamage(enemy.CurrentHealth);
+    }
+
+    // Get/set wave
+    private void RefreshWave(int wave)
+    {
+        waveInput.SetTextWithoutNotify(Mathf.Max(2, wave + 1).ToString());
+    }
+    private int TargetWave()
+    {
+        int.TryParse(waveInput.text, out int wave);
+        return wave;
     }
 
     // Spawn enemy around player

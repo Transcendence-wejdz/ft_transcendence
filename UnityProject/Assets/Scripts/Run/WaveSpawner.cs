@@ -37,6 +37,7 @@ public partial class WaveSpawner : NetworkBehaviour
     private bool spawningBatches;
 
     public static bool DevPaused { get; set; }  // DevMenu spawning pause
+    private bool devSkip;
 
     public int CurrentWave
     {
@@ -107,6 +108,7 @@ public partial class WaveSpawner : NetworkBehaviour
 
     private void StartNextWave()
     {
+        devSkip = false;
         SetWave(waveNumber + 1);
         OnWaveStarted?.Invoke(waveNumber);
         if (waveNumber == 1)
@@ -157,11 +159,23 @@ public partial class WaveSpawner : NetworkBehaviour
 
         while (elapsed < timeBetweenWaves || DevPaused)
         {
-            if (IsWaveOver() && !DevPaused)
+            if (devSkip || (IsWaveOver() && !DevPaused))
                 yield break;
             yield return checkDelay;
             if (!DevPaused)
                 elapsed += clearCheckInterval;
+        }
+    }
+
+    // Start wave (at next check from WaitForNextWave)
+    public static void DevStartWave(int wave)
+    {
+        foreach (WaveSpawner spawner in FindObjectsByType<WaveSpawner>(FindObjectsInactive.Exclude))
+        {
+            if (!spawner.HasServerAuthority())
+                continue;
+            spawner.waveNumber = Mathf.Max(1, wave - 1);
+            spawner.devSkip = true;
         }
     }
 

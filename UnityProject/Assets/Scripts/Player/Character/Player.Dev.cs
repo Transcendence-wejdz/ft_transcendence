@@ -52,6 +52,13 @@ public partial class Player
     public void DevNoCooldown(bool on) => NoCooldown = on;
     public void DevSpeedBoost(bool on) => FastAsFuck = on;
     public void DevKgbAgent(bool on) => kgbAgent.Value = on;
+    public void DevGiveBonus(LevelUpBonusType type)
+    {
+        bool tmpChosen = hasChosenLevelUpBonus.Value;  // Restore chosen state after
+
+        ChooseLevelUpBonusLocal(type);
+        hasChosenLevelUpBonus.Value = tmpChosen;
+    }
 
     private float DevCooldown(float cooldown) => NoCooldown ? 0.05f : cooldown;
 }

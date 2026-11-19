@@ -4662,6 +4662,9 @@ MonoBehaviour:
   bonusDropdown: {fileID: 632853355832658500}
   giveBonusButton: {fileID: 8994882166311538634}
   pauseSpawningToggle: {fileID: 538156815883718174}
+  enemyDropdown: {fileID: 1874074030044240520}
+  spawnEnemyButton: {fileID: 5855859220017089668}
+  spawnRadius: 4
   moreGoldButton: {fileID: 2176463880661400756}
   lessGoldButton: {fileID: 2010470577243150029}
   goldInput: {fileID: 6901104237984336332}
@@ -11267,7 +11270,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 0
+  m_Interactable: 1
   m_TargetGraphic: {fileID: 48437713675624766}
   m_OnClick:
     m_PersistentCalls:

@@ -34,6 +34,9 @@ public class DevMenu : MonoBehaviour
     [SerializeField] private Button giveBonusButton;
     // Spawning
     [SerializeField] private Toggle pauseSpawningToggle;
+    [SerializeField] private TMP_Dropdown enemyDropdown;
+    [SerializeField] private Button spawnEnemyButton;
+    [SerializeField] private float spawnRadius = 4f;
     // Gold
     [SerializeField] private Button moreGoldButton;
     [SerializeField] private Button lessGoldButton;
@@ -79,8 +82,9 @@ public class DevMenu : MonoBehaviour
         killAllButton.onClick.AddListener(KillAll);
         giveBonusButton.onClick.AddListener(() => LocalPlayer.GetPlayer()?.DevGiveBonus((LevelUpBonusType)bonusDropdown.value));
         // Spawning
-        pauseSpawningToggle.SetIsOnWithoutNotify(WaveSpawner.DevPaused);  // Static so no persistence needer
+        pauseSpawningToggle.SetIsOnWithoutNotify(WaveSpawner.DevPaused);  // Static so no persistence needed
         pauseSpawningToggle.onValueChanged.AddListener((value) => WaveSpawner.DevPaused = value);
+        spawnEnemyButton.onClick.AddListener(SpawnEnemy);
         // Gold
         moreGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(goldStep));
         lessGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(-goldStep));
@@ -152,6 +156,30 @@ public class DevMenu : MonoBehaviour
     {
         foreach (Enemy enemy in FindObjectsByType<Enemy>(FindObjectsInactive.Exclude))
             enemy.RequestDamage(enemy.CurrentHealth);
+    }
+
+    // Spawn enemy around player
+    private void SpawnEnemy()
+    {
+        Player player = LocalPlayer.GetPlayer();
+        string kitName = enemyDropdown.options[enemyDropdown.value].text + "_Kit";
+        EnemyKit kit;
+
+        if (player == null)
+            return;
+        foreach (WaveSpawner spawner in FindObjectsByType<WaveSpawner>(FindObjectsInactive.Exclude))
+        {
+            if (!spawner.HasServerAuthority())
+                continue;
+            for (int i = 0; (kit = spawner.GetKit(i)) != null; i++)
+            {
+                if (kit.name == kitName)
+                {
+                    spawner.SpawnEnemyNear(kit, player.transform.position, spawnRadius);
+                    return;
+                }
+            }
+        }
     }
 
     // Gold

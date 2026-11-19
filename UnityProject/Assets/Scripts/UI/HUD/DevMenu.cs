@@ -41,6 +41,7 @@ public class DevMenu : MonoBehaviour
     [SerializeField] private TMP_Dropdown enemyDropdown;
     [SerializeField] private Button spawnEnemyButton;
     [SerializeField] private float spawnRadius = 4f;
+    [SerializeField] private Selectable[] hostOnly;  // Hosts only options
     // Gold
     [SerializeField] private Button moreGoldButton;
     [SerializeField] private Button lessGoldButton;
@@ -127,6 +128,12 @@ public class DevMenu : MonoBehaviour
     {
         PanelSlideIn slide;
 
+        // Disable host's options if non host
+        NetworkManager network = NetworkManager.Singleton;
+        bool host = network == null || !network.IsListening || network.IsServer;
+
+        foreach (Selectable option in hostOnly)
+            option.interactable = host;
         // Mouse hover click prevention
         IsHovered = panel.activeInHierarchy && Mouse.current != null
             && RectTransformUtility.RectangleContainsScreenPoint((RectTransform)panel.transform, Mouse.current.position.ReadValue());

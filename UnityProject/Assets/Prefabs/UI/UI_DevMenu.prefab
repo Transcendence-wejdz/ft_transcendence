@@ -4669,6 +4669,22 @@ MonoBehaviour:
   enemyDropdown: {fileID: 1874074030044240520}
   spawnEnemyButton: {fileID: 5855859220017089668}
   spawnRadius: 4
+  hostOnly:
+  - {fileID: 2408457460482076591}
+  - {fileID: 4079514766795320787}
+  - {fileID: 7613588389982194011}
+  - {fileID: 1952809834670084755}
+  - {fileID: 5212733558683666223}
+  - {fileID: 2828315966922196226}
+  - {fileID: 7838525721383724059}
+  - {fileID: 728668422136500105}
+  - {fileID: 538156815883718174}
+  - {fileID: 2498145322164707704}
+  - {fileID: 8477938906924278357}
+  - {fileID: 7881611697418064607}
+  - {fileID: 6567189393390233282}
+  - {fileID: 1874074030044240520}
+  - {fileID: 5855859220017089668}
   moreGoldButton: {fileID: 2176463880661400756}
   lessGoldButton: {fileID: 2010470577243150029}
   goldInput: {fileID: 6901104237984336332}
@@ -6316,7 +6332,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3889130359873576260}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3312d7739989d2b4e91e6319e9a96d76, type: 3}
   m_Name: 

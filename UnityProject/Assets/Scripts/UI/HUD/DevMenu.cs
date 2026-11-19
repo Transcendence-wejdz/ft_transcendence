@@ -40,17 +40,25 @@ public class DevMenu : MonoBehaviour
         panel.SetActive(false);
         // Player
         infiniteHealthToggle.onValueChanged.AddListener((value) => LocalPlayer.GetPlayer()?.DevInfiniteHealth(value));
+        PersistToggle(infiniteHealthToggle, "health");
         unlimitedManaToggle.onValueChanged.AddListener((value) => LocalPlayer.GetPlayer()?.DevUnlimitedMana(value));
+        PersistToggle(unlimitedManaToggle, "mana");
         unlimitedDashesToggle.onValueChanged.AddListener((value) => LocalPlayer.GetPlayer()?.DevUnlimitedDashes(value));
+        PersistToggle(unlimitedDashesToggle, "dashes");
         noCooldownToggle.onValueChanged.AddListener((value) => LocalPlayer.GetPlayer()?.DevNoCooldown(value));
+        PersistToggle(noCooldownToggle, "cooldown");
         KGBAgentToggle.onValueChanged.AddListener((value) => LocalPlayer.GetPlayer()?.DevKgbAgent(value));
+        PersistToggle(KGBAgentToggle, "kgb");
         fastAsFuckToggle.onValueChanged.AddListener((value) => LocalPlayer.GetPlayer()?.DevSpeedBoost(value));
+        PersistToggle(fastAsFuckToggle, "speed");
         // Gold
         moreGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(goldStep));
         lessGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(-goldStep));
         goldInput.onEndEdit.AddListener(SetGold);
         // Network
         lagSlider.onValueChanged.AddListener(SetLag);
+        PersistSlider(lagSlider, "lag");
+        SetLag(lagSlider.value);
     }
 
     private void OnEnable()
@@ -81,6 +89,18 @@ public class DevMenu : MonoBehaviour
             slide.Hide();
         else
             slide.Show();
+    }
+
+    // Persistence listener setups
+    private void PersistToggle(Toggle toggle, string key)
+    {
+        toggle.SetIsOnWithoutNotify(Player.DevPrefInt(key));  // Load first
+        toggle.onValueChanged.AddListener((value) => Player.SetDevPrefInt(key, value));  // Then register listener
+    }
+    private void PersistSlider(Slider slider, string key)
+    {
+        slider.SetValueWithoutNotify(Player.DevPrefFloat(key));  // Load first
+        slider.onValueChanged.AddListener((value) => Player.SetDevPrefFloat(key, value));  // Then register listener
     }
 
     // Gold

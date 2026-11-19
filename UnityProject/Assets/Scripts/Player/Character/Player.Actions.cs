@@ -48,7 +48,7 @@ public partial class Player
     }
 
     // Dead players (pigs) can still move but not fight.
-    private bool CanFight => !IsBlocked && !IsDead && !IsDiving;
+    private bool CanFight => !IsBlocked && !IsDead && !IsDiving && !DevMenu.IsHovered;
 
     private bool CanAutofire
     {

@@ -38,6 +38,8 @@ public class DevMenu : MonoBehaviour
     [SerializeField] private Slider lagSlider;
     [SerializeField] private TMP_Text lagValue;
 
+    public static bool IsHovered { get; private set; }
+
 // Unity live / dev build
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     private void Refresh(int balance)
@@ -90,6 +92,7 @@ public class DevMenu : MonoBehaviour
     private void OnDisable()
     {
         devAction.action.Disable();
+        IsHovered = false;
         // Gold
         GoldWallet.OnChanged -= Refresh;
     }
@@ -98,6 +101,9 @@ public class DevMenu : MonoBehaviour
     {
         PanelSlideIn slide;
 
+        // Mouse hover click prevention
+        IsHovered = panel.activeInHierarchy && Mouse.current != null
+            && RectTransformUtility.RectangleContainsScreenPoint((RectTransform)panel.transform, Mouse.current.position.ReadValue());
         if (!devAction.action.WasPressedThisFrame())
             return;
         slide = panel.GetComponent<PanelSlideIn>();

@@ -17,6 +17,8 @@ public class MasterToggle : MonoBehaviour
             child.onValueChanged.AddListener(_ => Sync());
     }
 
+    private void OnEnable() => Sync();
+
     private void SetChildren(bool status)
     {
         foreach (Toggle child in children)

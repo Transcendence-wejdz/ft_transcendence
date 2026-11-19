@@ -14,6 +14,7 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
     [SerializeField] private Sprite[] frames;
     [SerializeField] private float frameRate = 24f;
     [SerializeField] private GameObject impactPrefab;
+    [SerializeField] private float fadeDuration = 0.15f;
 
     private GameObject owner;
     private bool hasHitbox;
@@ -27,6 +28,8 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
     private SpriteRenderer animatedRenderer;
     private float frameTimer;
     private int frameIndex;
+    private float fadeTimer = -1f;
+    private Color fadeColor;
     private readonly HashSet<IDamageable> hitTargets = new HashSet<IDamageable>();
 
     private bool IsAnimated => frames != null && frames.Length > 1;
@@ -137,13 +140,33 @@ public class ArrowProjectile : MonoBehaviour, IAttackFX
     // Loops the frames array when set; with no frames the assigned sprite stays static.
     void Update()
     {
-        if (Vector3.Distance(startPosition, transform.position) >= maxDistance)
+        if (fadeTimer >= 0f)
+            UpdateFade();
+        else if (Vector3.Distance(startPosition, transform.position) >= maxDistance)
+            StartFade();
+        if (IsAnimated)
+            UpdateFrames();
+    }
+
+    private void StartFade()
+    {
+        fadeColor = animatedRenderer.color;
+        fadeTimer = 0f;
+    }
+
+    private void UpdateFade()
+    {
+        float alpha;
+
+        fadeTimer += Time.deltaTime;
+        alpha = 1f - fadeTimer / fadeDuration;
+        if (alpha <= 0f)
         {
             Destroy(gameObject);
             return;
         }
-        if (IsAnimated)
-            UpdateFrames();
+        fadeColor.a = alpha;
+        animatedRenderer.color = fadeColor;
     }
 
     void FixedUpdate()

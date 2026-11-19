@@ -6,11 +6,11 @@ const MAX_KEYBINDS_LENGTH = 20_000;
 
 export type GameSettings = Record<string, boolean | string>;
 
-// Error message for an invalid player name, or null when it's valid.
-export function displayNameError(displayName: string): string | null {
-    if (displayName.length < 2 || displayName.length > 24) return 'Name must be between 2 and 24 characters.';
-    if (!/^[\p{L}\p{N}_ -]+$/u.test(displayName)) return 'Name can use letters, numbers, spaces, _ and -.';
-    return null;
+// Whitespace becomes underscores; canonical names contain 3-15 ASCII letters, digits, _ or -.
+export function normalizeDisplayName(displayName: string): string | null {
+    const cleanName = displayName.trim().replace(/\s+/g, '_');
+    if (cleanName.length < 3 || cleanName.length > 15) return null;
+    return /^[A-Za-z0-9_-]+$/.test(cleanName) ? cleanName : null;
 }
 
 // Whitelisted copy of the in-game settings object, or null when anything is malformed.

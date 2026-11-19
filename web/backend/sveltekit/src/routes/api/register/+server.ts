@@ -3,9 +3,9 @@ import { hash } from '@node-rs/argon2';
 import { prisma } from '$lib/server/db.js';
 import type { RequestHandler } from './$types';
 import { createSession } from '$lib/server/session.js';
+import { normalizeDisplayName } from '$lib/server/validation.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const NAME_RE = /^[A-Za-z0-9_-]{3,20}$/; // no '@', so a name can never look like an email
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
     let body: { email?: unknown; password?: unknown; display_name?: unknown };
@@ -22,14 +22,14 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const cleanName = display_name.trim();
+    const cleanName = normalizeDisplayName(display_name);
 
     if (cleanEmail.length > 254 || !EMAIL_RE.test(cleanEmail)) {
         return json({ success: false, error: 'Invalid email address' }, { status: 400 });
     }
-    if (!NAME_RE.test(cleanName)) {
+    if (!cleanName) {
         return json(
-            { success: false, error: 'Display name must be 3-20 characters: letters, digits, _ or -' },
+            { success: false, error: 'Name must be 3-15 characters: letters, numbers, _ or -. Spaces become _.' },
             { status: 400 }
         );
     }

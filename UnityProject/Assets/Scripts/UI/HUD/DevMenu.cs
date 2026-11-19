@@ -21,6 +21,8 @@ public class DevMenu : MonoBehaviour
     [SerializeField] private Toggle fastAsFuckToggle;
     [SerializeField] private Toggle KGBAgentToggle;
     // Execute
+    [SerializeField] private TMP_Dropdown biomeDropdown;
+    [SerializeField] private Button startButton;
     [SerializeField] private Button lobbyButton;
     [SerializeField] private Button restartButton;
     [SerializeField] private Button bossButton;
@@ -60,6 +62,7 @@ public class DevMenu : MonoBehaviour
         fastAsFuckToggle.onValueChanged.AddListener((value) => LocalPlayer.GetPlayer()?.DevSpeedBoost(value));
         PersistToggle(fastAsFuckToggle, "speed");
         // Execute
+        startButton.onClick.AddListener(() => StartRun((RunBiome)biomeDropdown.value));
         lobbyButton.onClick.AddListener(() => GameModeLoader.LoadNow("Lobby"));
         restartButton.onClick.AddListener(() => GameModeLoader.LoadNow(SceneManager.GetActiveScene().name));
         bossButton.onClick.AddListener(() => GameModeLoader.LoadNow("Boss"));
@@ -116,6 +119,16 @@ public class DevMenu : MonoBehaviour
     {
         slider.SetValueWithoutNotify(Player.DevPrefFloat(key));  // Load first
         slider.onValueChanged.AddListener((value) => Player.SetDevPrefFloat(key, value));  // Then register listener
+    }
+
+    // Execute
+    private void StartRun(RunBiome biome)
+    {
+        RunOptions options = RunOptions.Default;
+
+        options.biome = biome;
+        RunOptions.Current = options;
+        GameModeLoader.LoadNow("Coop");
     }
 
     // Gold

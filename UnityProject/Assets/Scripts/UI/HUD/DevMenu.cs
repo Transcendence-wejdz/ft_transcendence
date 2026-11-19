@@ -24,6 +24,8 @@ public class DevMenu : MonoBehaviour
     [SerializeField] private Button lobbyButton;
     [SerializeField] private Button restartButton;
     [SerializeField] private Button bossButton;
+    [SerializeField] private Button forceWinButton;
+    [SerializeField] private Button forceLoseButton;
     // Gold
     [SerializeField] private Button moreGoldButton;
     [SerializeField] private Button lessGoldButton;
@@ -60,6 +62,8 @@ public class DevMenu : MonoBehaviour
         lobbyButton.onClick.AddListener(() => GameModeLoader.LoadNow("Lobby"));
         restartButton.onClick.AddListener(() => GameModeLoader.LoadNow(SceneManager.GetActiveScene().name));
         bossButton.onClick.AddListener(() => GameModeLoader.LoadNow("Boss"));
+        forceWinButton.onClick.AddListener(() => GameOverCheck.DevEndRun(true));
+        forceLoseButton.onClick.AddListener(() => GameOverCheck.DevEndRun(false));
         // Gold
         moreGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(goldStep));
         lessGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(-goldStep));

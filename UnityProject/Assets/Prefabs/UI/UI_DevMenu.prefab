@@ -4258,6 +4258,8 @@ MonoBehaviour:
   lobbyButton: {fileID: 7613588389982194011}
   restartButton: {fileID: 1952809834670084755}
   bossButton: {fileID: 5212733558683666223}
+  forceWinButton: {fileID: 2828315966922196226}
+  forceLoseButton: {fileID: 7838525721383724059}
   moreGoldButton: {fileID: 2176463880661400756}
   lessGoldButton: {fileID: 2010470577243150029}
   goldInput: {fileID: 6901104237984336332}
@@ -11243,7 +11245,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 0
+  m_Interactable: 1
   m_TargetGraphic: {fileID: 5440678244288919618}
   m_OnClick:
     m_PersistentCalls:
@@ -14098,7 +14100,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 0
+  m_Interactable: 1
   m_TargetGraphic: {fileID: 6005107088142341369}
   m_OnClick:
     m_PersistentCalls:

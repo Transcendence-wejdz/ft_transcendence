@@ -3,6 +3,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using Unity.Multiplayer.Tools.NetworkSimulator.Runtime;
 
 // Debug panel
@@ -19,6 +20,10 @@ public class DevMenu : MonoBehaviour
     [SerializeField] private Toggle noCooldownToggle;
     [SerializeField] private Toggle fastAsFuckToggle;
     [SerializeField] private Toggle KGBAgentToggle;
+    // Execute
+    [SerializeField] private Button lobbyButton;
+    [SerializeField] private Button restartButton;
+    [SerializeField] private Button bossButton;
     // Gold
     [SerializeField] private Button moreGoldButton;
     [SerializeField] private Button lessGoldButton;
@@ -51,6 +56,10 @@ public class DevMenu : MonoBehaviour
         PersistToggle(KGBAgentToggle, "kgb");
         fastAsFuckToggle.onValueChanged.AddListener((value) => LocalPlayer.GetPlayer()?.DevSpeedBoost(value));
         PersistToggle(fastAsFuckToggle, "speed");
+        // Execute
+        lobbyButton.onClick.AddListener(() => GameModeLoader.LoadNow("Lobby"));
+        restartButton.onClick.AddListener(() => GameModeLoader.LoadNow(SceneManager.GetActiveScene().name));
+        bossButton.onClick.AddListener(() => GameModeLoader.LoadNow("Boss"));
         // Gold
         moreGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(goldStep));
         lessGoldButton.onClick.AddListener(() => GoldWallet.DevAdd(-goldStep));

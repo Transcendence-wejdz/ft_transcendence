@@ -137,7 +137,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 0
+  m_Interactable: 1
   m_TargetGraphic: {fileID: 1234326827398261744}
   m_OnClick:
     m_PersistentCalls:
@@ -354,7 +354,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 0
+  m_Interactable: 1
   m_TargetGraphic: {fileID: 7543559692035059076}
   m_OnClick:
     m_PersistentCalls:
@@ -4255,6 +4255,9 @@ MonoBehaviour:
   noCooldownToggle: {fileID: 7735407353185968770}
   fastAsFuckToggle: {fileID: 6276730435840949153}
   KGBAgentToggle: {fileID: 3545744545363133858}
+  lobbyButton: {fileID: 7613588389982194011}
+  restartButton: {fileID: 1952809834670084755}
+  bossButton: {fileID: 5212733558683666223}
   moreGoldButton: {fileID: 2176463880661400756}
   lessGoldButton: {fileID: 2010470577243150029}
   goldInput: {fileID: 6901104237984336332}
@@ -4398,7 +4401,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 0
+  m_Interactable: 1
   m_TargetGraphic: {fileID: 8135818313648337201}
   m_OnClick:
     m_PersistentCalls:

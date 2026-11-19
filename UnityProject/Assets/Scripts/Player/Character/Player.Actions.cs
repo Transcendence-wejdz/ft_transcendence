@@ -36,7 +36,7 @@ public partial class Player
         get
         {
             if (FastAsFuck)
-                return 3f;
+                return DevSpeedMultiplier;
             if (isShieldActive.Value)
                 return ShieldMoveSpeedMultiplier();
             if (IsCharging)

@@ -10,6 +10,7 @@ public partial class Player
     public bool UnlimitedDashes { get; private set; }
     public bool NoCooldown { get; private set; }
     public bool FastAsFuck { get; private set; }
+    private const float DevSpeedMultiplier = 3f;
     // Replicated on network
     private readonly NetworkVariable<bool> kgbAgent = new OfflineSafeNetworkVariable<bool>(
         false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);

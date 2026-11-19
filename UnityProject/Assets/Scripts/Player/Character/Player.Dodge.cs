@@ -102,6 +102,8 @@ public partial class Player
         dodgeEndTime = Time.time + activeKit.DodgeDuration;
         StartDashStrike();
         dodgeVelocity = direction * (activeKit.DodgeDistance / activeKit.DodgeDuration);
+        if (FastAsFuck)
+            dodgeVelocity *= DevSpeedMultiplier;
         dashDustEndTime = dodgeEndTime;
         if (NetworkObject.IsSpawned)
             DashDustServerRpc(activeKit.DodgeDuration);

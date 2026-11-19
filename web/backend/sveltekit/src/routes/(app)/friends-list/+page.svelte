@@ -251,7 +251,7 @@
                         </div>
 
                         <div class="friend-info">
-                            <span class="friend-name">{friend.displayName}</span>
+                            <a class="friend-name" href="/profile/{encodeURIComponent(friend.displayName)}">{friend.displayName}</a>
                             <span class:online={friend.online} class="friend-status">
                                 <span class="status-dot"></span>
                                 {friend.online ? 'Online' : formatLastSeen(friend.lastSeen)}
@@ -343,7 +343,7 @@
                         </div>
 
                         <div class="friend-info">
-                            <span class="friend-name">{request.displayName}</span>
+                            <a class="friend-name" href="/profile/{encodeURIComponent(request.displayName)}">{request.displayName}</a>
                             <span class="friend-status">Wants to be your friend</span>
                         </div>
 
@@ -542,6 +542,14 @@
         overflow-wrap: anywhere;
         color: #f3f5ff;
         font-weight: 650;
+    }
+
+    a.friend-name {
+        text-decoration: none;
+    }
+
+    a.friend-name:hover {
+        text-decoration: underline;
     }
 
     .friend-status {

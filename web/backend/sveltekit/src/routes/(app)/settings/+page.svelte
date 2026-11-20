@@ -81,7 +81,7 @@
                 <div class="avatar" style={`--player-color: ${colors.find((item) => item.name === color)?.value ?? '#171923'}`}>
                     {#if avatarUrl}<img src={avatarUrl} alt="" />{:else}{displayName.slice(0, 1).toUpperCase() || '?'}{/if}
                 </div>
-                <h2>{data.user.unity_player_name || displayName || 'Player name'}</h2>
+                <h2>{displayName || 'Player name'}</h2>
                 <div class="badges">
                     <span class="badge"><span class="badge-dot" style={`--player-color: ${colors.find((item) => item.name === color)?.value ?? '#171923'}`}></span>{color}</span>
                     <span class="badge">{playerClass}</span>

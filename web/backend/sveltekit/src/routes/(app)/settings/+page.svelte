@@ -92,8 +92,6 @@
             <form class="settings-form" onsubmit={saveSettings}>
                 <section class="form-section">
                     <div class="section-heading"><span class="step">01</span><div><h2>Profile details</h2><p>Choose how other players see you.</p></div></div>
-                    <label class="field-label" for="unity-name">UNITY USERNAME</label>
-                    <input id="unity-name" class="text-input" value={data.user.unity_player_name || 'Launch the game to sync your Unity username'} readonly />
                     <label class="field-label" for="display-name">PLAYER NAME</label>
                     <input id="display-name" class="text-input" bind:value={displayName} minlength="3" maxlength="15" autocomplete="nickname" required />
                     <small>3–15 characters. Use letters, numbers and hyphens; spaces become underscores.</small>

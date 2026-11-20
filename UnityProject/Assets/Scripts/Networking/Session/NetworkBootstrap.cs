@@ -8,6 +8,7 @@ using Unity.Services.Multiplayer;
 using UnityEngine;
 
 // Hosts and joins Netcode sessions over Unity Relay (driven by the social panel and invites).
+[DefaultExecutionOrder(-10000)]
 public partial class NetworkBootstrap : MonoBehaviour
 {
     // Look and pose of the offline player, taken over by its networked copy.
@@ -121,6 +122,19 @@ public partial class NetworkBootstrap : MonoBehaviour
             FailSession("rejoin", e);
             return false;
         }
+    }
+
+    // Lobby reload NetworkManager duplication prevention
+    private void Awake()
+    {
+        NetworkManager persistent = NetworkManager.Singleton;
+
+        if (persistent == null || persistent.gameObject == gameObject)
+            return;
+        if (persistent.IsListening && !persistent.ShutdownInProgress)
+            DestroyImmediate(gameObject);
+        else
+            DestroyImmediate(persistent.gameObject);
     }
 
     // Start runs after every Awake, so NetworkManager.Singleton is set.

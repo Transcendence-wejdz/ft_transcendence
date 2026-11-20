@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { m } from '$lib/paraglide/messages.js';
 	import Ribbon from '$lib/components/ui/Ribbon.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Tag from '$lib/components/ui/Tag.svelte';
@@ -24,33 +25,32 @@
 	};
 
 	const members: Member[] = [
-		{ name: '…', login: 'zsonie', github: 'SaruM4N3', role: 'Product owner · Developer', team: 'blue', unitClass: 'Warrior' },
-		{ name: '…', login: 'erbuffet', github: 'Nikad0', role: 'Back-end lead · Developer', team: 'red', unitClass: 'Archer' },
-		{ name: '…', login: 'jureix-c', github: 'E-B3rry', role: 'Tech lead · Developer', team: 'purple', unitClass: 'Pawn' },
-		{ name: '…', login: 'dabuchhe', github: 'dabuchhe', role: 'Scrum master · Developer', team: 'yellow', unitClass: 'Monk' },
-		{ name: '…', login: 'willda-s', github: 'willda-s', role: 'Front-end lead · Developer', team: 'black', unitClass: 'Lancer' }
+		{ name: 'Saru', login: 'zsonie', github: 'SaruM4N3', role: `${m.about_role_product_owner()} · ${m.about_role_developer()}`, team: 'blue', unitClass: 'Warrior', photo: '/team/zsonie.jpg' },
+		{ name: 'Eric', login: 'erbuffet', github: 'Nikad0', role: `${m.about_role_backend_lead()} · ${m.about_role_developer()}`, team: 'red', unitClass: 'Archer', photo: '/team/erbuffet.jpg' },
+		{ name: 'Jules', login: 'jureix-c', github: 'E-B3rry', role: `${m.about_role_tech_lead()} · ${m.about_role_developer()}`, team: 'purple', unitClass: 'Pawn', photo: '/team/jureix-c.png' },
+		{ name: 'Damien', login: 'dabuchhe', github: 'dabuchhe', role: `${m.about_role_scrum_master()} · ${m.about_role_developer()}`, team: 'yellow', unitClass: 'Monk', photo: '/team/dabuchhe.png' },
+		{ name: 'William', login: 'willda-s', github: 'willda-s', role: `${m.about_role_frontend_lead()} · ${m.about_role_developer()}`, team: 'black', unitClass: 'Lancer', photo: '/team/willda-s.jpg' }
 	];
 
 	const flow = [
-		{ name: 'Browser', detail: 'Player' },
-		{ name: 'nginx', detail: 'HTTPS proxy' },
-		{ name: 'SvelteKit', detail: 'Pages · API routes' },
-		{ name: 'PostgreSQL', detail: 'Prisma ORM' },
+		{ name: m.about_flow_browser(), detail: m.about_flow_player() },
+		{ name: 'nginx', detail: m.about_flow_proxy() },
+		{ name: 'SvelteKit', detail: m.about_flow_pages() },
+		{ name: 'PostgreSQL', detail: m.about_flow_orm() },
 		{ name: 'Unity WebGL', detail: 'Relay · Netcode', game: true }
 	];
 
 	const stack = [
-		{ label: 'Front-end', name: 'SvelteKit', text: 'Pages, profiles, friends and the game page, rendered on the server.' },
-		{ label: 'Game', name: 'Unity WebGL', text: '2D wave survival with Netcode for GameObjects and Unity Relay.' },
-		{ label: 'Back-end', name: 'SvelteKit + Prisma', text: 'API routes, accounts, sessions and game data, stored in PostgreSQL.' },
-		{ label: 'Art', name: 'Tiny Swords', text: 'Pixel-art units, castles and islands that set the look of the whole site.' }
+		{ id: 'frontend', label: m.about_stack_frontend(), name: 'SvelteKit', text: m.about_stack_frontend_text() },
+		{ id: 'game', label: m.about_stack_game(), name: 'Unity WebGL', text: m.about_stack_game_text() },
+		{ id: 'backend', label: m.about_stack_backend(), name: 'SvelteKit + Prisma', text: m.about_stack_backend_text() },
+		{ id: 'art', label: m.about_stack_art(), name: 'Tiny Swords', text: m.about_stack_art_text() }
 	];
 
 	type Module = {
 		name: string;
 		type: 'Major' | 'Minor';
 		points: number;
-		status: 'done' | 'planned';
 		detail: string;
 	};
 
@@ -59,14 +59,12 @@
 			name: 'Web: framework for front-end and back-end',
 			type: 'Major',
 			points: 2,
-			status: 'done',
 			detail: 'SvelteKit serves both the pages and the API routes, with server-side rendering.'
 		},
 		{
 			name: 'Web: real-time features',
 			type: 'Major',
 			points: 2,
-			status: 'planned',
 			detail:
 				'Presence, chat and notifications pushed live over WebSockets, with clean handling of disconnections.'
 		},
@@ -74,35 +72,30 @@
 			name: 'Web: user interaction',
 			type: 'Major',
 			points: 2,
-			status: 'planned',
 			detail: 'Chat between players, public profiles and a friends list.'
 		},
 		{
 			name: 'Web: ORM for the database',
 			type: 'Minor',
 			points: 1,
-			status: 'done',
 			detail: 'Prisma gives typed queries and versioned SQL migrations for PostgreSQL.'
 		},
 		{
 			name: 'Accessibility: multiple languages',
 			type: 'Minor',
 			points: 1,
-			status: 'planned',
 			detail: 'The whole site in at least 3 languages, with a language switcher in the top bar.'
 		},
 		{
 			name: 'Accessibility: additional browsers',
 			type: 'Minor',
 			points: 1,
-			status: 'planned',
 			detail: 'Every feature tested and fixed in at least 2 browsers besides Chrome.'
 		},
 		{
 			name: 'User management: standard users and authentication',
 			type: 'Major',
 			points: 2,
-			status: 'done',
 			detail:
 				'Sign up and log in with Argon2id-hashed passwords and database sessions. Players edit their name, class, color and avatar, shared with the game.'
 		},
@@ -110,7 +103,6 @@
 			name: 'Gaming: complete web-based game',
 			type: 'Major',
 			points: 2,
-			status: 'done',
 			detail:
 				'A wave-survival game made in Unity and played live in the browser: waves of enemies, level-up choices, revives and a game over screen.'
 		},
@@ -118,7 +110,6 @@
 			name: 'Gaming: remote players',
 			type: 'Major',
 			points: 2,
-			status: 'done',
 			detail:
 				'Players on different computers join the same session with a code through Unity Relay, and can rejoin after a disconnection.'
 		},
@@ -126,57 +117,43 @@
 			name: 'Gaming: multiplayer, more than two players',
 			type: 'Major',
 			points: 2,
-			status: 'done',
 			detail: 'Up to 4 players in the same session, kept in sync with Netcode for GameObjects.'
-		},
-		{
-			name: 'Gaming: another game with history and matchmaking',
-			type: 'Major',
-			points: 2,
-			status: 'planned',
-			detail: 'A second game, a pig race, with its own history, statistics and matchmaking.'
 		},
 		{
 			name: 'Gaming: game customization options',
 			type: 'Minor',
 			points: 1,
-			status: 'done',
 			detail: '5 classes × 4 colors, each class with its own abilities.'
 		},
 		{
 			name: 'Gaming: gamification system',
 			type: 'Minor',
 			points: 1,
-			status: 'planned',
 			detail:
-				'Achievements, an XP and level system and leaderboards, saved in the database and shown with clear progress feedback.'
+				'Gold earned in every run to buy permanent upgrades, an XP and level system, and leaderboards, all saved in the database.'
 		}
 	];
 
 	const totalPoints = modules.reduce((sum, module) => sum + module.points, 0);
 </script>
 
-<svelte:head><title>Transcendence — About</title></svelte:head>
+<svelte:head><title>Transcendence — {m.about_ribbon()}</title></svelte:head>
 
 <section class="hero">
 	<div class="intro">
-		<Ribbon>About</Ribbon>
+		<Ribbon>{m.about_ribbon()}</Ribbon>
 		<h1>ft_transcendence</h1>
-		<p>
-			The final project of the 42 common core: a full web platform built around a real-time
-			multiplayer game. Ours is a Vampire Survivors-like made in Unity: hold out against waves of
-			enemies, alone or with friends, straight in the browser.
-		</p>
+		<p>{m.about_intro()}</p>
 	</div>
-	<nav class="jump-links" aria-label="On this page">
-		<a href="#project">The project</a>
-		<a href="#stack">The stack</a>
-		<a href="#team">The team</a>
+	<nav class="jump-links" aria-label={m.about_jump_nav()}>
+		<a href="#project">{m.about_jump_project()}</a>
+		<a href="#stack">{m.about_jump_stack()}</a>
+		<a href="#team">{m.about_jump_team()}</a>
 	</nav>
 </section>
 
 <section id="project" class="section">
-	<h2>How it fits together</h2>
+	<h2>{m.about_flow_title()}</h2>
 	<Card variant="parchment">
 		<div class="flow">
 			{#each flow as node, i (node.name)}
@@ -193,9 +170,9 @@
 </section>
 
 <section id="stack" class="section">
-	<h2>The stack</h2>
+	<h2>{m.about_stack_title()}</h2>
 	<div class="stack-grid">
-		{#each stack as item (item.label)}
+		{#each stack as item (item.id)}
 			<Card as="article">
 				<span class="stack-label">{item.label}</span>
 				<h3>{item.name}</h3>
@@ -206,8 +183,8 @@
 	<Card variant="parchment">
 		<details class="scroll">
 			<summary>
-				<h3 class="modules-title">Subject modules</h3>
-				<span class="scroll-count">{modules.length} modules · {totalPoints} points</span>
+				<h3 class="modules-title">{m.about_modules_title()}</h3>
+				<span class="scroll-count">{m.about_modules_count({ modules: modules.length, points: totalPoints })}</span>
 				<span class="scroll-chevron" aria-hidden="true">▾</span>
 			</summary>
 			<ul class="modules">
@@ -216,9 +193,6 @@
 						<details>
 							<summary>
 								<span class="module-name">{module.name}</span>
-								<Tag dot={module.status === 'done' ? 'var(--color-online)' : 'var(--color-gold)'}>
-									{module.status === 'done' ? 'Done' : 'Planned'}
-								</Tag>
 								<Tag>{module.type} · {module.points} pt{module.points > 1 ? 's' : ''}</Tag>
 							</summary>
 							<p>{module.detail}</p>
@@ -230,8 +204,8 @@
 	</Card>
 </section>
 <section id="team" class="section">
-	<Ribbon>The guild</Ribbon>
-	<h2 class="team-title">Meet the team</h2>
+	<Ribbon>{m.about_team_ribbon()}</Ribbon>
+	<h2 class="team-title">{m.about_team_title()}</h2>
 	<div class="team-grid">
 		{#each members as member (member.login)}
 			<Card variant="parchment" as="article">
@@ -248,12 +222,12 @@
 					<span class="login">{member.login}</span>
 					<p>{member.role}</p>
 					<div class="links">
-						<a href="https://github.com/{member.github}" aria-label="{member.name} on GitHub">
+						<a href="https://github.com/{member.github}" aria-label={m.about_member_github({ name: member.name })}>
 							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
 								<path d="M9 19c-4 1.5-4-2-6-2.5M15 21v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12 12 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21" />
 							</svg>
 						</a>
-						<a href="https://profile.intra.42.fr/users/{member.login}" aria-label="{member.name} on the 42 intra">42</a>
+						<a href="https://profile.intra.42.fr/users/{member.login}" aria-label={m.about_member_intra({ name: member.name })}>42</a>
 					</div>
 				</div>
 			</Card>
@@ -263,22 +237,17 @@
 <Card as="section">
 	<div class="cta">
 		<div>
-			<h2>Think you can beat our scores?</h2>
+			<h2>{m.about_cta_title()}</h2>
 			<p>
-				{page.data.user
-					? 'Jump into a run and challenge the team from their profiles.'
-					: 'Create an account, then challenge the team from their profiles.'}
+				{page.data.user ? m.about_cta_player() : m.about_cta_guest()}
 			</p>
 		</div>
 		<div class="cta-actions">
 			{#if page.data.user}
-				<Button href="/game" data-sveltekit-reload>Play now</Button>
+				<Button href="/game" data-sveltekit-reload>{m.about_cta_play()}</Button>
 			{:else}
-				<Button href="/register">Create an account</Button>
+				<Button href="/register">{m.about_cta_register()}</Button>
 			{/if}
-			<Button variant="secondary" href="https://github.com/Transcendence-wejdz/ft_transcendence">
-				View the source
-			</Button>
 		</div>
 	</div>
 </Card>

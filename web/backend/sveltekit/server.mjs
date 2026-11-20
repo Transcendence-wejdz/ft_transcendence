@@ -71,13 +71,14 @@ function hasSameOrigin(request) {
 async function broadcastPresence(userId, online) {
 	try {
 		const friends = await pool.query(
-			`SELECT friend.id AS friend_id, friend.display_name
+			`SELECT friend.id AS friend_id, online_user.display_name
 			 FROM "friendship" AS relationship
 			 JOIN "users" AS friend
 			   ON friend.id = CASE
 			     WHEN relationship."user_Low_id" = $1::uuid THEN relationship."user_High_id"
 			     ELSE relationship."user_Low_id"
 			   END
+			 JOIN "users" AS online_user ON online_user.id = $1::uuid
 			 WHERE relationship."relationStatus" = 'ACCEPTED'
 			   AND (relationship."user_Low_id" = $1::uuid OR relationship."user_High_id" = $1::uuid)`,
 			[userId]

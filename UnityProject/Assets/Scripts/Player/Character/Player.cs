@@ -80,6 +80,11 @@ public partial class Player : NetworkBehaviour, IDamageable
         StartPigForm();
         if (!IsSpawned && this.IsLocallyControlled())
             PlayerCameraRig.ClaimAudioListener(transform);
+        // Dev menu, load settings if own player
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (this.IsLocallyControlled())
+            LoadDev();
+#endif
         hasStarted = true;
     }
 

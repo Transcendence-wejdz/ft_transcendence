@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 3798855412133559385}
   - component: {fileID: 770619590161321919}
   - component: {fileID: 5025535322495409637}
+  - component: {fileID: 2249536055295966727}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -120,11 +121,39 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 665455fac024cb65ea7f053f8fa69f94, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetworkBootstrap
-  multiplayerPanel: {fileID: 0}
   gameModeManagerPrefab: {fileID: 4421769525994616640, guid: aff9998613da735098ddf828e741457b, type: 3}
-  ipInputField: {fileID: 0}
   maxPlayers: 4
-  hostButton: {fileID: 0}
-  joinButton: {fileID: 0}
-  joinStatusText: {fileID: 0}
   sessionCodeText: {fileID: 0}
+--- !u!114 &2249536055295966727
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 607615138255195075}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98d9db9626104da59357651088226725, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Multiplayer.Tools.NetworkSimulator.Runtime::Unity.Multiplayer.Tools.NetworkSimulator.Runtime.NetworkSimulator
+  m_PresetAsset: {fileID: 0}
+  m_PresetReference:
+    rid: 7420385580461064352
+  m_Scenario:
+    rid: -2
+  m_IsScenarioSettingsFolded: 0
+  AutoRunScenario: 0
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
+    - rid: 7420385580461064352
+      type: {class: NetworkSimulatorPreset, ns: Unity.Multiplayer.Tools.NetworkSimulator.Runtime, asm: Unity.Multiplayer.Tools.NetworkSimulator.Runtime}
+      data:
+        <Name>k__BackingField: 
+        <Description>k__BackingField: 
+        <PacketDelayMs>k__BackingField: 0
+        <PacketJitterMs>k__BackingField: 0
+        <PacketLossInterval>k__BackingField: 0
+        <PacketLossPercent>k__BackingField: 0

@@ -43,7 +43,7 @@ public partial class Player
 
         if (!TryPayCast(kit, specialReadyTime))
             return;
-        cooldown = kit.Cooldown * SpecialCooldownMultiplier;
+        cooldown = DevCooldown(kit.Cooldown * SpecialCooldownMultiplier);
         PlayAbilityAnimation(SpecialHash, SpecialAnimSpeedHash, kit.AnimSpeed);
         specialReadyTime = Time.time + cooldown;
         StartMoveLock(kit);
@@ -59,9 +59,9 @@ public partial class Player
         if (!TryPayCast(kit, ultimateReadyTime))
             return;
         PlayAbilityAnimation(UltimateHash, UltimateAnimSpeedHash, kit.AnimSpeed);
-        ultimateReadyTime = Time.time + kit.Cooldown;
+        ultimateReadyTime = Time.time + DevCooldown(kit.Cooldown);
         StartMoveLock(kit);
-        OnAbilityUsed?.Invoke(AbilityType.Ultimate, kit.Cooldown);
+        OnAbilityUsed?.Invoke(AbilityType.Ultimate, DevCooldown(kit.Cooldown));
         if (kit.Kind == AbilityKind.Dive)
             StartDive(kit, distance);
         else

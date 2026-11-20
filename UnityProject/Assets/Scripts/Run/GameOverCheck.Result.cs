@@ -55,4 +55,13 @@ public partial class GameOverCheck
         offlineResult = snapshot;
         offlineGameOver = true;
     }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    // Ends a run if host or solo
+    public static void DevEndRun(bool victory)
+    {
+        if (instance != null && instance.CanChoose && !instance.IsGameOver)
+            instance.EndRun(CaptureResult(victory));
+    }
+#endif
 }

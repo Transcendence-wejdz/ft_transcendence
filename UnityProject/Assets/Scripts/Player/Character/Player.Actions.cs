@@ -35,6 +35,8 @@ public partial class Player
     {
         get
         {
+            if (FastAsFuck)
+                return DevSpeedMultiplier;
             if (isShieldActive.Value)
                 return ShieldMoveSpeedMultiplier();
             if (IsCharging)
@@ -46,7 +48,7 @@ public partial class Player
     }
 
     // Dead players (pigs) can still move but not fight.
-    private bool CanFight => !IsBlocked && !IsDead && !IsDiving;
+    private bool CanFight => !IsBlocked && !IsDead && !IsDiving && !DevMenu.IsHovered;
 
     private bool CanAutofire
     {
@@ -124,7 +126,7 @@ public partial class Player
     private void FireAttack()
     {
         AbilityKit kit = Ability(AbilityType.Attack);
-        float cooldown = kit.Cooldown * AttackCooldownMultiplier;
+        float cooldown = DevCooldown(kit.Cooldown * AttackCooldownMultiplier);
 
         PlayAbilityAnimation(AttackHash, AttackAnimSpeedHash, kit.AnimSpeed * AttackSpeedMultiplier);
         attackReadyTime = Time.time + cooldown;
@@ -165,5 +167,4 @@ public partial class Player
                 BeginAim(AbilityType.Attack);
         }
     }
-
 }

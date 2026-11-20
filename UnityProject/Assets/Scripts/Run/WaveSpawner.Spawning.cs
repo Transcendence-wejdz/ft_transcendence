@@ -39,7 +39,7 @@ public partial class WaveSpawner
         spawningBatches = true;
         while (pendingSpawns > 0 && !GameOverCheck.IsRunOver)
         {
-            batch = Mathf.Min(spawnBatchSize, pendingSpawns, RoomForEnemies());
+            batch = DevPaused ? 0 : Mathf.Min(spawnBatchSize, pendingSpawns, RoomForEnemies());
             pendingSpawns -= batch;
             for (int i = 0; i < batch; i++)
                 SpawnEnemy(unlockedKitIndices[Random.Range(0, unlockedKitIndices.Count)], FindSpawnPosition());

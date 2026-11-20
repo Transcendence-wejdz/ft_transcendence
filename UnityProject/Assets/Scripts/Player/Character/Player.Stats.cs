@@ -141,6 +141,8 @@ public partial class Player
 
     public bool TrySpendMana(float amount)
     {
+        if (UnlimitedMana)
+            return true;
         if (CurrentMana < amount)
         {
             if (this.IsLocallyControlled())

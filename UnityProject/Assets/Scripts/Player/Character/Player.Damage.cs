@@ -12,7 +12,7 @@ public partial class Player
     {
         float health;
 
-        if (!this.IsLocallyControlled() || IsInvulnerable)
+        if (!this.IsLocallyControlled() || IsInvulnerable || InfiniteHealth)
             return;
         health = Mathf.Clamp(currentHealth.Value - amount, 0f, MaxHealth);
         if (health <= 0f && currentHealth.Value > 0f && TryConsumeExtraLife())

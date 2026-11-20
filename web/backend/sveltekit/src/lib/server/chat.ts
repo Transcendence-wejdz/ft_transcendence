@@ -3,7 +3,7 @@ import { json } from '@sveltejs/kit';
 import { prisma } from '$lib/server/db.js';
 import type { ApiErrorCode, ApiFailure, ChatMessage, PlayerColor, UserSummary, Uuid } from '$lib/types';
 
-const UUID_PATTERN = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+export const UUID_PATTERN = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 
 // Prisma selects for the rows the chat routes send back.
 export const userSummarySelect = { id: true, displayName: true, color: true, avatarUrl: true } as const;

@@ -59,7 +59,8 @@
                autocomplete="email" required />
         <label for="display-name">Display name</label>
         <input id="display-name" type="text" bind:value={display_name} placeholder="How players will see you"
-               autocomplete="nickname" required />
+               minlength="3" maxlength="15" autocomplete="nickname" required />
+        <small>3–15 characters. Use letters, numbers and hyphens; spaces become underscores.</small>
         <label for="password">Password</label>
         <input id="password" type="password" bind:value={password} placeholder="8 to 128 characters"
                autocomplete="new-password" required />

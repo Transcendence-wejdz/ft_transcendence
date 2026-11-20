@@ -3,7 +3,7 @@ using UnityEngine;
 // The local player's class, color and name choices, with change events for the HUD; usable from any scene.
 public static class LocalCharacterLook
 {
-    public const int MaxNameLength = 24;
+    public const int MaxNameLength = 15;
 
     public static event System.Action<Sprite> OnPortraitChanged;
     public static event System.Action<Sprite> OnBackgroundChanged;
@@ -39,16 +39,21 @@ public static class LocalCharacterLook
             customization.SetSelection(classIndex, colorIndex);
     }
 
-    // Trimmed and cut to MaxNameLength; null when nothing is left.
+    // Whitespace becomes underscores; require 3-15 ASCII letters, digits, _ or -.
     private static string CleanName(string value)
     {
         if (value == null)
             return null;
-        value = value.Trim();
-        if (string.IsNullOrEmpty(value))
+        value = System.Text.RegularExpressions.Regex.Replace(value.Trim(), @"\s+", "_");
+        if (value.Length < 3 || value.Length > MaxNameLength)
             return null;
-        if (value.Length > MaxNameLength)
-            value = value.Substring(0, MaxNameLength);
+        foreach (char character in value)
+        {
+            if ((character >= 'A' && character <= 'Z') || (character >= 'a' && character <= 'z')
+                || (character >= '0' && character <= '9') || character == '_' || character == '-')
+                continue;
+            return null;
+        }
         return value;
     }
 

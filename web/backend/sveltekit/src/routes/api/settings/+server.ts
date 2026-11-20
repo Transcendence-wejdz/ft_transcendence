@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { prisma } from '$lib/server/db.js';
-import { CLASSES, COLORS, displayNameError, isUniqueViolation } from '$lib/server/validation.js';
+import { CLASSES, COLORS, normalizeDisplayName, isUniqueViolation } from '$lib/server/validation.js';
 
 const MAX_AVATAR_LENGTH = 700_000;
 
@@ -19,13 +19,12 @@ export const PUT: RequestHandler = async ({ locals, request }) => {
     }
 
     const input = body as Record<string, unknown>;
-    const displayName = typeof input.display_name === 'string' ? input.display_name.trim() : '';
+    const displayName = typeof input.display_name === 'string' ? normalizeDisplayName(input.display_name) : null;
     const color = input.color;
     const playerClass = input.class;
     const avatarUrl = input.avatar_url;
 
-    const nameError = displayNameError(displayName);
-    if (nameError) return json({ success: false, error: nameError }, { status: 400 });
+    if (!displayName) return json({ success: false, error: 'Name must be 3-15 characters: letters, numbers, _ or -. Spaces become _.' }, { status: 400 });
     if (typeof color !== 'string' || !COLORS.has(color)) {
         return json({ success: false, error: 'Choose a color from the available options.' }, { status: 400 });
     }

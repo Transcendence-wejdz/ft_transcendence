@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import type { Prisma } from '$lib/server/generated/prisma/client';
 import { prisma } from '$lib/server/db.js';
-import { CLASSES, COLORS, displayNameError, isUniqueViolation, parseGameSettings } from '$lib/server/validation.js';
+import { CLASSES, COLORS, normalizeDisplayName, isUniqueViolation, parseGameSettings } from '$lib/server/validation.js';
 
 // Partial profile/settings update pushed by the Unity game whenever the player changes something in-game.
 export const PATCH: RequestHandler = async ({ locals, request }) => {
@@ -22,9 +22,8 @@ export const PATCH: RequestHandler = async ({ locals, request }) => {
     const data: Prisma.UserUpdateInput = {};
 
     if (input.display_name !== undefined) {
-        const displayName = typeof input.display_name === 'string' ? input.display_name.trim() : '';
-        const nameError = displayNameError(displayName);
-        if (nameError) return json({ success: false, error: nameError }, { status: 400 });
+        const displayName = typeof input.display_name === 'string' ? normalizeDisplayName(input.display_name) : null;
+        if (!displayName) return json({ success: false, error: 'Name must be 3-15 characters: letters, numbers, _ or -. Spaces become _.' }, { status: 400 });
         data.displayName = displayName;
     }
     if (input.class !== undefined) {

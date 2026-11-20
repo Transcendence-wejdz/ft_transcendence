@@ -383,14 +383,16 @@
 
 	.mode-name {
 		display: block;
-		font-family: var(--font-ui);
-		font-weight: 700;
+		font-family: var(--font-title);
+		font-weight: 400;
 		font-size: 2.5rem;
+		line-height: 1.1;
 		color: var(--color-gold);
 	}
 
 	.mode p {
 		margin: 0.5rem 0 0;
+		font-size: 1.125rem;
 		color: var(--color-text-secondary);
 		line-height: 1.6;
 	}

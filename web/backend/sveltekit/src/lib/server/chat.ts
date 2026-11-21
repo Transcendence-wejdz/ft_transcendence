@@ -1,16 +1,18 @@
-// Server side of the chat: who may chat with whom, the message queries and live delivery.
+// Server side of the chat: who may chat with whom, the message queries, the /chat list and live delivery.
 import { json } from '@sveltejs/kit';
 import { prisma } from '$lib/server/db.js';
 import { sendToUser } from '$lib/server/realtime.js';
 import { isUuid } from '$lib/server/validation.js';
-import type { ApiErrorCode, ApiFailure, ChatMessage, MessagesPage, Uuid } from '$lib/types';
+import type { ApiErrorCode, ApiFailure, ChatMessage, Conversation, MessagesPage, PlayerColor, UserSummary, Uuid } from '$lib/types';
 
 // Messages per page of history: enough to fill the screen, small enough to load fast.
 const PAGE_SIZE = 30;
 
-// Prisma select for the message rows the chat routes send back.
+// Prisma selects for the rows the chat routes send back.
+const userSummarySelect = { id: true, displayName: true, color: true, avatarUrl: true } as const;
 const messageSelect = { id: true, senderId: true, receiverId: true, text: true, sentAt: true } as const;
 
+type UserSummaryRow = { id: Uuid; displayName: string; color: string; avatarUrl: string | null };
 type MessageRow = { id: Uuid; senderId: Uuid; receiverId: Uuid; text: string; sentAt: Date };
 
 // ---- Responses ----
@@ -106,6 +108,61 @@ export async function findMessagesPage(userId: Uuid, peerId: Uuid, before: Uuid 
 	});
 	const items = rows.slice(0, PAGE_SIZE).map(toChatMessage);
 	return { items, nextCursor: rows.length > PAGE_SIZE ? items[items.length - 1].id : null };
+}
+
+async function findLatestMessage(userId: Uuid, peerId: Uuid): Promise<ChatMessage | null> {
+	const row = await prisma.message.findFirst({
+		where: between(userId, peerId),
+		orderBy: newestFirst(),
+		select: messageSelect
+	});
+	return row ? toChatMessage(row) : null;
+}
+
+// Messages the user received and has not read yet, counted per sender.
+async function countUnreadBySender(userId: Uuid, senderIds: Uuid[]): Promise<Map<Uuid, number>> {
+	const groups = await prisma.message.groupBy({
+		by: ['senderId'],
+		where: { receiverId: userId, readAt: null, senderId: { in: senderIds } },
+		_count: { _all: true }
+	});
+	return new Map(groups.map((group) => [group.senderId, group._count._all]));
+}
+
+// ---- Conversations ----
+
+// One row per friend: latest activity first, then friends with no message yet, by name.
+export async function listConversations(userId: Uuid): Promise<Conversation[]> {
+	const friends = await findFriends(userId);
+	const [latestMessages, unreadBySender] = await Promise.all([
+		Promise.all(friends.map((friend) => findLatestMessage(userId, friend.id))),
+		countUnreadBySender(userId, friends.map((friend) => friend.id))
+	]);
+	const conversations = friends.map((peer, index) => ({
+		peer,
+		lastMessage: latestMessages[index],
+		unreadCount: unreadBySender.get(peer.id) ?? 0
+	}));
+	return conversations.sort(byLatestActivity);
+}
+
+// Accepted friends only. Blocking a player deletes the friendship, so no blocked player is listed.
+async function findFriends(userId: Uuid): Promise<UserSummary[]> {
+	const rows = await prisma.friendship.findMany({
+		where: { relationStatus: 'ACCEPTED', OR: [{ userLowId: userId }, { userHighId: userId }] },
+		select: { userLow: { select: userSummarySelect }, userHigh: { select: userSummarySelect } }
+	});
+	return rows.map((row) => toUserSummary(row.userLow.id === userId ? row.userHigh : row.userLow));
+}
+
+function toUserSummary(row: UserSummaryRow): UserSummary {
+	return { ...row, color: row.color as PlayerColor };
+}
+
+function byLatestActivity(a: Conversation, b: Conversation): number {
+	if (a.lastMessage && b.lastMessage) return b.lastMessage.sentAt.localeCompare(a.lastMessage.sentAt);
+	if (a.lastMessage || b.lastMessage) return a.lastMessage ? -1 : 1;
+	return a.peer.displayName.localeCompare(b.peer.displayName);
 }
 
 // ---- Live delivery ----

@@ -23,6 +23,9 @@ const WEB_SOCKET_HEARTBEAT_INTERVAL_MS = 25_000;
 // Tracks connections in this Node process, grouped by user so multiple tabs
 // still count as one online user.
 const connectionsByUser = new Map();
+// API routes run in this same Node process: $lib/server/realtime.ts reads this
+// map to push events, such as a new chat message, to a user's open tabs.
+globalThis.realtimeConnections = connectionsByUser;
 
 // The browser sends the raw session cookie; the database stores only its hash.
 function getSessionToken(request) {

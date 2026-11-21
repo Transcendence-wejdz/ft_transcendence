@@ -129,6 +129,14 @@ async function countUnreadBySender(userId: Uuid, senderIds: Uuid[]): Promise<Map
 	return new Map(groups.map((group) => [group.senderId, group._count._all]));
 }
 
+// Marks as read every message the user received from peerId and had not read yet.
+export async function markConversationRead(userId: Uuid, peerId: Uuid): Promise<void> {
+	await prisma.message.updateMany({
+		where: { senderId: peerId, receiverId: userId, readAt: null },
+		data: { readAt: new Date() }
+	});
+}
+
 // ---- Conversations ----
 
 // One row per friend: latest activity first, then friends with no message yet, by name.
